@@ -42,7 +42,8 @@ def choose_k(rows: list[RegionFeatures], k_values: tuple[int, ...] | list[int] =
 
     valid_ks = [k for k in k_values if 2 <= k < len(rows)]
     if not valid_ks:
-        valid_ks = [min(2, len(rows))]
+        fallback_k = min(2, len(rows))
+        return KSelection(k=fallback_k, silhouette_score=0.0)
 
     best_k = valid_ks[0]
     best_score = -1.0
