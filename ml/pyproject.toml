@@ -1,0 +1,25 @@
+[project]
+name = "geohazard-ml"
+version = "0.1.0"
+description = "Regional seismic risk profiling pipeline for GeoHazard PH"
+requires-python = ">=3.11"
+dependencies = [
+  "pandas>=2.2.0",
+  "scikit-learn>=1.5.0",
+  "joblib>=1.4.0",
+  "kaggle>=1.6.17"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.0",
+  "ruff>=0.6.0"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
