@@ -1,0 +1,22 @@
+[
+  {
+    "region_name": "Bicol Region",
+    "cluster": 2,
+    "label": "High",
+    "confidence": 0.82,
+    "feature_importances": {"event_count": 0.42, "max_magnitude": 0.31},
+    "model_version": "v-test",
+    "generated_at": "2026-08-27T00:00:00Z",
+    "dataset_snapshot": "Kaggle PHIVOLCS and USGS fixture"
+  },
+  {
+    "region_name": "Palawan",
+    "cluster": 0,
+    "label": "Low",
+    "confidence": 0.91,
+    "feature_importances": {"event_count": 0.39, "mean_magnitude": 0.22},
+    "model_version": "v-test",
+    "generated_at": "2026-08-27T00:00:00Z",
+    "dataset_snapshot": "Kaggle PHIVOLCS and USGS fixture"
+  }
+]
