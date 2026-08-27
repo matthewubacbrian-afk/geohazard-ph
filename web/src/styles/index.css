@@ -1,0 +1,85 @@
+:root {
+  color: #172026;
+  background: #f5f7f8;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+.header {
+  align-items: baseline;
+  background: #ffffff;
+  border-bottom: 1px solid #d7dee2;
+  display: flex;
+  gap: 16px;
+  padding: 16px 24px;
+}
+
+.header h1 {
+  font-size: 24px;
+  margin: 0;
+}
+
+.workspace {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 280px minmax(320px, 1fr) 320px;
+  min-height: calc(100vh - 65px);
+  padding: 16px;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #d7dee2;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.panel h2 {
+  font-size: 16px;
+  margin: 0 0 12px;
+}
+
+.map-shell {
+  background: #dbe7e4;
+  border: 1px solid #b7c9c5;
+  border-radius: 8px;
+  min-height: 560px;
+}
+
+.map-placeholder {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  justify-content: center;
+}
+
+.map-placeholder strong {
+  font-size: 48px;
+}
+
+.filter-bar,
+.toggle-row {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-bar {
+  flex-direction: column;
+}
+
+@media (max-width: 960px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "abc123",
+      "properties": {
+        "mag": 4.8,
+        "place": "12 km E of Sample, Philippines",
+        "time": 1787788800000
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [121.0, 14.5, 35.0]
+      }
+    }
+  ]
+}

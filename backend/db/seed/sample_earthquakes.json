@@ -1,0 +1,14 @@
+[
+  {
+    "id": "sample-usgs-001",
+    "hazard_type": "earthquake",
+    "source": "usgs",
+    "external_id": "usgs-sample-001",
+    "magnitude": 5.2,
+    "depth_km": 32.0,
+    "latitude": 14.5995,
+    "longitude": 120.9842,
+    "place_name": "Sample event near Manila, Philippines",
+    "occurred_at": "2026-08-27T00:00:00Z"
+  }
+]

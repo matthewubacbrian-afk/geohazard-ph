@@ -1,4 +1,4 @@
-from ml.clustering import assign_risk_labels, choose_k, fit_kmeans
+﻿from ml.clustering import assign_risk_labels, choose_k, fit_kmeans
 from ml.features import RegionFeatures
 
 
@@ -32,3 +32,17 @@ def test_fit_kmeans_returns_region_assignments_and_model():
     assert len(result.assignments) == 4
     assert result.model.n_clusters in {2, 3}
     assert result.scaler is not None
+
+
+def test_fit_kmeans_returns_labels_from_same_cluster_assignments():
+    result = fit_kmeans(_rows(), k_values=[2], random_state=7)
+
+    assert set(result.risk_labels) == set(result.assignments)
+    for region_name, cluster_id in result.assignments.items():
+        same_cluster_regions = [
+            other_region
+            for other_region, other_cluster_id in result.assignments.items()
+            if other_cluster_id == cluster_id
+        ]
+        labels = {result.risk_labels[other_region] for other_region in same_cluster_regions}
+        assert len(labels) == 1

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -24,6 +24,7 @@ class KSelection:
 @dataclass(frozen=True)
 class KMeansResult:
     assignments: dict[str, int]
+    risk_labels: dict[str, str]
     model: KMeans
     scaler: StandardScaler
     region_names: list[str]
@@ -36,7 +37,7 @@ def feature_matrix(rows: list[RegionFeatures]) -> tuple[list[str], pd.DataFrame]
 
 
 def choose_k(rows: list[RegionFeatures], k_values: tuple[int, ...] | list[int] = (3, 4, 5)) -> KSelection:
-    region_names, matrix = feature_matrix(rows)
+    _, matrix = feature_matrix(rows)
     scaler = StandardScaler()
     scaled = scaler.fit_transform(matrix)
 
@@ -62,17 +63,29 @@ def choose_k(rows: list[RegionFeatures], k_values: tuple[int, ...] | list[int] =
 
 def _cluster_severity_order(matrix: pd.DataFrame, labels: np.ndarray, n_clusters: int) -> dict[int, int]:
     centroids = []
-    for c in range(n_clusters):
-        mask = labels == c
+    for cluster_id in range(n_clusters):
+        mask = labels == cluster_id
         centroids.append(matrix.loc[mask].mean(axis=0).values)
 
     centroid_df = pd.DataFrame(centroids, columns=FEATURE_COLUMNS)
     centroid_df["cluster"] = range(n_clusters)
     centroid_df["severity"] = (
-        centroid_df["event_count"] + centroid_df["mean_magnitude"] + centroid_df["max_magnitude"] + centroid_df["event_density"]
+        centroid_df["event_count"]
+        + centroid_df["mean_magnitude"]
+        + centroid_df["max_magnitude"]
+        + centroid_df["event_density"]
     )
     centroid_df = centroid_df.sort_values("severity").reset_index(drop=True)
-    return {row["cluster"]: i for i, row in centroid_df.iterrows()}
+    return {int(row["cluster"]): int(index) for index, row in centroid_df.iterrows()}
+
+
+def _labels_for_clusters(assignments: dict[str, int], severity_map: dict[int, int]) -> dict[str, str]:
+    available_labels = RISK_LABELS[: max(severity_map.values(), default=0) + 1]
+    labels: dict[str, str] = {}
+    for region_name, cluster_id in assignments.items():
+        severity_idx = severity_map[cluster_id]
+        labels[region_name] = available_labels[min(severity_idx, len(available_labels) - 1)]
+    return labels
 
 
 def fit_kmeans(
@@ -86,19 +99,30 @@ def fit_kmeans(
 
     selection = choose_k(rows, k_values)
     km = KMeans(n_clusters=selection.k, n_init=10, random_state=random_state)
-    labels = km.fit_predict(scaled)
+    cluster_ids = km.fit_predict(scaled)
 
-    assignments = {name: int(label) for name, label in zip(region_names, labels)}
-    return KMeansResult(assignments=assignments, model=km, scaler=scaler, region_names=region_names)
+    assignments = {name: int(label) for name, label in zip(region_names, cluster_ids)}
+    severity_map = _cluster_severity_order(matrix, cluster_ids, km.n_clusters)
+    risk_labels = _labels_for_clusters(assignments, severity_map)
+    return KMeansResult(
+        assignments=assignments,
+        risk_labels=risk_labels,
+        model=km,
+        scaler=scaler,
+        region_names=region_names,
+    )
 
 
 def _rank_severity(rows: list[RegionFeatures]) -> dict[str, float]:
     _, matrix = feature_matrix(rows)
     scaler = StandardScaler()
     scaled = scaler.fit_transform(matrix)
-    severity_cols = [FEATURE_COLUMNS.index(c) for c in ["event_count", "mean_magnitude", "max_magnitude", "event_density"]]
+    severity_cols = [
+        FEATURE_COLUMNS.index(column)
+        for column in ["event_count", "mean_magnitude", "max_magnitude", "event_density"]
+    ]
     scores = scaled[:, severity_cols].mean(axis=1)
-    ranked = sorted(zip([r.region_name for r in rows], scores), key=lambda x: x[1])
+    ranked = sorted(zip([r.region_name for r in rows], scores), key=lambda item: item[1])
     n = len(ranked)
     return {name: rank / max(n - 1, 1) for rank, (name, _) in enumerate(ranked)}
 
@@ -120,16 +144,4 @@ def assign_risk_labels(rows: list[RegionFeatures]) -> dict[str, str]:
 
     max_k = len(rows) - 1
     k_values = [k for k in range(2, n_labels + 1) if k <= max_k]
-
-    result = fit_kmeans(rows, k_values=k_values, random_state=42)
-    severity_map = _cluster_severity_order(
-        feature_matrix(rows)[1],
-        result.model.labels_,
-        result.model.n_clusters,
-    )
-
-    labels = {}
-    for name, cluster_id in result.assignments.items():
-        severity_idx = severity_map[cluster_id]
-        labels[name] = available_labels[min(severity_idx, len(available_labels) - 1)]
-    return labels
+    return fit_kmeans(rows, k_values=k_values, random_state=42).risk_labels

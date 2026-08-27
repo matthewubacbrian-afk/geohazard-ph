@@ -1,0 +1,11 @@
+name: Deploy Staging
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Add staging deployment steps when hosting is selected."
