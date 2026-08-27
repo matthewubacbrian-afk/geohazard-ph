@@ -13,6 +13,10 @@ GeoHazard PH is a Project NOAH-inspired geologic hazard monitoring platform for 
 - `docs/` - project documentation, specs, implementation plans, ADRs, and runbooks.
 - `scripts/` - helper scripts for verification, imports, and ML training.
 
+## Coding Standards
+
+All human-written and generated changes should follow [CODING_STANDARDS.md](CODING_STANDARDS.md). Coding agents should also read [AGENTS.md](AGENTS.md) before modifying the repository.
+
 ## Prerequisites
 
 Install these before running the project locally:
