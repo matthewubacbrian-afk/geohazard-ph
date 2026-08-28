@@ -49,10 +49,15 @@ body {
 }
 
 .map-shell {
-  background: #dbe7e4;
   border: 1px solid #b7c9c5;
   border-radius: 8px;
   min-height: 560px;
+  overflow: hidden;
+}
+
+.map-container {
+  height: 100%;
+  width: 100%;
 }
 
 .map-placeholder {
