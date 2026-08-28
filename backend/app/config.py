@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://geohazard:geohazard@localhost:5432/geohazard"
     redis_url: str = "redis://localhost:6379/0"
     risk_profile_export_path: Path = Path("tests/fixtures/risk_profiles.json")
+    usgs_feed_url: str = "https://earthquake.usgs.gov/fdsnws/event/1/query"
+    ph_bbox: tuple[float, float, float, float] = (116.0, 4.0, 128.0, 22.0)
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 
