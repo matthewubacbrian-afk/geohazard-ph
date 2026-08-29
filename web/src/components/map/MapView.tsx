@@ -7,6 +7,8 @@ type MapViewProps = {
   events: HazardEvent[];
 };
 
+const PH_CENTER: [number, number] = [121.774, 12.8797]; // Philippines
+
 export default function MapView({ events }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
 
@@ -16,7 +18,7 @@ export default function MapView({ events }: MapViewProps) {
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: 'https://tiles.openfreemap.org/styles/bright',
-      center: [121.774, 12.8797], // Philippines
+      center: PH_CENTER,
       zoom: 5,
     });
 
@@ -35,15 +37,42 @@ export default function MapView({ events }: MapViewProps) {
           'text-font': ['literal', ['Noto Sans Regular']],
         },
       ]);
+
+      map.addSource('events', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: events.map((event) => ({
+            type: 'Feature' as const,
+            geometry: { type: 'Point' as const, coordinates: [event.longitude, event.latitude] },
+            properties: { place: event.place_name, magnitude: event.magnitude ?? null },
+          })),
+        },
+      });
+
+      map.addLayer({
+        id: 'event-circles',
+        type: 'circle',
+        source: 'events',
+        paint: {
+          'circle-radius': 8,
+          'circle-color': '#dc2626',
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
     });
 
     return () => map.remove();
-  }, []);
+  }, [events]);
 
   return (
     <div className="map-canvas" aria-label="Hazard map">
       <div ref={mapContainer} className="map-container" />
       <span className="sr-only">{events.length} events loaded</span>
+      {events.length === 0 && (
+        <div className="map-empty">No events to display.</div>
+      )}
     </div>
   );
 }

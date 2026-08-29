@@ -1,7 +1,30 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { act } from 'react';
 
-describe('MapView scaffold', () => {
-  it('has a starter test target', () => {
-    expect('GeoHazard PH').toContain('GeoHazard');
+import MapView from '../src/components/map/MapView';
+
+const mapInstance = {
+  addControl: vi.fn(),
+  remove: vi.fn(),
+  on: vi.fn((_event: string, callback: () => void) => callback()),
+};
+
+vi.mock('maplibre-gl', () => ({
+  default: {
+    Map: vi.fn(() => mapInstance),
+    NavigationControl: vi.fn(),
+  },
+}));
+
+describe('MapView', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows an empty state when there are no events', () => {
+    render(<MapView events={[]} />);
+
+    expect(screen.getByText(/no events/i)).toBeTruthy();
   });
 });

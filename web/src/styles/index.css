@@ -150,6 +150,15 @@ img {
   background: transparent;
 }
 
+.map-empty {
+  align-items: center;
+  color: #5a716c;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  padding: 12px;
+}
+
 .hero-overlay {
   position: absolute;
   inset: 0;
