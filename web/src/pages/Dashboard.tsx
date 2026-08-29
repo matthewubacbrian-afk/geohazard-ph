@@ -1,22 +1,24 @@
-import EventList from '../components/events/EventList';
-import Header from '../components/layout/Header';
-import Sidebar from '../components/layout/Sidebar';
-import MapView from '../components/map/MapView';
-import { useEvents } from '../hooks/useEvents';
-import RiskProfileExplorer from './RiskProfileExplorer';
+import DashboardMapArea from "../components/dashboard/DashboardMapArea";
+import DashboardSidebar from "../components/dashboard/DashboardSidebar";
+import TopNav from "../components/layout/TopNav";
+
+const navItems = [
+  "Dashboard",
+  "How It Works",
+  "About",
+  "Data Sources",
+  "Contact",
+];
 
 export default function Dashboard() {
-  const { data: events = [] } = useEvents();
-
   return (
-    <main>
-      <Header />
-      <div className="workspace">
-        <Sidebar />
-        <MapView events={events} />
-        <EventList events={events} />
-        <RiskProfileExplorer />
+    <div className="dashboard-page">
+      <TopNav items={navItems} activeItem="Dashboard" theme="dashboard" />
+
+      <div className="dashboard-main">
+        <DashboardSidebar />
+        <DashboardMapArea />
       </div>
-    </main>
+    </div>
   );
 }
