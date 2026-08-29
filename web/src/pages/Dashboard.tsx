@@ -12,7 +12,7 @@ const navItems = [
 ];
 
 export default function Dashboard() {
-  const { data: events = [] } = useEvents();
+  const { data: events = [], isLoading, error, refetch } = useEvents();
 
   return (
     <div className="dashboard-page">
@@ -20,7 +20,12 @@ export default function Dashboard() {
 
       <div className="dashboard-main">
         <DashboardSidebar />
-        <DashboardMapArea events={events} />
+        <DashboardMapArea
+          events={events}
+          isLoading={isLoading}
+          error={error as Error | null}
+          onRetry={() => refetch()}
+        />
       </div>
     </div>
   );

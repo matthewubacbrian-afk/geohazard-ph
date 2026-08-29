@@ -20,7 +20,12 @@ function renderCard(summary: EventSummary) {
 
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>
-      <DashboardMapArea events={[]} />
+      <DashboardMapArea
+        events={[]}
+        isLoading={false}
+        error={null}
+        onRetry={vi.fn()}
+      />
     </QueryClientProvider>,
   );
 }

@@ -4,21 +4,44 @@ import { useEventSummary } from "../../hooks/useEventSummary";
 
 type DashboardMapAreaProps = {
   events: HazardEvent[];
+  isLoading: boolean;
+  error: Error | null;
+  onRetry: () => void;
 };
 
-export default function DashboardMapArea({ events }: DashboardMapAreaProps) {
-  const { data: summary, isLoading, error } = useEventSummary();
+export default function DashboardMapArea({
+  events,
+  isLoading,
+  error,
+  onRetry,
+}: DashboardMapAreaProps) {
+  const {
+    data: summary,
+    isLoading: summaryLoading,
+    error: summaryError,
+  } = useEventSummary();
 
-  const avgMagnitude = !isLoading && !error && summary?.avg_magnitude != null
+  const avgMagnitude = !summaryLoading && !summaryError && summary?.avg_magnitude != null
     ? summary.avg_magnitude
     : null;
-  const eventCount = !isLoading && !error && summary?.event_count != null
+  const eventCount = !summaryLoading && !summaryError && summary?.event_count != null
     ? summary.event_count
     : null;
 
   return (
     <main className="dashboard-map-area" aria-label="Geospatial risk dashboard map">
-      <MapView events={events} />
+      {isLoading && !error ? (
+        <div className="dashboard-events-status">Loading events…</div>
+      ) : error ? (
+        <div className="dashboard-events-status dashboard-events-status--error">
+          <p>Failed to load events.</p>
+          <button type="button" onClick={onRetry}>
+            Retry
+          </button>
+        </div>
+      ) : (
+        <MapView events={events} />
+      )}
 
       <div className="dashboard-map-legend">
         <h4>Seismic Risk Level</h4>
