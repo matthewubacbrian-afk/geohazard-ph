@@ -30,17 +30,19 @@ export default function DashboardMapArea({
 
   return (
     <main className="dashboard-map-area" aria-label="Geospatial risk dashboard map">
-      {isLoading && !error ? (
+      <MapView events={events} />
+
+      {isLoading && !error && (
         <div className="dashboard-events-status">Loading events…</div>
-      ) : error ? (
+      )}
+
+      {error && (
         <div className="dashboard-events-status dashboard-events-status--error">
           <p>Failed to load events.</p>
           <button type="button" onClick={onRetry}>
             Retry
           </button>
         </div>
-      ) : (
-        <MapView events={events} />
       )}
 
       <div className="dashboard-map-legend">
