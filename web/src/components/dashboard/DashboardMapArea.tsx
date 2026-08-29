@@ -1,7 +1,14 @@
-export default function DashboardMapArea() {
+import MapView from "../map/MapView";
+import type { HazardEvent } from "../../types/hazard";
+
+type DashboardMapAreaProps = {
+  events: HazardEvent[];
+};
+
+export default function DashboardMapArea({ events }: DashboardMapAreaProps) {
   return (
     <main className="dashboard-map-area" aria-label="Geospatial risk dashboard map">
-      <div className="dashboard-map-overlay" aria-hidden="true" />
+      <MapView events={events} />
 
       <div className="dashboard-map-legend">
         <h4>Seismic Risk Level</h4>

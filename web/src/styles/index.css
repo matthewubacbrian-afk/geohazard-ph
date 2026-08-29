@@ -884,20 +884,28 @@ img {
   min-height: 720px;
   overflow: hidden;
   background-color: #e5e9ec;
-  background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD9ZBIJld0ONA-yv0FH_UtmwwTO7FfZlSRdy8UKXv_ApCjdajdxLbcvWHOoVv_oePnaoX51wNzpdng_WPmMj_dhhfacZaAtGd7RMUk1134sYzHKIEA8G-s-cWRSQpJIw8q1-jkMROBxeVc1gFEngDEqkytAvxBxJDLaKeSi7lJjV3Qo8A7Q_H4tU-oTL7aeHgej578bQmijmSf3qGQS4SmaFhi53TcLg6eC2KekxiUwUCKg07k9k7F8");
-  background-size: cover;
-  background-position: center;
 }
 
-.dashboard-map-overlay {
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dashboard-map-area .map-canvas {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(252, 249, 246, 0.32),
-    transparent 38%
-  );
-  pointer-events: none;
+}
+
+.map-canvas .map-container {
+  height: 100%;
+  width: 100%;
 }
 
 .dashboard-map-legend {
@@ -1206,8 +1214,6 @@ img {
 .workspace,
 .sidebar,
 .panel,
-.map-shell,
-.map-placeholder,
 .filter-bar,
 .toggle-row {
   display: revert;
