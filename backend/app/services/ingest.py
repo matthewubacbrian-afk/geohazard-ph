@@ -15,7 +15,6 @@ def ingest_usgs_events(session: Session, events: list[HazardEvent]) -> int:
     existing = session.execute(
         select(HazardEventORM).where(
             HazardEventORM.source.in_([source for source, _external_id in keys]),
-            HazardEventORM.external_id.in_([external_id for _source, external_id in keys]),
         )
     ).scalars()
     rows_by_key = {dedup_key(row): row for row in existing}
