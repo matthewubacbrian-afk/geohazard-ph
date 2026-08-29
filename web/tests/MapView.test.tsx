@@ -6,7 +6,10 @@ import MapView from '../src/components/map/MapView';
 
 const mapInstance = {
   addControl: vi.fn(),
+  addLayer: vi.fn(),
+  addSource: vi.fn(),
   remove: vi.fn(),
+  setLayoutProperty: vi.fn(),
   on: vi.fn((_event: string, callback: () => void) => callback()),
 };
 
