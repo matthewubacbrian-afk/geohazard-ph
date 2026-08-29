@@ -1,10 +1,10 @@
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import HazardEvent as HazardEventORM
-from app.schemas.hazard_event import HazardEvent
+from app.schemas.hazard_event import EventSummary, HazardEvent
 
 
 def list_events(session: Session, since: datetime | None = None) -> list[HazardEvent]:
@@ -13,6 +13,33 @@ def list_events(session: Session, since: datetime | None = None) -> list[HazardE
         stmt = stmt.where(HazardEventORM.occurred_at >= since)
     rows = session.execute(stmt).scalars().all()
     return [_to_schema(row) for row in rows]
+
+
+def summarize_events(
+    session: Session,
+    west: float,
+    south: float,
+    east: float,
+    north: float,
+    region_name: str | None = None,
+) -> EventSummary:
+    stmt = select(
+        func.count(HazardEventORM.id).label("count"),
+        func.avg(HazardEventORM.magnitude).label("avg_mag"),
+        func.max(HazardEventORM.magnitude).label("max_mag"),
+        func.max(HazardEventORM.occurred_at).label("latest"),
+    ).where(
+        HazardEventORM.latitude.between(south, north),
+        HazardEventORM.longitude.between(west, east),
+    )
+    row = session.execute(stmt).one()
+    return EventSummary(
+        region_name=region_name,
+        event_count=int(row.count),
+        avg_magnitude=round(float(row.avg_mag), 2) if row.avg_mag is not None else None,
+        max_magnitude=float(row.max_mag) if row.max_mag is not None else None,
+        latest_occurred_at=row.latest,
+    )
 
 
 def _to_schema(row: HazardEventORM) -> HazardEvent:

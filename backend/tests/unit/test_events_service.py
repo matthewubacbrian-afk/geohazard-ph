@@ -3,7 +3,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 from uuid import UUID
 
-from app.services.events import list_events
+from app.services.events import list_events, summarize_events
 
 
 class FakeScalarResult:
@@ -20,6 +20,16 @@ class FakeExecuteResult:
 
     def scalars(self):
         return FakeScalarResult(self._rows)
+
+    def one(self):
+        magnitudes = [float(row.magnitude) for row in self._rows if row.magnitude is not None]
+        occurred_at = [row.occurred_at for row in self._rows if row.occurred_at is not None]
+        return SimpleNamespace(
+            count=len(self._rows),
+            avg_mag=sum(magnitudes) / len(magnitudes) if magnitudes else None,
+            max_mag=max(magnitudes) if magnitudes else None,
+            latest=max(occurred_at) if occurred_at else None,
+        )
 
 
 class FakeSession:
@@ -73,3 +83,32 @@ def test_list_events_queries_newest_first_with_optional_since_filter():
     statement = str(session.statement)
     assert "WHERE hazard_events.occurred_at >=" in statement
     assert "ORDER BY hazard_events.occurred_at DESC" in statement
+
+
+def test_summarize_events_aggregates_magnitudes_and_count():
+    rows = [_row("e1"), _row("e2")]
+    rows[1].magnitude = Decimal("5.8")
+    rows[1].occurred_at = datetime(2026, 8, 29, tzinfo=UTC)
+    summary = summarize_events(FakeSession(rows), 116.0, 4.0, 128.0, 22.0, region_name="Test Region")
+    assert summary.region_name == "Test Region"
+    assert summary.event_count == 2
+    assert summary.avg_magnitude == 5.0
+    assert summary.max_magnitude == 5.8
+    assert summary.latest_occurred_at == datetime(2026, 8, 29, tzinfo=UTC)
+
+
+def test_summarize_events_returns_none_aggregates_when_no_rows():
+    summary = summarize_events(FakeSession([]), 116.0, 4.0, 128.0, 22.0)
+    assert summary.event_count == 0
+    assert summary.avg_magnitude is None
+    assert summary.max_magnitude is None
+    assert summary.latest_occurred_at is None
+
+
+def test_summarize_events_rounds_average_to_two_decimals():
+    rows = [_row("e1"), _row("e2"), _row("e3")]
+    rows[1].magnitude = Decimal("4.3")
+    rows[2].magnitude = Decimal("4.3")
+    summary = summarize_events(FakeSession(rows), 116.0, 4.0, 128.0, 22.0)
+    assert summary.avg_magnitude == 4.27
+    assert summary.max_magnitude == 4.3
