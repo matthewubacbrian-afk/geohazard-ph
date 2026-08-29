@@ -22,3 +22,11 @@ export type RiskProfile = {
   generated_at: string;
   dataset_snapshot: string;
 };
+
+export type EventSummary = {
+  region_name?: string | null;
+  event_count: number;
+  avg_magnitude?: number | null;
+  max_magnitude?: number | null;
+  latest_occurred_at?: string | null;
+};

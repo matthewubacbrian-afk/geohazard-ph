@@ -147,12 +147,17 @@ In Docker, the `worker` service runs the same ingestion:
 docker compose up --build worker
 ```
 
-The live earthquake feed, `GET /api/v1/events`, is database-backed and returns events newest-first, with an optional `since` filter:
+The live earthquake feeds are database-backed:
 
 ```text
 GET /api/v1/events
 GET /api/v1/events?since=2026-08-28T00:00:00Z
+GET /api/v1/events/summary            # aggregate stats within the PH bounding box
 ```
+
+`GET /api/v1/events` returns events newest-first, with an optional `since` (ISO 8601) filter. `GET /api/v1/events/summary` accepts optional `west`/`south`/`east`/`north` bounds (defaulting to the PH bounding box) and an optional `region_name`, returning `event_count`, `avg_magnitude`, `max_magnitude`, and `latest_occurred_at`. The web dashboard's region card and its loading/error states are driven by these endpoints.
+
+Ingestion deduplicates events: by the USGS `external_id` when present, and by a content-derived key (time, coordinates, magnitude) for events without an `external_id`, so the same event is never stored twice.
 
 The `hazard_events` table is managed by Alembic migrations under `backend/db/migrations/versions`. Apply migrations from `backend/` with:
 

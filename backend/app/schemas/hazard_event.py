@@ -16,3 +16,11 @@ class HazardEvent(BaseModel):
     place_name: str
     occurred_at: datetime
     alert_level: str | None = None
+
+
+class EventSummary(BaseModel):
+    region_name: str | None = None
+    event_count: int = 0
+    avg_magnitude: float | None = None
+    max_magnitude: float | None = None
+    latest_occurred_at: datetime | None = None

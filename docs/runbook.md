@@ -37,6 +37,10 @@ When the USGS feed is unreachable:
 3. Respect the one-minute minimum poll cadence; do not hammer the feed.
 4. Confirm the bounding box (`PH_BBOX`) and `eventtype` filter are still valid if ingest runs but returns zero events.
 
+### API — regional event summary
+
+`GET /api/v1/events/summary` returns aggregate statistics (event_count, avg_magnitude, max_magnitude, latest_occurred_at) for events within a bounding box. The bounding box defaults to the Philippines (PH_BBOX) and may be overridden with west/south/east/north query params; an optional region_name labels the response. The web dashboard card uses this endpoint.
+
 ## Data Accuracy Concern
 
 1. Treat coordinate, magnitude, alert-level, and deduplication issues as high priority.

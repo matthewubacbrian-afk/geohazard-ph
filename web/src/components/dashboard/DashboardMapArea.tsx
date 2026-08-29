@@ -1,14 +1,47 @@
 import MapView from "../map/MapView";
 import type { HazardEvent } from "../../types/hazard";
+import { useEventSummary } from "../../hooks/useEventSummary";
 
 type DashboardMapAreaProps = {
   events: HazardEvent[];
+  isLoading: boolean;
+  error: Error | null;
+  onRetry: () => void;
 };
 
-export default function DashboardMapArea({ events }: DashboardMapAreaProps) {
+export default function DashboardMapArea({
+  events,
+  isLoading,
+  error,
+  onRetry,
+}: DashboardMapAreaProps) {
+  const {
+    data: summary,
+    isLoading: summaryLoading,
+    error: summaryError,
+  } = useEventSummary();
+
+  const avgMagnitude = !summaryLoading && !summaryError && summary?.avg_magnitude != null
+    ? summary.avg_magnitude
+    : null;
+  const eventCount = !summaryLoading && !summaryError && summary?.event_count != null
+    ? summary.event_count
+    : null;
+
   return (
     <main className="dashboard-map-area" aria-label="Geospatial risk dashboard map">
-      <MapView events={events} />
+      {isLoading && !error ? (
+        <div className="dashboard-events-status">Loading events…</div>
+      ) : error ? (
+        <div className="dashboard-events-status dashboard-events-status--error">
+          <p>Failed to load events.</p>
+          <button type="button" onClick={onRetry}>
+            Retry
+          </button>
+        </div>
+      ) : (
+        <MapView events={events} />
+      )}
 
       <div className="dashboard-map-legend">
         <h4>Seismic Risk Level</h4>
@@ -57,8 +90,8 @@ export default function DashboardMapArea({ events }: DashboardMapAreaProps) {
       <div className="dashboard-floating-card">
         <div className="dashboard-floating-header">
           <div>
-            <h3>Cagayan Valley</h3>
-            <p>Region II</p>
+            <h3>Philippines</h3>
+            <p>Regional activity</p>
           </div>
           <button type="button" aria-label="Close panel">
             <span className="material-symbols-outlined">close</span>
@@ -67,11 +100,11 @@ export default function DashboardMapArea({ events }: DashboardMapAreaProps) {
 
         <div className="dashboard-stat-grid">
           <div className="dashboard-stat dashboard-stat--wide">
-            <div className="dashboard-stat-marker dashboard-stat-marker--high" />
+            <div className="dashboard-stat-marker" />
             <div>
               <span className="dashboard-stat-label">Classification</span>
-              <strong className="dashboard-stat-value dashboard-stat-value--high">
-                Critical Risk
+              <strong className="dashboard-stat-value">
+                Not available
               </strong>
             </div>
           </div>
@@ -79,21 +112,22 @@ export default function DashboardMapArea({ events }: DashboardMapAreaProps) {
           <div className="dashboard-stat">
             <span className="dashboard-stat-label">Avg Magnitude</span>
             <strong className="dashboard-stat-value">
-              5.2<span> Mw</span>
+              {avgMagnitude != null ? `${avgMagnitude}` : '—'}<span> Mw</span>
             </strong>
           </div>
 
           <div className="dashboard-stat">
             <span className="dashboard-stat-label">Frequency (YTD)</span>
             <strong className="dashboard-stat-value">
-              14<span> events</span>
+              {eventCount != null ? `${eventCount}` : '—'}
+              {eventCount != null ? <span> events</span> : null}
             </strong>
           </div>
 
           <div className="dashboard-stat dashboard-stat--full">
             <span className="dashboard-stat-label">Dominant Fault System</span>
             <div className="dashboard-fault-box">
-              Philippine Fault Zone (Digdig Fault)
+              Not available
             </div>
           </div>
         </div>
