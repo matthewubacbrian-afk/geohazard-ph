@@ -1,5 +1,13 @@
-import Dashboard from './pages/Dashboard';
+import { useState } from "react";
+import Dashboard from "./pages/Dashboard";
+import Hero from "./pages/Hero";
 
 export default function App() {
-  return <Dashboard />;
+  const [view, setView] = useState<"hero" | "dashboard">("hero");
+
+  if (view === "dashboard") {
+    return <Dashboard />;
+  }
+
+  return <Hero onNavigate={(nextView) => setView(nextView)} />;
 }
