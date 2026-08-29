@@ -24,4 +24,4 @@ def get_db_session() -> Iterator[Session]:
         session.close()
 
 
-__all__ = ["engine", "SessionLocal", "init_db", "get_db_session", "Base"]
+__all__ = ["Base", "SessionLocal", "engine", "get_db_session", "init_db"]
