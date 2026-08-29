@@ -17,7 +17,7 @@ def list_events(session: Session, since: datetime | None = None) -> list[HazardE
 
 def _to_schema(row: HazardEventORM) -> HazardEvent:
     return HazardEvent(
-        id=f"{row.source}-{row.external_id}" if row.source else str(row.id),
+        id=f"{row.source}-{row.external_id}" if row.source and row.external_id else str(row.id),
         hazard_type=row.hazard_type,
         source=row.source,
         external_id=row.external_id,

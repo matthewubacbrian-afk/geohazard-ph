@@ -53,4 +53,3 @@ def test_events_endpoint_filters_by_since(client, migrated_engine):
 
     assert response.status_code == 200
     assert response.json() == []
-

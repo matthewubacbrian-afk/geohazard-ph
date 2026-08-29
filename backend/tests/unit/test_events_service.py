@@ -1,5 +1,75 @@
-from app.services import events
+from datetime import UTC, datetime
+from decimal import Decimal
+from types import SimpleNamespace
+from uuid import UUID
+
+from app.services.events import list_events
 
 
-def test_events_service_module_exports_list_events():
-    assert callable(events.list_events)
+class FakeScalarResult:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def all(self):
+        return self._rows
+
+
+class FakeExecuteResult:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def scalars(self):
+        return FakeScalarResult(self._rows)
+
+
+class FakeSession:
+    def __init__(self, rows):
+        self._rows = rows
+        self.statement = None
+
+    def execute(self, statement):
+        self.statement = statement
+        return FakeExecuteResult(self._rows)
+
+
+def _row(external_id="live-1"):
+    return SimpleNamespace(
+        id=UUID("12345678-1234-5678-1234-567812345678"),
+        hazard_type="earthquake",
+        source="usgs",
+        external_id=external_id,
+        magnitude=Decimal("4.2"),
+        depth_km=Decimal("25.5"),
+        latitude=15.0,
+        longitude=120.0,
+        place_name="Seeded, Philippines",
+        occurred_at=datetime(2026, 8, 28, tzinfo=UTC),
+        alert_level=None,
+    )
+
+
+def test_list_events_maps_rows_to_schema_and_numeric_values():
+    events = list_events(FakeSession([_row()]))
+
+    assert len(events) == 1
+    assert events[0].id == "usgs-live-1"
+    assert events[0].magnitude == 4.2
+    assert events[0].depth_km == 25.5
+    assert events[0].place_name == "Seeded, Philippines"
+
+
+def test_list_events_falls_back_to_database_id_without_external_id():
+    events = list_events(FakeSession([_row(external_id=None)]))
+
+    assert events[0].id == "12345678-1234-5678-1234-567812345678"
+
+
+def test_list_events_queries_newest_first_with_optional_since_filter():
+    since = datetime(2026, 8, 1, tzinfo=UTC)
+    session = FakeSession([])
+
+    list_events(session, since=since)
+
+    statement = str(session.statement)
+    assert "WHERE hazard_events.occurred_at >=" in statement
+    assert "ORDER BY hazard_events.occurred_at DESC" in statement
