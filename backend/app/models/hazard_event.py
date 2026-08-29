@@ -2,7 +2,16 @@ import uuid
 from datetime import datetime
 
 from geoalchemy2 import Geography
-from sqlalchemy import CheckConstraint, DateTime, Float, Index, Numeric, Text, UniqueConstraint, text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    Float,
+    Index,
+    Numeric,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -33,7 +42,9 @@ class HazardEvent(Base):
     longitude: Mapped[float] = mapped_column(Float)
     place_name: Mapped[str] = mapped_column(Text)
     alert_level: Mapped[str | None] = mapped_column(Text, nullable=True)
-    location: Mapped[object] = mapped_column(Geography(geometry_type="POINT", srid=4326))
+    location: Mapped[object] = mapped_column(
+        Geography(geometry_type="POINT", srid=4326, spatial_index=False)
+    )
     raw_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))

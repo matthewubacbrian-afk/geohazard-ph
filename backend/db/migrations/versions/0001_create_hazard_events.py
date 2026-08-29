@@ -33,7 +33,11 @@ def upgrade() -> None:
         sa.Column("longitude", sa.Float(), nullable=False),
         sa.Column("place_name", sa.Text(), nullable=False),
         sa.Column("alert_level", sa.Text(), nullable=True),
-        sa.Column("location", Geography(geometry_type="POINT", srid=4326), nullable=False),
+        sa.Column(
+            "location",
+            Geography(geometry_type="POINT", srid=4326, spatial_index=False),
+            nullable=False,
+        ),
         sa.Column("raw_payload", JSONB(), nullable=True),
         sa.Column("occurred_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column(
