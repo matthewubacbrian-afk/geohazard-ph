@@ -90,8 +90,8 @@ export default function DashboardMapArea({
       <div className="dashboard-floating-card">
         <div className="dashboard-floating-header">
           <div>
-            <h3>Cagayan Valley</h3>
-            <p>Region II</p>
+            <h3>Philippines</h3>
+            <p>Regional activity</p>
           </div>
           <button type="button" aria-label="Close panel">
             <span className="material-symbols-outlined">close</span>
