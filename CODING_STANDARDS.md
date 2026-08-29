@@ -39,6 +39,18 @@ All new code, documentation, tests, scripts, generated scaffolds, and future AI-
 
 When another document conflicts with this one, follow the more specific rule for the affected package. If there is still a conflict, update the documentation before changing behavior.
 
+### Documentation Hub
+
+This document is the general standard. Detailed, stack-specific contracts live next to it and take precedence for their scope — read the relevant one before work in that area:
+
+- `BACKEND_STANDARDS.md` — backend code contract (routes, DI, services, models, ingestion).
+- `docs/api-contracts.md` — endpoint naming, response shapes, error envelope, versioning.
+- `docs/testing-standards.md` — per-stack test locations, naming, and what "done" means.
+- `docs/error-handling-and-logging.md` — error envelope and logging rules for all stacks.
+- `docs/glossary.md` — canonical domain vocabulary and field names.
+- `docs/git-workflow.md` — worktrees, agent commit checklist, merge policy.
+- `docs/superpowers/templates/` — spec and plan templates.
+
 ---
 
 ## Technology Stack
@@ -228,6 +240,8 @@ Rules:
 
 ## Git Workflow
 
+> See `docs/git-workflow.md` for worktree-per-feature mapping, the agent commit checklist, and the merge policy.
+
 ### Branching Strategy
 
 Use feature branches for non-trivial work. Keep `main` deployable and reviewable.
@@ -341,6 +355,8 @@ Final checks:
 ---
 
 ## Backend API Standards
+
+> See `BACKEND_STANDARDS.md` for the full backend contract and `docs/api-contracts.md` for the wire contract.
 
 ### Route Structure
 
@@ -496,6 +512,8 @@ def parse_usgs_feature(feature: dict) -> HazardEvent:
 
 ## Error Handling
 
+> See `docs/error-handling-and-logging.md` for the error envelope and logging rules that apply to every stack.
+
 ### Backend
 
 - Raise clear domain errors in services when useful.
@@ -531,6 +549,8 @@ def parse_usgs_feature(feature: dict) -> HazardEvent:
 ---
 
 ## Testing Standards
+
+> See `docs/testing-standards.md` for per-package test locations, naming, fixture rules, and what "done" means.
 
 ### Required Commands
 
