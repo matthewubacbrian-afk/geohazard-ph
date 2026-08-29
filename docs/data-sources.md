@@ -3,6 +3,10 @@
 ## Earthquakes
 
 - USGS Earthquake Catalog: REST/GeoJSON, no API key.
+  - The ingestion worker polls the USGS Earthquakes feed (`/fdsnws/event/1/query`) filtered to the Philippines bounding box and `eventtype=earthquake`, then upserts records into Postgres.
+  - The bounding box comes from the `PH_BBOX` config (default `116.0,4.0,128.0,22.0`; west, south, east, north).
+  - Poll cadence stays at or above one minute to respect USGS feed caching.
+  - Attribution: USGS data requires attribution to the "USGS Earthquake Hazards Program". Display the source and last-updated time alongside any USGS-derived view.
 - PHIVOLCS earthquake bulletins: scraped source, no official public API assumed.
 
 ## Kaggle Historical Earthquake Datasets

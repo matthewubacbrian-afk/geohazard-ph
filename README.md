@@ -131,6 +131,35 @@ Useful local ports:
 - Postgres: `localhost:5432`
 - Redis: `localhost:6379`
 
+## Live Earthquake Ingestion
+
+A USGS ingestion worker fetches recent earthquakes inside the Philippines bounding box and upserts them into Postgres. Run a one-shot ingest locally from `backend/`:
+
+```powershell
+python -m ingestion.scheduler
+```
+
+The command prints a summary such as `USGS ingest complete: fetched=42, processed=42`. The worker polls the USGS Earthquakes feed no faster than once per minute to respect the source cache.
+
+In Docker, the `worker` service runs the same ingestion:
+
+```powershell
+docker compose up --build worker
+```
+
+The live earthquake feed, `GET /api/v1/events`, is database-backed and returns events newest-first, with an optional `since` filter:
+
+```text
+GET /api/v1/events
+GET /api/v1/events?since=2026-08-28T00:00:00Z
+```
+
+The `hazard_events` table is managed by Alembic migrations under `backend/db/migrations/versions`. Apply migrations from `backend/` with:
+
+```powershell
+alembic upgrade head
+```
+
 ## Regional Seismic Risk Profiles
 
 The ML module trains descriptive regional seismic risk profiles from two Kaggle historical earthquake datasets:
