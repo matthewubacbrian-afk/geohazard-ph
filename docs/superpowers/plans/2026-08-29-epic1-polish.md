@@ -75,7 +75,7 @@
 **Files:**
 - Modify: `web/src/pages/Dashboard.tsx` (surface `isLoading`/`error`)
 - Modify: `web/src/components/dashboard/DashboardMapArea.tsx` (loading indicator + retry-able error banner)
-- Test: `web/tests/Dashboard.test.tsx` (create)
+- Test: `web/tests/DashboardStates.test.tsx` (extend the existing file; state tests for the dashboard map area landed in `DashboardStates.test.tsx`, not the `Dashboard.test.tsx` this plan originally named)
 
 **Interfaces:**
 - `Dashboard` passes loading/error through to the map area.
