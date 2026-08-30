@@ -1,4 +1,5 @@
 import styles from "./Hero.module.css";
+import Reveal from "../components/common/Reveal/Reveal";
 import RiskMeter from "../components/common/RiskMeter";
 import SectionHeader from "../components/common/SectionHeader";
 import TopNav from "../components/layout/TopNav";
@@ -48,31 +49,37 @@ export default function Hero({ onNavigate }: HeroProps) {
         <div className={styles.heroAbstract} aria-hidden="true" />
 
         <div className={styles.heroContent}>
-          <h1 className={styles.heroTitle}>
-            <span>Patterns.Predictions.Protection.</span>
-            <span>Before the Ground Shakes</span>
-          </h1>
+          <Reveal delayMs={0}>
+            <h1 className={styles.heroTitle}>
+              <span>Patterns.Predictions.Protection.</span>
+              <span>Before the Ground Shakes</span>
+            </h1>
+          </Reveal>
 
-          <p className={styles.heroSubtitle}>
-            From fault lines to insights. From patterns to preparedness
-          </p>
+          <Reveal delayMs={100}>
+            <p className={styles.heroSubtitle}>
+              From fault lines to insights. From patterns to preparedness
+            </p>
+          </Reveal>
 
-          <div className={styles.heroActions}>
-            <button
-              type="button"
-              className="primary-button"
-              onClick={() => onNavigate?.("dashboard")}
-            >
-              View Risk Map
-            </button>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => onNavigate?.("dashboard")}
-            >
-              View Dashboard
-            </button>
-          </div>
+          <Reveal delayMs={200}>
+            <div className={styles.heroActions}>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => onNavigate?.("dashboard")}
+              >
+                View Risk Map
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => onNavigate?.("dashboard")}
+              >
+                View Dashboard
+              </button>
+            </div>
+          </Reveal>
         </div>
       </section>
 
@@ -86,14 +93,16 @@ export default function Hero({ onNavigate }: HeroProps) {
           <div className={styles.processGrid}>
             <div className={styles.processLine} aria-hidden="true" />
 
-            {steps.map((step) => (
-              <article key={step.title} className={styles.processCard}>
-                <div className={styles.processIcon}>
-                  <span aria-hidden="true">•</span>
-                </div>
-                <h3 className={styles.processTitle}>{step.title}</h3>
-                <p className={styles.processDesc}>{step.description}</p>
-              </article>
+            {steps.map((step, index) => (
+              <Reveal key={step.title} delayMs={index * 100} className={styles.processCardWrap}>
+                <article className={styles.processCard}>
+                  <div className={styles.processIcon}>
+                    <span aria-hidden="true">•</span>
+                  </div>
+                  <h3 className={styles.processTitle}>{step.title}</h3>
+                  <p className={styles.processDesc}>{step.description}</p>
+                </article>
+              </Reveal>
             ))}
           </div>
         </div>

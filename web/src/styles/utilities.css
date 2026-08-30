@@ -14,22 +14,7 @@
   border: 0;
 }
 
-/* Scroll-reveal pattern. `.reveal` holds the pre-reveal state;
-   `.reveal--visible` is added when the target scrolls into view.
-   Gated by prefers-reduced-motion in base.css. */
-.reveal {
-  opacity: 0;
-  transform: translateY(16px);
-  transition:
-    opacity var(--dur-slow) var(--ease-out),
-    transform var(--dur-slow) var(--ease-out);
-  will-change: opacity, transform;
-}
-
-.reveal--visible {
-  opacity: 1;
-  transform: none;
-}
+/* Note: scroll-reveal utilities live in components/common/Reveal/Reveal.module.css */
 
 /* Shared "mono technical label" treatment used across nav/buttons/labels */
 .mono-label {

@@ -115,22 +115,29 @@
   background: rgba(195, 199, 200, 0.5);
 }
 
-.processCard {
+.processCardWrap {
   position: relative;
   z-index: 1;
   display: flex;
+  border-right: 1px solid rgba(195, 199, 200, 0.2);
+  min-width: 0;
+}
+
+.processCardWrap:last-child {
+  border-right: none;
+}
+
+.processCard {
+  position: relative;
+  display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   padding: 32px 24px 24px;
-  border-right: 1px solid rgba(195, 199, 200, 0.2);
   text-align: center;
   transition:
     background-color var(--dur-fast) var(--ease-default),
     transform var(--dur-fast) var(--ease-default);
-}
-
-.processCard:last-child {
-  border-right: none;
 }
 
 .processCard:hover {
@@ -341,12 +348,12 @@
     grid-template-columns: 1fr;
   }
 
-  .processCard {
+  .processCardWrap {
     border-right: none;
     border-bottom: 1px solid rgba(195, 199, 200, 0.2);
   }
 
-  .processCard:last-child {
+  .processCardWrap:last-child {
     border-bottom: none;
   }
 }
