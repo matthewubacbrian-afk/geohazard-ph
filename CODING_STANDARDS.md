@@ -458,6 +458,14 @@ def load_region_events(path: Path) -> pd.DataFrame:
 - Keep map rendering concerns isolated in map components.
 - Do not block the main UI on optional realtime or map overlay data; handle loading and empty states explicitly.
 
+### Web styling (CSS Modules + design tokens)
+
+- Style every component with a colocated `*.module.css`; import as `import styles from './X.module.css'`.
+- Consume **design tokens** from `web/src/styles/tokens.css` (single source of truth). Never hard-code brand hex values in component source or modules — add a token (primitive + semantic alias) if a new color is needed. See `web/DESIGN_NOTES.md`.
+- Keep the three global stylesheets thin: `tokens.css` (variables), `base.css` (reset/typography/a11y), `utilities.css` (small shared helpers). No Tailwind.
+- Gate all motion behind `prefers-reduced-motion`; prefer CSS transitions + an `IntersectionObserver` reveal (`components/common/Reveal`) over animation libraries.
+- Render missing data as loading skeletons or styled "Coming soon" placeholders — never a bare "Not available" or an empty box.
+
 Component pattern:
 
 ```typescript

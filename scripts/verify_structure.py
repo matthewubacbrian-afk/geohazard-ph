@@ -79,7 +79,6 @@ EXPECTED_PATHS = [
     "backend/tests/conftest.py",
     "web/package.json",
     "web/vite.config.ts",
-    "web/tailwind.config.ts",
     "web/tsconfig.json",
     "web/index.html",
     "web/Dockerfile",
