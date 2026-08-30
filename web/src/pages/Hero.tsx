@@ -2,9 +2,10 @@ import styles from "./Hero.module.css";
 import RiskMeter from "../components/common/RiskMeter";
 import SectionHeader from "../components/common/SectionHeader";
 import TopNav from "../components/layout/TopNav";
+import type { View } from "../types/views";
 
 type HeroProps = {
-  onNavigate?: (view: "dashboard") => void;
+  onNavigate?: (view: View) => void;
 };
 
 const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Contact"];

@@ -2,6 +2,7 @@ import styles from "./Dashboard.module.css";
 import DashboardMapArea from "../components/dashboard/DashboardMapArea";
 import DashboardSidebar from "../components/dashboard/DashboardSidebar";
 import TopNav from "../components/layout/TopNav";
+import type { View } from "../types/views";
 import { useEvents } from "../hooks/useEvents";
 
 const navItems = [
@@ -12,12 +13,21 @@ const navItems = [
   "Contact",
 ];
 
-export default function Dashboard() {
+type DashboardProps = {
+  onNavigate?: (view: View) => void;
+};
+
+export default function Dashboard({ onNavigate }: DashboardProps) {
   const { data: events = [], isLoading, error, refetch } = useEvents();
 
   return (
     <div className={styles.page}>
-      <TopNav items={navItems} activeItem="Dashboard" theme="dashboard" />
+      <TopNav
+        items={navItems}
+        activeItem="Dashboard"
+        theme="dashboard"
+        onNavigate={onNavigate}
+      />
 
       <div className={styles.main}>
         <DashboardSidebar />

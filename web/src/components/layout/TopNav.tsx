@@ -1,10 +1,21 @@
+import type { View } from "../../types/views";
 import styles from "./TopNav.module.css";
 
 type TopNavProps = {
   items: string[];
   activeItem?: string;
-  onNavigate?: (view: "dashboard") => void;
+  onNavigate?: (view: View) => void;
   theme?: "hero" | "dashboard";
+};
+
+// Map a nav label to an app view, for items that navigate. Labels without a
+// mapping render as placeholder links.
+const NAV_VIEWS: Record<string, View> = {
+  Dashboard: "dashboard",
+  "How It Works": "hero",
+  About: "about",
+  "Data Sources": "data-sources",
+  Historical: "historical",
 };
 
 export default function TopNav({
@@ -30,14 +41,16 @@ export default function TopNav({
           const linkClassName = `${styles.linkBtn} ${
             isActive ? styles.linkBtnActive : ""
           }`;
+          const targetView = NAV_VIEWS[item];
 
           return (
             <li key={item}>
-              {item === "Dashboard" && onNavigate ? (
+              {targetView && onNavigate ? (
                 <button
                   type="button"
                   className={linkClassName}
-                  onClick={() => onNavigate("dashboard")}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={() => onNavigate(targetView)}
                 >
                   {item}
                 </button>
