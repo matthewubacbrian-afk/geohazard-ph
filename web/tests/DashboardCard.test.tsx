@@ -45,8 +45,8 @@ describe('Dashboard floating card', () => {
     expect(html).toContain('7');
   });
 
-  it('shows Not available for classification and dominant fault system', () => {
+  it('shows a coming-soon state for classification and dominant fault system', () => {
     const html = renderCard(summary);
-    expect(html).toMatch(/Not available/i);
+    expect(html).toMatch(/Coming soon/i);
   });
 });

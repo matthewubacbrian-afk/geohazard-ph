@@ -42,20 +42,20 @@ function renderArea({
 describe('Dashboard map states', () => {
   it('keeps the map visible and shows a loading indicator while events are loading', () => {
     const html = renderArea({ isLoading: true, error: null });
-    expect(html).toContain('map-canvas');
+    expect(html).toContain('aria-label="Hazard map"');
     expect(html).toMatch(/Loading events/i);
   });
 
   it('keeps the map visible and shows a retry-able error banner when the events request fails', () => {
     const html = renderArea({ isLoading: false, error: new Error('boom') });
-    expect(html).toContain('map-canvas');
+    expect(html).toContain('aria-label="Hazard map"');
     expect(html).toMatch(/Failed to load events/i);
     expect(html).toMatch(/Retry/i);
   });
 
   it('renders the map without any status overlay when events load successfully', () => {
     const html = renderArea({ isLoading: false, error: null, events: [] });
-    expect(html).toContain('map-canvas');
+    expect(html).toContain('aria-label="Hazard map"');
     expect(html).not.toMatch(/Failed to load events/i);
     expect(html).not.toMatch(/Loading events/i);
   });

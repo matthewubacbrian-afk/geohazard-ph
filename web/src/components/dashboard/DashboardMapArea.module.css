@@ -1,0 +1,353 @@
+.mapArea {
+  position: relative;
+  flex: 1;
+  min-height: 720px;
+  overflow: hidden;
+  background-color: #e5e9ec;
+}
+
+/* ---- Status / loading / error ---- */
+.status {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: var(--z-status);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--surface-overlay);
+  border: 1px solid rgba(195, 199, 200, 0.5);
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.status--error {
+  border-color: rgba(220, 38, 38, 0.6);
+}
+
+.statusText {
+  margin: 0;
+}
+
+.retryBtn {
+  padding: 6px 12px;
+  border: 1px solid rgba(24, 31, 33, 0.2);
+  background: var(--ink);
+  color: var(--white);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.retryBtn:active {
+  transform: translateY(1px);
+}
+
+/* ---- Legend ---- */
+.legend {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: var(--z-map-overlay);
+  width: 240px;
+  padding: 18px 16px;
+  background: var(--surface-overlay);
+  border: 1px solid rgba(195, 199, 200, 0.5);
+  box-shadow: var(--shadow-card);
+}
+
+.legendTitle {
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(195, 199, 200, 0.45);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.legendLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text);
+}
+
+.legendValue {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 12px;
+  letter-spacing: 1px;
+  color: var(--outline);
+}
+
+/* ---- Map controls ---- */
+.controls {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: var(--z-map-overlay);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.controlBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(195, 199, 200, 0.4);
+  background: var(--surface-overlay);
+  color: var(--text);
+  box-shadow: var(--shadow-control);
+  font-family: var(--font-icon);
+  font-size: 20px;
+}
+
+.controlBtn:hover {
+  background: var(--surface-container);
+}
+
+.controlBtn:active {
+  transform: translateY(1px);
+}
+
+.controlBtnStacked {
+  margin-top: 4px;
+}
+
+/* ---- Floating summary card ---- */
+.card {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: var(--z-map-overlay);
+  width: 320px;
+  background: var(--surface-overlay);
+  border: 1px solid rgba(195, 199, 200, 0.5);
+  box-shadow: var(--shadow-overlay);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(195, 199, 200, 0.4);
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cardSub {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 12px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--outline);
+}
+
+.cardClose {
+  background: transparent;
+  color: var(--outline);
+  border: none;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  padding: 18px 16px 8px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(195, 199, 200, 0.4);
+}
+
+.statWide {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  border-top: none;
+  padding-top: 0;
+}
+
+.statFull {
+  grid-column: 1 / -1;
+}
+
+.statMarker {
+  width: 6px;
+  height: 54px;
+  border-radius: var(--radius-pill);
+  background: var(--outline-variant);
+}
+
+.statLabel {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 12px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--outline);
+}
+
+.statValue {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  color: var(--text);
+}
+
+.statValue span {
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.faultBox {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(195, 199, 200, 0.6);
+  background: rgba(240, 237, 234, 0.75);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text);
+}
+
+.cardFooter {
+  padding: 12px 16px 16px;
+  border-top: 1px solid rgba(195, 199, 200, 0.4);
+  background: rgba(246, 243, 240, 0.8);
+}
+
+.cardFooter button {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(116, 120, 121, 0.4);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cardFooter button:active {
+  transform: translateY(1px);
+}
+
+/* Shared swatches (reused by legend + card) */
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.swatch--high {
+  background: var(--risk-high);
+}
+
+.swatch--medium {
+  background: var(--risk-medium);
+}
+
+.swatch--low {
+  background: var(--risk-low);
+}
+
+/* Skeleton loading */
+.skeleton {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    rgba(195, 199, 200, 0.25) 25%,
+    rgba(195, 199, 200, 0.45) 50%,
+    rgba(195, 199, 200, 0.25) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .mapArea {
+    min-height: 620px;
+  }
+}
+
+@media (max-width: 640px) {
+  .mapArea {
+    min-height: 560px;
+  }
+
+  .card {
+    width: calc(100% - 32px);
+    left: 16px;
+    right: 16px;
+    top: 16px;
+  }
+
+  .legend {
+    right: 16px;
+    bottom: 16px;
+    width: calc(100% - 32px);
+  }
+
+  .controls {
+    top: 16px;
+    right: 16px;
+  }
+}

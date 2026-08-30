@@ -1,3 +1,5 @@
+import styles from "./RiskMeter.module.css";
+
 type RiskMeterProps = {
   label: string;
   level: "high" | "medium" | "low";
@@ -6,10 +8,15 @@ type RiskMeterProps = {
 
 export default function RiskMeter({ label, level, value }: RiskMeterProps) {
   return (
-    <div className="risk-row">
-      <span className={`risk-label risk-label--${level}`}>{label}</span>
-      <div className="risk-bar">
-        <span className={`risk-fill risk-fill--${level}`} style={{ width: `${value}%` }} />
+    <div className={styles.row}>
+      <span className={`${styles.label} ${styles[`label--${level}`]}`}>
+        {label}
+      </span>
+      <div className={styles.bar}>
+        <span
+          className={`${styles.fill} ${styles[`fill--${level}`]}`}
+          style={{ width: `${value}%` }}
+        />
       </div>
     </div>
   );

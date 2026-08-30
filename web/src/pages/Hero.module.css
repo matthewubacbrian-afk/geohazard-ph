@@ -1,0 +1,352 @@
+.page {
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* ---- Hero section ---- */
+.heroSection {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 819px;
+  overflow: hidden;
+  padding: 240px 32px 96px;
+  background: transparent;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(246, 243, 240, 0) 0%,
+    #f6f3f0 100%
+  );
+  opacity: 0.8;
+}
+
+.heroAbstract {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 600px;
+  height: 327px;
+  opacity: 0.1;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(24, 31, 33, 0.35), transparent 42%),
+    linear-gradient(
+      135deg,
+      transparent 0%,
+      rgba(24, 31, 33, 0.12) 50%,
+      transparent 100%
+    );
+  border-radius: var(--radius-panel);
+  border: 1px solid rgba(24, 31, 33, 0.2);
+  transform: translateX(20%);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(896px, 100%);
+  text-align: center;
+}
+
+.heroTitle {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 736px;
+  margin: 0;
+  font-size: var(--text-3xl);
+  line-height: 56px;
+  letter-spacing: -0.96px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.heroSubtitle {
+  max-width: 672px;
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--text-muted);
+}
+
+.heroActions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+}
+
+/* ---- How it works / process ---- */
+.howItWorks {
+  padding: 96px 80px;
+  background: var(--surface-container-lowest);
+  border-top: 1px solid rgba(195, 199, 200, 0.3);
+  border-bottom: 1px solid rgba(195, 199, 200, 0.3);
+}
+
+.sectionInner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.processGrid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  max-width: 1216px;
+  margin: 0 auto;
+}
+
+.processLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40px;
+  height: 1px;
+  background: rgba(195, 199, 200, 0.5);
+}
+
+.processCard {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px 24px;
+  border-right: 1px solid rgba(195, 199, 200, 0.2);
+  text-align: center;
+  transition:
+    background-color var(--dur-fast) var(--ease-default),
+    transform var(--dur-fast) var(--ease-default);
+}
+
+.processCard:last-child {
+  border-right: none;
+}
+
+.processCard:hover {
+  background: var(--surface);
+  transform: translateY(-2px);
+}
+
+.processIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: var(--surface);
+  border: 1px solid rgba(195, 199, 200, 0.5);
+  color: var(--text-muted);
+  font-size: 30px;
+}
+
+.processTitle {
+  margin: 16px 0 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.processDesc {
+  max-width: 247px;
+  margin: 16px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-muted);
+}
+
+/* ---- About ---- */
+.aboutSection {
+  padding: 96px 32px;
+  background: var(--surface-container);
+}
+
+.aboutGrid {
+  display: grid;
+  grid-template-columns: 1.6fr 0.9fr;
+  gap: 24px;
+  max-width: 1376px;
+  margin: 0 auto;
+}
+
+.aboutPanel {
+  background: var(--surface-raised);
+  border: 1px solid rgba(195, 199, 200, 0.3);
+  padding: 32px;
+}
+
+.aboutWideTitle {
+  margin: 0 0 24px;
+  font-size: var(--text-2xl);
+  line-height: 40px;
+  letter-spacing: -0.32px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.aboutWide p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--text-muted);
+}
+
+.aboutWide p + p {
+  margin-top: 24px;
+}
+
+.aboutStats {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 224px;
+}
+
+.riskCaption {
+  margin: 20px 0 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* ---- Footer ---- */
+.footer {
+  background: var(--ink);
+  color: var(--white);
+}
+
+.footerInner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  padding: 48px 32px;
+}
+
+.footerBrand {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.footerLogo {
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: -0.32px;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.footerTagline {
+  max-width: 384px;
+  margin: 0;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 24px;
+}
+
+.footerLinks a {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.footerLinks a:hover {
+  opacity: 1;
+}
+
+@media (max-width: 900px) {
+  .processGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .aboutGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .footerInner {
+    flex-direction: column;
+  }
+
+  .footerLinks {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .heroSection {
+    min-height: 640px;
+    padding: 120px 20px;
+  }
+
+  .heroTitle {
+    font-size: 2.5rem;
+    line-height: 48px;
+  }
+
+  .heroActions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .primaryBtn,
+  .secondaryBtn {
+    width: 100%;
+  }
+
+  .howItWorks {
+    padding: 72px 20px;
+  }
+
+  .processGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .processCard {
+    border-right: none;
+    border-bottom: 1px solid rgba(195, 199, 200, 0.2);
+  }
+
+  .processCard:last-child {
+    border-bottom: none;
+  }
+}

@@ -1,3 +1,5 @@
+import styles from "./DashboardSidebar.module.css";
+
 const tabs = [
   { label: "Map Layers", icon: "layers", active: false },
   { label: "Seismic Filters", icon: "filter_alt", active: true },
@@ -7,25 +9,25 @@ const tabs = [
 
 export default function DashboardSidebar() {
   return (
-    <aside className="dashboard-sidebar" aria-label="Risk controls panel">
-      <div className="dashboard-sidebar-header">
-        <h2>Risk Controls</h2>
-        <p>LGU Assessment Tools</p>
+    <aside className={styles.sidebar} aria-label="Risk controls panel">
+      <div className={styles.header}>
+        <h2 className={styles.title}>Risk Controls</h2>
+        <p className={styles.subtitle}>LGU Assessment Tools</p>
       </div>
 
-      <div className="dashboard-sidebar-body">
-        <div className="dashboard-section">
-          <h3>Date Range</h3>
-          <div className="dashboard-date-grid">
-            <input type="date" defaultValue="2023-01-01" className="dashboard-input" />
-            <input type="date" defaultValue="2024-01-01" className="dashboard-input" />
+      <div className={styles.body}>
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Date Range</h3>
+          <div className={styles.dateGrid}>
+            <input type="date" defaultValue="2023-01-01" className={styles.input} />
+            <input type="date" defaultValue="2024-01-01" className={styles.input} />
           </div>
         </div>
 
-        <div className="dashboard-section">
-          <h3>
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>
             <span>Magnitude</span>
-            <span className="dashboard-section-value">4.0 - 9.0</span>
+            <span className={styles.sectionValue}>4.0 - 9.0</span>
           </h3>
           <input
             type="range"
@@ -33,50 +35,51 @@ export default function DashboardSidebar() {
             max="9"
             step="0.1"
             defaultValue={4}
-            className="dashboard-range"
+            className={styles.range}
           />
-          <div className="dashboard-scale">
+          <div className={styles.scale}>
             <span>M1</span>
             <span>M5</span>
             <span>M9</span>
           </div>
         </div>
 
-        <div className="dashboard-section">
-          <h3>Risk Level</h3>
-          <div className="dashboard-checklist">
-            <label className="dashboard-check-item">
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Risk Level</h3>
+          <div className={styles.checklist}>
+            <label className={styles.checkItem}>
               <input type="checkbox" defaultChecked />
-              <span className="dashboard-swatch dashboard-swatch--high" />
+              <span className={`${styles.swatch} ${styles["swatch--high"]}`} />
               <span>High Risk</span>
             </label>
-            <label className="dashboard-check-item">
+            <label className={styles.checkItem}>
               <input type="checkbox" defaultChecked />
-              <span className="dashboard-swatch dashboard-swatch--medium" />
+              <span className={`${styles.swatch} ${styles["swatch--medium"]}`} />
               <span>Moderate Risk</span>
             </label>
-            <label className="dashboard-check-item">
+            <label className={styles.checkItem}>
               <input type="checkbox" />
-              <span className="dashboard-swatch dashboard-swatch--low" />
+              <span className={`${styles.swatch} ${styles["swatch--low"]}`} />
               <span>Low Risk</span>
             </label>
           </div>
         </div>
 
-        <div className="dashboard-section dashboard-section--tabs">
-          <h3>Views</h3>
-          <div className="dashboard-tab-list">
+        <div className={`${styles.section} ${styles.tabsSection}`}>
+          <h3 className={styles.sectionTitle}>Views</h3>
+          <div className={styles.tabList}>
             {tabs.map((tab) => (
-              <a
+              <button
                 key={tab.label}
-                href="#"
-                className={`dashboard-tab ${tab.active ? "dashboard-tab--active" : ""}`}
+                type="button"
+                className={`${styles.tab} ${tab.active ? styles.tabActive : ""}`}
+                aria-current={tab.active ? "true" : undefined}
               >
-                <span className="material-symbols-outlined" aria-hidden="true">
+                <span className={styles.icon} aria-hidden="true">
                   {tab.icon}
                 </span>
                 <span>{tab.label}</span>
-              </a>
+              </button>
             ))}
           </div>
         </div>

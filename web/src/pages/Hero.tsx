@@ -1,3 +1,4 @@
+import styles from "./Hero.module.css";
 import RiskMeter from "../components/common/RiskMeter";
 import SectionHeader from "../components/common/SectionHeader";
 import TopNav from "../components/layout/TopNav";
@@ -33,7 +34,7 @@ const steps = [
 
 export default function Hero({ onNavigate }: HeroProps) {
   return (
-    <main className="hero-page">
+    <main className={styles.page}>
       <TopNav
         items={navItems}
         activeItem="How It Works"
@@ -41,21 +42,21 @@ export default function Hero({ onNavigate }: HeroProps) {
         theme="hero"
       />
 
-      <section className="hero-section">
-        <div className="hero-overlay" />
-        <div className="hero-abstract" aria-hidden="true" />
+      <section className={styles.heroSection}>
+        <div className={styles.heroOverlay} />
+        <div className={styles.heroAbstract} aria-hidden="true" />
 
-        <div className="hero-content">
-          <h1 className="hero-title">
+        <div className={styles.heroContent}>
+          <h1 className={styles.heroTitle}>
             <span>Patterns.Predictions.Protection.</span>
             <span>Before the Ground Shakes</span>
           </h1>
 
-          <p className="hero-subtitle">
+          <p className={styles.heroSubtitle}>
             From fault lines to insights. From patterns to preparedness
           </p>
 
-          <div className="hero-actions">
+          <div className={styles.heroActions}>
             <button
               type="button"
               className="primary-button"
@@ -74,33 +75,33 @@ export default function Hero({ onNavigate }: HeroProps) {
         </div>
       </section>
 
-      <section className="how-it-works">
-        <div className="section-inner">
+      <section className={styles.howItWorks}>
+        <div className={styles.sectionInner}>
           <SectionHeader
             title="Methodology &amp; Pipeline"
             subtitle="A robust, scientific approach to risk classification."
           />
 
-          <div className="process-grid">
-            <div className="process-line" aria-hidden="true" />
+          <div className={styles.processGrid}>
+            <div className={styles.processLine} aria-hidden="true" />
 
             {steps.map((step) => (
-              <article key={step.title} className="process-card">
-                <div className="process-icon">
+              <article key={step.title} className={styles.processCard}>
+                <div className={styles.processIcon}>
                   <span aria-hidden="true">•</span>
                 </div>
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
+                <h3 className={styles.processTitle}>{step.title}</h3>
+                <p className={styles.processDesc}>{step.description}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="about-section">
-        <div className="about-grid">
-          <div className="about-panel about-panel--wide">
-            <h2>Empowering Disaster Coordinators</h2>
+      <section className={styles.aboutSection}>
+        <div className={styles.aboutGrid}>
+          <div className={`${styles.aboutPanel} ${styles.aboutWide}`}>
+            <h2 className={styles.aboutWideTitle}>Empowering Disaster Coordinators</h2>
             <p>
               The primary objective of GeoHazard is to bridge the gap between
               complex geophysical data and pragmatic local governance. We equip
@@ -115,26 +116,26 @@ export default function Hero({ onNavigate }: HeroProps) {
             </p>
           </div>
 
-          <div className="about-panel about-panel--stats">
+          <div className={`${styles.aboutPanel} ${styles.aboutStats}`}>
             <RiskMeter label="High Risk" level="high" value={85} />
             <RiskMeter label="Moderate" level="medium" value={45} />
             <RiskMeter label="Low Risk" level="low" value={20} />
-            <p className="risk-caption">Sample Risk Profiling Output</p>
+            <p className={styles.riskCaption}>Sample Risk Profiling Output</p>
           </div>
         </div>
       </section>
 
-      <footer className="site-footer">
-        <div className="footer-inner">
-          <div className="footer-brand">
-            <div className="footer-logo">GeoHazard</div>
-            <p>
+      <footer className={styles.footer}>
+        <div className={styles.footerInner}>
+          <div className={styles.footerBrand}>
+            <div className={styles.footerLogo}>GeoHazard</div>
+            <p className={styles.footerTagline}>
               © 2024 GeoHazard Philippines. Seismic Risk Intelligence for Local
               Governance.
             </p>
           </div>
 
-          <div className="footer-links">
+          <div className={styles.footerLinks}>
             {[
               "About Project",
               "Data Credits",

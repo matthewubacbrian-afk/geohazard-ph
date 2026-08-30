@@ -1,3 +1,5 @@
+import styles from "./TopNav.module.css";
+
 type TopNavProps = {
   items: string[];
   activeItem?: string;
@@ -17,27 +19,21 @@ export default function TopNav({
 
   return (
     <nav
-      className={isDashboardTheme ? "dashboard-topbar" : "top-nav"}
+      className={`${styles.nav} ${isDashboardTheme ? styles["nav--dashboard"] : ""}`}
       aria-label="Main navigation"
     >
-      <div className={isDashboardTheme ? "dashboard-brand" : "nav-logo"}>
-        GeoHazard
-      </div>
+      <div className={styles.brand}>GeoHazard</div>
 
-      <ul className={isDashboardTheme ? "dashboard-nav" : "nav-links"}>
+      <ul className={styles.links}>
         {items.map((item) => {
-          const isDashboardItem = item === "Dashboard";
           const isActive = item === resolvedActiveItem;
-          const linkClassName = isDashboardTheme
-            ? `dashboard-nav-link ${isActive ? "dashboard-nav-link--active" : ""}`
-            : `nav-link ${isActive ? "nav-link--active" : ""}`;
+          const linkClassName = `${styles.linkBtn} ${
+            isActive ? styles.linkBtnActive : ""
+          }`;
 
           return (
-            <li
-              key={item}
-              className={isDashboardTheme ? "dashboard-nav-item" : ""}
-            >
-              {isDashboardItem && onNavigate ? (
+            <li key={item}>
+              {item === "Dashboard" && onNavigate ? (
                 <button
                   type="button"
                   className={linkClassName}
@@ -46,7 +42,7 @@ export default function TopNav({
                   {item}
                 </button>
               ) : (
-                <a href="#" className={linkClassName}>
+                <a href="#" className={linkClassName} aria-current={isActive ? "page" : undefined}>
                   {item}
                 </a>
               )}
@@ -55,10 +51,7 @@ export default function TopNav({
         })}
       </ul>
 
-      <button
-        type="button"
-        className={isDashboardTheme ? "dashboard-lang-button" : "lang-button"}
-      >
+      <button type="button" className={styles.settingsBtn}>
         Settings
       </button>
     </nav>

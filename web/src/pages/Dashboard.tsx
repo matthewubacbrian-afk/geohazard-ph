@@ -1,3 +1,4 @@
+import styles from "./Dashboard.module.css";
 import DashboardMapArea from "../components/dashboard/DashboardMapArea";
 import DashboardSidebar from "../components/dashboard/DashboardSidebar";
 import TopNav from "../components/layout/TopNav";
@@ -15,10 +16,10 @@ export default function Dashboard() {
   const { data: events = [], isLoading, error, refetch } = useEvents();
 
   return (
-    <div className="dashboard-page">
+    <div className={styles.page}>
       <TopNav items={navItems} activeItem="Dashboard" theme="dashboard" />
 
-      <div className="dashboard-main">
+      <div className={styles.main}>
         <DashboardSidebar />
         <DashboardMapArea
           events={events}
