@@ -1,0 +1,101 @@
+/* GeoHazard PH — Design tokens
+   Single source of truth for the web UI (and the hand-off foundation for the
+   React Native app). Primitive values mirror the established brand palette;
+   semantic tokens are what components consume. See web/DESIGN_NOTES.md. */
+
+:root {
+  /* ---- Primitives: brand palette (unchanged identity) ---- */
+  --cream-0: #f9f6f3;      /* app background (was --bg)     */
+  --cream-50: #fcf9f6;     /* raised surface (was --surface) */
+  --cream-100: #f6f3f0;    /* strong surface (was --surface-strong) */
+  --cream-150: #f0edea;    /* container surface (was --surface-container) */
+  --cream-200: #ffffff;    /* container-lowest / card on map */
+
+  --ink: #181f21;          /* primary text / near-black (was --primary) */
+  --ink-soft: #434749;     /* muted text (was --text-muted) */
+  --ink-faint: #959c9f;    /* faint text / footer (was --text-light) */
+  --outline: #747879;      /* strong outline (was secondary gray) */
+  --outline-variant: #c3c7c8; /* hairline border */
+
+  --accent: #c0392b;       /* brand red / high risk (was --secondary) */
+  --risk-medium: #e3a655;  /* amber */
+  --risk-low: #6bb4b1;     /* teal */
+  --white: #ffffff;
+
+  /* ---- Semantic surfaces ---- */
+  --surface: var(--cream-0);
+  --surface-raised: var(--cream-50);
+  --surface-overlay: rgba(252, 249, 246, 0.92);
+  --surface-overlay-solid: var(--cream-50);
+  --surface-container: var(--cream-150);
+  --surface-container-lowest: var(--cream-200);
+
+  /* ---- Semantic text ---- */
+  --text: var(--ink);
+  --text-muted: var(--ink-soft);
+  --text-faint: var(--ink-faint);
+
+  /* ---- Semantic border / shadows (tinted, not pure black) ---- */
+  --border: var(--outline);
+  --border-strong: var(--outline-variant);
+  --shadow-color: rgba(24, 31, 33, 0.08);
+  --shadow-card: 0 10px 30px rgba(24, 31, 33, 0.07);
+  --shadow-overlay: 0 12px 32px rgba(24, 31, 33, 0.09);
+  --shadow-control: 0 8px 20px rgba(24, 31, 33, 0.08);
+
+  /* ---- Semantic accent / risk ---- */
+  /* (brand red primitive doubles as the semantic accent and high risk) */
+  --risk-high: var(--accent);
+
+  /* ---- Typography ---- */
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-icon: "Material Symbols Outlined", sans-serif;
+
+  /* Type ramp (Inter sizes; labels use mono separately) */
+  --text-2xs: 10px;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+  --text-3xl: clamp(2.5rem, 4vw, 3rem);
+
+  --leading-tight: 1.1;
+  --leading-normal: 1.5;
+
+  /* ---- Spacing (4px scale) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* ---- Radius (intent: small controls, medium cards, panel surfaces) ---- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-panel: 16px;
+  --radius-pill: 999px;
+
+  /* ---- Motion ---- */
+  --dur-fast: 0.15s;
+  --dur-base: 0.25s;
+  --dur-slow: 0.4s;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-default: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* ---- Z-index scale ---- */
+  --z-status: 3;        /* in-map status / floating banners */
+  --z-map-overlay: 2;   /* in-map legend / controls / floating cards */
+  --z-topbar: 50;       /* sticky top navigation */
+
+  /* ---- Breakpoints ---- */
+  --bp-md: 900px;
+  --bp-sm: 640px;
+}
