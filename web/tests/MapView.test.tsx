@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 import MapView from '../src/components/map/MapView';
+import { BASEMAPS } from '../src/components/map/basemaps';
 import type { HazardEvent } from '../src/types/hazard';
 
 const mapInstance = {
@@ -12,6 +13,7 @@ const mapInstance = {
   on: vi.fn((_event: string, callback: () => void) => callback()),
   remove: vi.fn(),
   setLayoutProperty: vi.fn(),
+  setStyle: vi.fn(),
 };
 
 vi.mock('maplibre-gl', () => ({
@@ -73,5 +75,18 @@ describe('MapView', () => {
       'text-field',
       expect.any(Array),
     );
+  });
+
+  it('does not call setStyle on initial mount', () => {
+    render(<MapView events={fixtureEvents} />);
+
+    expect(mapInstance.setStyle).not.toHaveBeenCalled();
+  });
+
+  it('calls setStyle with the new style when the basemap changes', () => {
+    const { rerender } = render(<MapView events={fixtureEvents} basemap="streets" />);
+    rerender(<MapView events={fixtureEvents} basemap="satellite" />);
+
+    expect(mapInstance.setStyle).toHaveBeenCalledWith(BASEMAPS.satellite.style);
   });
 });

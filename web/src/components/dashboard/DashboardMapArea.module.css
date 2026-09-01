@@ -1,7 +1,8 @@
 .mapArea {
   position: relative;
   flex: 1;
-  min-height: 720px;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
   background-color: #e5e9ec;
 }
@@ -324,12 +325,14 @@
 
 @media (max-width: 900px) {
   .mapArea {
+    height: 72vh;
     min-height: 620px;
   }
 }
 
 @media (max-width: 640px) {
   .mapArea {
+    height: 72vh;
     min-height: 560px;
   }
 

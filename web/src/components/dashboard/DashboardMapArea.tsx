@@ -1,6 +1,7 @@
 import styles from "./DashboardMapArea.module.css";
 import Skeleton from "../common/Skeleton";
 import MapView from "../map/MapView";
+import type { BasemapId } from "../map/basemaps";
 import type { HazardEvent } from "../../types/hazard";
 import { useEventSummary } from "../../hooks/useEventSummary";
 
@@ -9,6 +10,7 @@ type DashboardMapAreaProps = {
   isLoading: boolean;
   error: Error | null;
   onRetry: () => void;
+  basemap?: BasemapId;
 };
 
 export default function DashboardMapArea({
@@ -16,6 +18,7 @@ export default function DashboardMapArea({
   isLoading,
   error,
   onRetry,
+  basemap = "streets",
 }: DashboardMapAreaProps) {
   const {
     data: summary,
@@ -34,7 +37,7 @@ export default function DashboardMapArea({
 
   return (
     <main className={styles.mapArea} aria-label="Geospatial risk dashboard map">
-      <MapView events={events} />
+      <MapView events={events} basemap={basemap} />
 
       {isLoading && !error && (
         <div className={styles.status} role="status">
