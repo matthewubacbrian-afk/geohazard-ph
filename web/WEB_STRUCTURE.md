@@ -17,11 +17,13 @@ web/
 │   ├── api/                     # API client layer
 │   ├── components/
 │   │   ├── common/              # Presentational primitives (shared)
-│   │   ├── dashboard/           # Dashboard page interior
+│   │   ├── dashboard/           # Dashboard page interior (sidebar + map area)
+│   │   ├── events/              # Live event feed + detail (active dashboard flow)
 │   │   ├── layout/              # TopNav (the only surviving layout component)
-│   │   ├── map/                 # MapLibre integration
-│   │   └── risk/                # Risk profile UI (legacy / out of active flow)
+│   │   ├── map/                 # MapLibre integration + basemaps
+│   │   └── risk/                # Risk profile UI (profile panel + card + lookup)
 │   ├── hooks/                   # Custom React hooks
+│   ├── lib/                     # Shared domain helpers (risk bucketing)
 │   ├── pages/                   # Page-level components
 │   ├── styles/                  # Global stylesheets (tokens, base, utilities)
 │   └── types/                   # TypeScript type definitions
@@ -84,7 +86,21 @@ The marketing landing page. Sections: hero headline + CTAs, "Methodology & Pipel
 
 ### `src/pages/Dashboard.tsx`
 
-The interactive risk dashboard. Calls `useEvents()` for live hazard data, then composes `DashboardSidebar` (controls) and `DashboardMapArea` (map + overlays) inside a `TopNav`-scaffolded workspace.
+The interactive risk dashboard, laid out as a **three-column instrument panel** under a `TopNav`-scaffolded workspace:
+
+- **Left — `DashboardSidebar`** (`components/dashboard`): the controls rail. Holds the View tabs
+  (`map` / `filters` / `history` / `risk`), the basemap picker (driven by `basemaps.ts` +
+  `BasemapId`), toggleable map layers (Live events / Risk overlay available; Fault lines / Volcano
+  zones marked "Soon"), a risk-level checklist (high/medium/low), and date-range/magnitude inputs.
+- **Center — `DashboardMapArea`** (`components/dashboard`): the MapLibre map with overlays plus
+  loading/error/empty states.
+- **Right — activity panel** (`<section className={styles.sidePanel}>`): toggles between
+  `EventFeed` (the default, rendering live hazard events from `useEvents()`) and
+  `RiskProfilesPanel` (the ML regional-risk panel). The switch is driven by the sidebar's active
+  View — `activeView === 'risk'` shows risk, otherwise it shows the event feed.
+
+`Dashboard` owns the layout state: `basemap`, `activeView`, `activeLayers`, and
+`activeRiskLevels`, and threads them down so the sidebar and map/activity areas stay in sync.
 
 ### `src/pages/About.tsx`, `src/pages/DataSources.tsx`, `src/pages/HistoricalBrowser.tsx`
 
@@ -92,7 +108,7 @@ Styled placeholder pages built from the shared `ComingSoon` component. They are 
 
 ### `src/pages/RiskProfileExplorer.tsx`
 
-**Out of the active flow.** Legacy ML risk-profile exploration surface (plus `components/risk/RiskProfileCard.tsx` and `RegionLookup.tsx`). Not rendered by `App`; retained for a future risk surface.
+**Out of the active flow.** Legacy ML risk-profile exploration surface plus `components/risk/RegionLookup.tsx` (the search/select piece the standalone page reuses). Not rendered by `App`; retained for a future dedicated risk surface. Note the shared `RiskProfileCard` and `RiskProfilesPanel` measure IS active in the dashboard (see `Dashboard.tsx` above).
 
 ---
 
@@ -107,16 +123,22 @@ components/
 │   ├── ComingSoon / ComingSoon.module.css     # polished placeholder page body
 │   └── Reveal/Reveal.tsx + Reveal.module.css  # IntersectionObserver scroll reveal
 ├── dashboard/
-│   ├── DashboardSidebar.tsx / .module.css     # controls panel
+│   ├── DashboardSidebar.tsx / .module.css     # controls/views/tabs panel
 │   └── DashboardMapArea.tsx / .module.css     # map with overlays + loading/empty states
+├── events/                                    # activity feed (active dashboard flow)
+│   ├── EventFeed.tsx / .module.css            # scrolling list of live hazard events
+│   ├── EventFeedItem.tsx / .module.css        # single event row/card
+│   └── EventDetailPanel.tsx / .module.css     # detail for the selected event
 ├── layout/
 │   └── TopNav.tsx / TopNav.module.css         # primary navigation (hero/dashboard themes)
 ├── map/
+│   ├── basemaps.ts                            # basemap definitions + BasemapId type
 │   ├── MapView.tsx / MapView.module.css       # live MapLibre map
 │   └── EventMarker.tsx                        # non-MapLibre legacy marker (reference)
-└── risk/                                      # legacy, out of active flow
-    ├── RiskProfileCard.tsx
-    └── RegionLookup.tsx
+└── risk/
+    ├── RiskProfilesPanel.tsx / .module.css    # risk panel in the dashboard activity area
+    ├── RiskProfileCard.tsx / .module.css      # cluster + RF label, confidence, importances
+    └── RegionLookup.tsx                       # search a province/region for its risk profile
 ```
 
 ### Custom Hooks (`src/hooks/`)
@@ -125,8 +147,12 @@ components/
 - **`useEventSummary.ts`** — derived summary counts per hazard type.
 - **`useFaultLines.ts`** — legacy fault-line fetch (not in active flow).
 - **`useRealtimeAlerts.ts`** — realtime alert subscription (not in active flow).
-- **`useRiskProfiles.ts`** — ML risk-profile fetch (used by the out-of-flow `RiskProfileExplorer`).
+- **`useRiskProfiles.ts`** — ML risk-profile fetch (feeds the active dashboard `RiskProfilesPanel` and the standalone `RiskProfileExplorer`).
 - **`useRevealOnScroll.ts`** — IntersectionObserver hook that toggles visibility; respects `prefers-reduced-motion`.
+
+### Helpers (`src/lib/`)
+
+- **`lib/risk.ts`** — `eventRiskBucket()` and related risk-level helpers shared by the event feed and markers.
 
 ### Types
 
