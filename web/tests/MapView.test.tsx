@@ -9,9 +9,20 @@ const mapInstance = {
   addControl: vi.fn(),
   addLayer: vi.fn(),
   addSource: vi.fn(),
+  getBearing: vi.fn(() => 0),
+  getCenter: vi.fn(() => ({ toArray: () => [121.774, 12.8797] })),
   getLayer: vi.fn((_id: string) => undefined as { id: string } | undefined),
+  getPitch: vi.fn(() => 0),
+  getSource: vi.fn(() => undefined as object | undefined),
+  getZoom: vi.fn(() => 5),
+  flyTo: vi.fn(),
+  isStyleLoaded: vi.fn(() => false),
+  jumpTo: vi.fn(),
   on: vi.fn((_event: string, callback: () => void) => callback()),
+  once: vi.fn((_event: string, callback: () => void) => callback()),
   remove: vi.fn(),
+  removeLayer: vi.fn(),
+  removeSource: vi.fn(),
   setLayoutProperty: vi.fn(),
   setStyle: vi.fn(),
 };
@@ -88,5 +99,30 @@ describe('MapView', () => {
     rerender(<MapView events={fixtureEvents} basemap="satellite" />);
 
     expect(mapInstance.setStyle).toHaveBeenCalledWith(BASEMAPS.satellite.style);
+  });
+
+  it('restores the camera after a basemap change so the viewport is preserved', () => {
+    mapInstance.getZoom.mockReturnValue(9);
+    mapInstance.getCenter.mockReturnValue({ toArray: () => [122.5, 13.5] });
+    mapInstance.getBearing.mockReturnValue(15);
+    mapInstance.getPitch.mockReturnValue(20);
+
+    const { rerender } = render(<MapView events={fixtureEvents} basemap="streets" />);
+    rerender(<MapView events={fixtureEvents} basemap="satellite" />);
+
+    expect(mapInstance.flyTo).toHaveBeenCalledWith({
+      center: [122.5, 13.5],
+      zoom: 9,
+      bearing: 15,
+      pitch: 20,
+      duration: 0,
+    });
+  });
+
+  it('restores the camera once the new style loads', () => {
+    const { rerender } = render(<MapView events={fixtureEvents} basemap="streets" />);
+    rerender(<MapView events={fixtureEvents} basemap="terrain" />);
+
+    expect(mapInstance.flyTo).toHaveBeenCalledTimes(1);
   });
 });

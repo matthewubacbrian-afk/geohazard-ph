@@ -103,43 +103,6 @@
   color: var(--outline);
 }
 
-/* ---- Map controls ---- */
-.controls {
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  z-index: var(--z-map-overlay);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.controlBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid rgba(195, 199, 200, 0.4);
-  background: var(--surface-overlay);
-  color: var(--text);
-  box-shadow: var(--shadow-control);
-  font-family: var(--font-icon);
-  font-size: 20px;
-}
-
-.controlBtn:hover {
-  background: var(--surface-container);
-}
-
-.controlBtn:active {
-  transform: translateY(1px);
-}
-
-.controlBtnStacked {
-  margin-top: 4px;
-}
-
 /* ---- Floating summary card ---- */
 .card {
   position: absolute;
@@ -349,8 +312,4 @@
     width: calc(100% - 32px);
   }
 
-  .controls {
-    top: 16px;
-    right: 16px;
-  }
 }

@@ -80,33 +80,6 @@ export default function DashboardMapArea({
         </div>
       </div>
 
-      <div className={styles.controls} aria-label="Map controls">
-        <button type="button" className={styles.controlBtn} aria-label="Zoom in">
-          <span className="material-symbols-outlined" aria-hidden="true">
-            add
-          </span>
-        </button>
-        <button type="button" className={styles.controlBtn} aria-label="Zoom out">
-          <span className="material-symbols-outlined" aria-hidden="true">
-            remove
-          </span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.controlBtn} ${styles.controlBtnStacked}`}
-          aria-label="My location"
-        >
-          <span className="material-symbols-outlined" aria-hidden="true">
-            my_location
-          </span>
-        </button>
-        <button type="button" className={styles.controlBtn} aria-label="Explore">
-          <span className="material-symbols-outlined" aria-hidden="true">
-            explore
-          </span>
-        </button>
-      </div>
-
       <div className={styles.card}>
         <div className={styles.cardHeader}>
           <div>
