@@ -11,8 +11,23 @@ class RiskProfileNotFound(Exception):
     pass
 
 
+def _resolve_path(path: Path | str) -> Path:
+    candidate = Path(path)
+    if candidate.exists():
+        return candidate
+
+    if not candidate.is_absolute():
+        backend_root = Path(__file__).resolve().parents[2]
+        for base in (backend_root, backend_root.parent):
+            resolved = (base / candidate).resolve()
+            if resolved.exists():
+                return resolved
+
+    return candidate
+
+
 def load_profiles(path: Path | str) -> list[RiskProfile]:
-    path = Path(path)
+    path = _resolve_path(path)
     if not path.exists():
         return []
     data = json.loads(path.read_text(encoding="utf-8"))

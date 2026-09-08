@@ -54,6 +54,8 @@ def test_fetch_recent_events_uses_configured_feed(monkeypatch):
     def fake_get(url: str, **kwargs: object) -> FakeResponse:
         captured["url"] = url
         captured["timeout"] = kwargs["timeout"]
+        captured["headers"] = kwargs["headers"]
+        captured["verify"] = kwargs["verify"]
         return FakeResponse(html)
 
     monkeypatch.setattr(requests, "get", fake_get)
@@ -67,6 +69,8 @@ def test_fetch_recent_events_uses_configured_feed(monkeypatch):
     assert captured == {
         "url": settings.phivolcs_earthquake_feed_url,
         "timeout": 30,
+        "headers": {"User-Agent": "GeoHazard-PH/0.1"},
+        "verify": settings.phivolcs_ssl_verify,
     }
 
 

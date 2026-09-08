@@ -8,6 +8,7 @@ from app.config import Settings
 from app.schemas.hazard_event import HazardEvent
 
 PH_TZ = timezone(timedelta(hours=8))  # Philippine Standard Time, UTC+8
+PHIVOLCS_USER_AGENT = "GeoHazard-PH/0.1"
 
 
 class PhivolcsFetchError(RuntimeError):
@@ -19,7 +20,12 @@ def fetch_recent_events(
 ) -> list[HazardEvent]:
     http = session or requests
     try:
-        response = http.get(settings.phivolcs_earthquake_feed_url, timeout=30)
+        response = http.get(
+            settings.phivolcs_earthquake_feed_url,
+            headers={"User-Agent": PHIVOLCS_USER_AGENT},
+            timeout=30,
+            verify=settings.phivolcs_ssl_verify,
+        )
         response.raise_for_status()
     except Exception as exc:
         raise PhivolcsFetchError(f"PHIVOLCS feed request failed: {exc}") from exc
@@ -51,6 +57,8 @@ def _parse_bulletin_table(html: str) -> list[HazardEvent]:
             events.append(_parse_row(cells))
         except (TypeError, ValueError) as exc:
             raise PhivolcsFetchError(f"unexpected row format: {exc}") from exc
+    if not events:
+        raise PhivolcsFetchError("earthquake data table contained no event rows")
     return events
 
 
