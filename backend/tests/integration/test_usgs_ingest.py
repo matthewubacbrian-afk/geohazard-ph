@@ -50,3 +50,28 @@ def test_ingest_usgs_events_dedupes_events_without_external_id(migrated_engine):
         rows = session.execute(select(HazardEventORM)).scalars().all()
         assert ingested == 1
         assert len(rows) == 1
+
+
+def test_ingest_events_calls_on_committed_after_commit(migrated_engine):
+    from app.services.ingest import ingest_events
+
+    def make(external_id: str, magnitude: float) -> HazardEvent:
+        return HazardEvent(
+            id=f"evt-{external_id}", hazard_type="earthquake", source="usgs",
+            external_id=external_id, magnitude=magnitude, depth_km=30.0,
+            latitude=14.5, longitude=121.0, place_name="Sample, Philippines",
+            occurred_at=datetime(2026, 8, 28, tzinfo=UTC),
+        )
+
+    received = []
+
+    def on_committed(changes):
+        received.extend(changes)
+
+    with Session(migrated_engine) as session:
+        count = ingest_events(session, [make("a1", 4.0), make("a2", 5.0)], on_committed=on_committed)
+        assert count == 2
+
+    assert len(received) == 2
+    assert {change.source for change in received} == {"usgs"}
+    assert {change.external_id for change in received} == {"a1", "a2"}
