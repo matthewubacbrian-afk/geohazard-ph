@@ -78,6 +78,7 @@ def _to_event_change(row: HazardEventORM) -> EventChange:
         external_id=row.external_id,
         canonical_id=str(getattr(row, "canonical_id", None)) if getattr(row, "canonical_id", None) is not None else None,
         is_primary=getattr(row, "is_primary", None),
+        match_confidence=float(row.match_confidence) if row.match_confidence is not None else None,
         latitude=row.latitude,
         longitude=row.longitude,
         magnitude=float(row.magnitude) if row.magnitude is not None else None,
