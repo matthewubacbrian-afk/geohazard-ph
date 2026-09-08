@@ -97,6 +97,13 @@ Run backend tests with local PostGIS and Redis available. Realtime integration
 tests use a unique test channel so fixture events never enter the live dashboard.
 The source tests use saved HTML and never make external network calls.
 
+Backend CI provisions both PostGIS and a health-checked Redis service and sets
+`REDIS_URL` explicitly. If the realtime integration test fails while opening a
+WebSocket with code 1013, check Redis availability first: subscription happens
+before the handshake is accepted. Adding sleeps after publication cannot repair
+a failed connection. `TestClient`'s `receive_json()` waits for the next message
+and does not accept a `timeout` argument.
+
 ## PHIVOLCS volcano bulletins
 
 Use the dashboard's **Volcano bulletins** view or `GET /api/v1/volcanoes`.
