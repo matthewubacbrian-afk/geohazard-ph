@@ -1,4 +1,5 @@
 from uuid import uuid4
+import time
 
 from fastapi.testclient import TestClient
 
@@ -30,6 +31,7 @@ def test_redis_delivers_primary_and_demoted_changes_to_two_clients(monkeypatch):
         client.websocket_connect("/ws/events") as second,
     ):
         events_publisher.publish([row, demoted])
+        time.sleep(0.1)
         for socket in (first, second):
             assert socket.receive_json() == row.model_dump(mode="json")
             assert socket.receive_json() == demoted.model_dump(mode="json")
