@@ -11,6 +11,7 @@ type DashboardMapAreaProps = {
   error: Error | null;
   onRetry: () => void;
   basemap?: BasemapId;
+  selectedEvent?: HazardEvent | null;
 };
 
 export default function DashboardMapArea({
@@ -19,6 +20,7 @@ export default function DashboardMapArea({
   error,
   onRetry,
   basemap = "streets",
+  selectedEvent,
 }: DashboardMapAreaProps) {
   const {
     data: summary,
@@ -37,7 +39,7 @@ export default function DashboardMapArea({
 
   return (
     <main className={styles.mapArea} aria-label="Geospatial risk dashboard map">
-      <MapView events={events} basemap={basemap} />
+      <MapView events={events} basemap={basemap} selectedEvent={selectedEvent} />
 
       {isLoading && !error && (
         <div className={styles.status} role="status">

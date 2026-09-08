@@ -173,3 +173,21 @@ migration was introduced by this Person B slice. Changes remain uncommitted.
 - [API contracts](api-contracts.md)
 - [Data sources and fixture provenance](data-sources.md)
 - [Glossary](glossary.md)
+
+## Map interaction follow-up
+
+Basemap switching now requests full style replacement (`diff: false`) and restores
+markers through one persistent `style.load` listener. This avoids the MapLibre
+style-diff path, which can remove custom layers without emitting `style.load`.
+The map instance and current camera remain in place, and restoration uses the
+latest events received while a style was loading.
+
+Clicking a Regional activity item opens its details and centers/zooms the map on
+its longitude/latitude. Repeated selection recenters the same event, and reduced
+motion preferences disable the flight animation. Lifecycle tests now dispatch
+style events explicitly rather than running listener callbacks immediately.
+
+Follow-up verification: 41 web tests and the production build passed. A real
+Firefox session switched through satellite, hybrid, and terrain; MapLibre reported
+50 rendered earthquake markers on each. Clicking an activity centered the map on
+that event's coordinates at zoom 8.

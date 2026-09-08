@@ -8,6 +8,7 @@ import styles from './MapView.module.css';
 type MapViewProps = {
   events: HazardEvent[];
   basemap?: BasemapId;
+  selectedEvent?: HazardEvent | null;
 };
 
 const PH_CENTER: [number, number] = [121.774, 12.8797]; // Philippines
@@ -42,10 +43,10 @@ function toFeatureCollection(events: HazardEvent[]) {
   };
 }
 
-export default function MapView({ events, basemap = 'streets' }: MapViewProps) {
+export default function MapView({ events, basemap = 'streets', selectedEvent }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const skipNextBasemapSwitch = useRef(true);
+  const appliedBasemap = useRef(basemap);
 
   // Always-current events, readable from inside event handlers that were
   // registered once at mount (those closures would otherwise see whatever
@@ -111,17 +112,7 @@ export default function MapView({ events, basemap = 'streets' }: MapViewProps) {
     }
   };
 
-  // Create the map exactly ONCE, on mount. Basemap changes are applied via
-  // setStyle in the effect below rather than recreating the map (cheaper,
-  // and preserves the camera); event-data changes are pushed into the
-  // existing source via setData in the effect below that too — NOT by
-  // recreating the map. Recreating the map on every `events` change was the
-  // actual bug: `events` commonly arrives as a new array reference on
-  // re-renders that have nothing to do with its contents (e.g. switching
-  // basemap re-renders the parent), and destroying+recreating the map on
-  // every one of those resets the camera to PH_CENTER/zoom 5 regardless of
-  // any style.load camera-restore logic, because the whole map instance —
-  // camera included — is thrown away.
+  // Keep the map and camera while replacing only its style.
   useEffect(() => {
     if (!mapContainer.current) return;
 
@@ -135,12 +126,12 @@ export default function MapView({ events, basemap = 'streets' }: MapViewProps) {
 
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-    // Setup event layers on initial map load
-    map.on('load', () => {
-      setupEventLayers(map);
-    });
+    const restoreEvents = () => setupEventLayers(map);
+    map.on('style.load', restoreEvents);
+    appliedBasemap.current = basemap;
 
     return () => {
+      map.off('style.load', restoreEvents);
       map.remove();
       mapRef.current = null;
     };
@@ -161,46 +152,28 @@ export default function MapView({ events, basemap = 'streets' }: MapViewProps) {
     source.setData(toFeatureCollection(events));
   }, [events]);
 
-  // Swap the basemap in place. The first render is skipped because the Map
-  // constructor already applied the starting style.
-  //
-  // CRITICAL: Listen for 'style.load' (not 'load'!) because:
-  // - 'load' fires only ONCE when the map is first created
-  // - 'style.load' fires every time a new style is loaded via setStyle()
-  //
-  // Restore camera state and re-add event layers that were wiped by setStyle.
   useEffect(() => {
-    if (skipNextBasemapSwitch.current) {
-      skipNextBasemapSwitch.current = false;
-      return;
-    }
     const map = mapRef.current;
-    if (!map) return;
-
-    const camera = {
-      center: map.getCenter().toArray() as [number, number],
-      zoom: map.getZoom(),
-      bearing: map.getBearing(),
-      pitch: map.getPitch(),
-    };
-
-    // When the new style is fully loaded, restore camera and re-add event layers
-    map.once('style.load', () => {
-      // Restore camera state instantly (duration: 0)
-      map.flyTo({
-        center: camera.center,
-        zoom: camera.zoom,
-        bearing: camera.bearing,
-        pitch: camera.pitch,
-        duration: 0,
-      });
-
-      // Re-add event layers (wiped by setStyle)
-      setupEventLayers(map);
-    });
-
-    map.setStyle(BASEMAPS[basemap].style);
+    if (!map || appliedBasemap.current === basemap) return;
+    appliedBasemap.current = basemap;
+    // Diff updates can remove custom layers without emitting style.load.
+    // Full replacement guarantees our persistent listener restores markers.
+    map.setStyle(BASEMAPS[basemap].style, { diff: false });
   }, [basemap]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selectedEvent) return;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    map.flyTo({
+      center: [selectedEvent.longitude, selectedEvent.latitude],
+      zoom: Math.max(map.getZoom(), 8),
+      duration: reducedMotion ? 0 : 800,
+    });
+    mapContainer.current?.scrollIntoView?.({
+      block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth',
+    });
+  }, [selectedEvent]);
 
   return (
     <div className={styles.canvas} aria-label="Hazard map">

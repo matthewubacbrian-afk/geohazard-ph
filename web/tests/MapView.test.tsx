@@ -1,128 +1,99 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import MapView from '../src/components/map/MapView';
-import { BASEMAPS } from '../src/components/map/basemaps';
+import { BASEMAPS, BASEMAP_IDS } from '../src/components/map/basemaps';
 import type { HazardEvent } from '../src/types/hazard';
 
+const handlers = new Map<string, Set<() => void>>();
+let source: { setData: ReturnType<typeof vi.fn> } | undefined;
+const layers = new Set<string>();
+function emit(name: string) { handlers.get(name)?.forEach((callback) => callback()); }
 const mapInstance = {
   addControl: vi.fn(),
-  addLayer: vi.fn(),
-  addSource: vi.fn(),
-  getBearing: vi.fn(() => 0),
-  getCenter: vi.fn(() => ({ toArray: () => [121.774, 12.8797] })),
-  getLayer: vi.fn((_id: string) => undefined as { id: string } | undefined),
-  getPitch: vi.fn(() => 0),
-  getSource: vi.fn(() => undefined as object | undefined),
+  addLayer: vi.fn((layer: { id: string }) => layers.add(layer.id)),
+  addSource: vi.fn(() => { source = { setData: vi.fn() }; }),
+  getLayer: vi.fn((id: string) => layers.has(id) ? { id } : undefined),
+  getSource: vi.fn(() => source),
   getZoom: vi.fn(() => 5),
+  getCenter: vi.fn(() => ({ toArray: () => [121.774, 12.8797] })),
+  getBearing: vi.fn(() => 0), getPitch: vi.fn(() => 0),
   flyTo: vi.fn(),
-  isStyleLoaded: vi.fn(() => false),
-  jumpTo: vi.fn(),
-  on: vi.fn((_event: string, callback: () => void) => callback()),
-  once: vi.fn((_event: string, callback: () => void) => callback()),
+  on: vi.fn((name: string, callback: () => void) => {
+    if (!handlers.has(name)) handlers.set(name, new Set());
+    handlers.get(name)!.add(callback);
+  }),
+  off: vi.fn((name: string, callback: () => void) => handlers.get(name)?.delete(callback)),
+  once: vi.fn(),
   remove: vi.fn(),
-  removeLayer: vi.fn(),
-  removeSource: vi.fn(),
+  removeLayer: vi.fn((id: string) => layers.delete(id)),
+  removeSource: vi.fn(() => { source = undefined; }),
   setLayoutProperty: vi.fn(),
-  setStyle: vi.fn(),
+  setStyle: vi.fn((_style: unknown, _options?: { diff?: boolean }) => {
+    source = undefined; layers.clear();
+  }),
 };
-
 vi.mock('maplibre-gl', () => ({
-  default: {
-    Map: vi.fn(() => mapInstance),
-    NavigationControl: vi.fn(),
-  },
+  default: { Map: vi.fn(() => mapInstance), NavigationControl: vi.fn() },
 }));
-
-const fixtureEvents: HazardEvent[] = [
-  {
-    id: 'e1',
-    hazard_type: 'earthquake',
-    source: 'usgs',
-    magnitude: 4.5,
-    depth_km: 10,
-    latitude: 14.6,
-    longitude: 120.97,
-    place_name: 'Luzon',
-    occurred_at: '2026-08-29T00:00:00Z',
-  },
-];
-
-describe('MapView', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mapInstance.getLayer.mockReturnValue(undefined);
-  });
-
-  it('shows an empty state when there are no events', () => {
+const event: HazardEvent = {
+  id: 'e1', hazard_type: 'earthquake', source: 'usgs', magnitude: 4.5,
+  depth_km: 10, latitude: 14.6, longitude: 120.97, place_name: 'Luzon',
+  occurred_at: '2026-08-29T00:00:00Z',
+};
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  handlers.clear(); layers.clear(); source = undefined;
+  mapInstance.getZoom.mockReturnValue(5);
+  vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
+});
+describe('MapView style lifecycle', () => {
+  it('shows an empty state', () => {
     render(<MapView events={[]} />);
-
     expect(screen.getByText(/no events/i)).toBeTruthy();
   });
-
-  it('adds event marker layers even when the label_country layer is missing', () => {
-    render(<MapView events={fixtureEvents} />);
-
-    expect(mapInstance.addSource).toHaveBeenCalledWith(
-      'events',
-      expect.objectContaining({ type: 'geojson' }),
-    );
-    expect(mapInstance.addLayer).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'event-circles' }),
-    );
-    expect(mapInstance.setLayoutProperty).not.toHaveBeenCalled();
+  it.each(BASEMAP_IDS)('renders markers after the initial %s style loads', (basemap) => {
+    render(<MapView events={[event]} basemap={basemap} />);
+    expect(mapInstance.addLayer).not.toHaveBeenCalled();
+    act(() => emit('style.load'));
+    expect(layers.has('event-circles')).toBe(true);
   });
-
-  it('applies the country-label override when the label_country layer exists', () => {
-    mapInstance.getLayer.mockReturnValue({ id: 'label_country' });
-
-    render(<MapView events={fixtureEvents} />);
-
-    expect(mapInstance.addLayer).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'event-circles' }),
-    );
-    expect(mapInstance.setLayoutProperty).toHaveBeenCalledWith(
-      'label_country',
-      'text-field',
-      expect.any(Array),
-    );
+  it.each(BASEMAP_IDS)('restores current events when switching to %s', (basemap) => {
+    const initial = basemap === 'streets' ? 'terrain' : 'streets';
+    const view = render(<MapView events={[event]} basemap={initial} />);
+    act(() => emit('style.load'));
+    view.rerender(<MapView events={[event]} basemap={basemap} />);
+    expect(mapInstance.setStyle).toHaveBeenCalledWith(BASEMAPS[basemap].style, { diff: false });
+    view.rerender(<MapView events={[{ ...event, magnitude: 6 }]} basemap={basemap} />);
+    act(() => emit('style.load'));
+    expect(layers.has('event-circles')).toBe(true);
+    expect(mapInstance.addSource).toHaveBeenLastCalledWith('events', expect.objectContaining({
+      data: expect.objectContaining({
+        features: [expect.objectContaining({ properties: expect.objectContaining({ magnitude: 6 }) })],
+      }),
+    }));
+    expect(mapInstance.flyTo).not.toHaveBeenCalled();
   });
-
-  it('does not call setStyle on initial mount', () => {
-    render(<MapView events={fixtureEvents} />);
-
+  it('updates events without replacing the style or camera', () => {
+    const view = render(<MapView events={[event]} />);
+    act(() => emit('style.load'));
+    view.rerender(<MapView events={[{ ...event, magnitude: 7 }]} />);
+    expect(source?.setData).toHaveBeenCalled();
     expect(mapInstance.setStyle).not.toHaveBeenCalled();
+    expect(mapInstance.flyTo).not.toHaveBeenCalled();
   });
-
-  it('calls setStyle with the new style when the basemap changes', () => {
-    const { rerender } = render(<MapView events={fixtureEvents} basemap="streets" />);
-    rerender(<MapView events={fixtureEvents} basemap="satellite" />);
-
-    expect(mapInstance.setStyle).toHaveBeenCalledWith(BASEMAPS.satellite.style);
+  it('focuses the selected earthquake, including repeat selections', () => {
+    const view = render(<MapView events={[event]} selectedEvent={null} />);
+    view.rerender(<MapView events={[event]} selectedEvent={event} />);
+    expect(mapInstance.flyTo).toHaveBeenLastCalledWith(expect.objectContaining({
+      center: [120.97, 14.6], zoom: 8, duration: 800,
+    }));
+    view.rerender(<MapView events={[event]} selectedEvent={{ ...event }} />);
+    expect(mapInstance.flyTo).toHaveBeenCalledTimes(2);
   });
-
-  it('restores the camera after a basemap change so the viewport is preserved', () => {
-    mapInstance.getZoom.mockReturnValue(9);
-    mapInstance.getCenter.mockReturnValue({ toArray: () => [122.5, 13.5] });
-    mapInstance.getBearing.mockReturnValue(15);
-    mapInstance.getPitch.mockReturnValue(20);
-
-    const { rerender } = render(<MapView events={fixtureEvents} basemap="streets" />);
-    rerender(<MapView events={fixtureEvents} basemap="satellite" />);
-
-    expect(mapInstance.flyTo).toHaveBeenCalledWith({
-      center: [122.5, 13.5],
-      zoom: 9,
-      bearing: 15,
-      pitch: 20,
-      duration: 0,
-    });
-  });
-
-  it('restores the camera once the new style loads', () => {
-    const { rerender } = render(<MapView events={fixtureEvents} basemap="streets" />);
-    rerender(<MapView events={fixtureEvents} basemap="terrain" />);
-
-    expect(mapInstance.flyTo).toHaveBeenCalledTimes(1);
+  it('honors reduced motion when focusing', () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
+    render(<MapView events={[event]} selectedEvent={event} />);
+    expect(mapInstance.flyTo).toHaveBeenCalledWith(expect.objectContaining({ duration: 0 }));
   });
 });

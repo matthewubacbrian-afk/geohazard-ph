@@ -7,6 +7,7 @@ import DashboardSidebar, {
 import TopNav from '../components/layout/TopNav';
 import EventFeed from '../components/events/EventFeed';
 import RiskProfilesPanel from '../components/risk/RiskProfilesPanel';
+import type { HazardEvent } from '../types/hazard';
 import type { View } from '../types/views';
 import type { BasemapId } from '../components/map/basemaps';
 import VolcanoPanel from '../components/volcanoes/VolcanoPanel';
@@ -31,6 +32,7 @@ type DashboardProps = {
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
   const [source, setSource] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState<HazardEvent | null>(null);
   const realtime = useRealtimeAlerts();
   const { data: events = [], isLoading, error, refetch } = useEvents(source);
 
@@ -85,6 +87,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           error={error as Error | null}
           onRetry={() => refetch()}
           basemap={basemap}
+          selectedEvent={selectedEvent}
         />
 
         <section className={styles.sidePanel} aria-label="Activity panel">
@@ -96,6 +99,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               isLoading={isLoading}
               error={error as Error | null}
               onRetry={() => refetch()}
+              onSelectEvent={(event) => setSelectedEvent({ ...event })}
             />
           )}
         </section>
