@@ -1,5 +1,7 @@
 export type HazardEvent = {
   id: string;
+  canonical_id?: string | null;
+  is_primary?: boolean;
   hazard_type: 'earthquake' | 'volcanic' | 'landslide';
   source: string;
   external_id?: string | null;
@@ -29,4 +31,12 @@ export type EventSummary = {
   avg_magnitude?: number | null;
   max_magnitude?: number | null;
   latest_occurred_at?: string | null;
+};
+
+export type EventChange = Omit<HazardEvent, 'canonical_id' | 'is_primary' | 'alert_level'> & {
+  canonical_id: string;
+  is_primary: boolean;
+  external_id: string | null;
+  magnitude: number | null;
+  depth_km: number | null;
 };

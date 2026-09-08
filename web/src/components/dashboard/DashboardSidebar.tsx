@@ -2,12 +2,13 @@ import { useState } from 'react';
 import styles from './DashboardSidebar.module.css';
 import { BASEMAPS, BASEMAP_IDS, type BasemapId } from '../map/basemaps';
 
-export type DashboardView = 'map' | 'filters' | 'history' | 'risk';
+export type DashboardView = 'map' | 'filters' | 'history' | 'risk' | 'volcanoes';
 
 const VIEWS: { key: DashboardView; label: string; icon: string }[] = [
   { key: 'map', label: 'Map', icon: 'map' },
   { key: 'filters', label: 'Seismic filters', icon: 'filter_alt' },
   { key: 'history', label: 'Historical data', icon: 'history' },
+  { key: 'volcanoes', label: 'Volcano bulletins', icon: 'volcano' },
   { key: 'risk', label: 'Risk reports', icon: 'assessment' },
 ];
 

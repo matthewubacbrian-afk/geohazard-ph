@@ -11,6 +11,7 @@ type EventFeedProps = {
   isLoading: boolean;
   error: Error | null;
   onRetry: () => void;
+  onSelectEvent?: (event: HazardEvent) => void;
 };
 
 const BUCKETS: { key: RiskBucket; label: string }[] = [
@@ -19,7 +20,7 @@ const BUCKETS: { key: RiskBucket; label: string }[] = [
   { key: 'baseline', label: 'Baseline' },
 ];
 
-export default function EventFeed({ events, isLoading, error, onRetry }: EventFeedProps) {
+export default function EventFeed({ events, isLoading, error, onRetry, onSelectEvent }: EventFeedProps) {
   const [activeBuckets, setActiveBuckets] = useState<RiskBucket[]>([
     'critical',
     'elevated',
@@ -99,7 +100,10 @@ export default function EventFeed({ events, isLoading, error, onRetry }: EventFe
               key={event.id}
               event={event}
               selected={event.id === selectedId}
-              onSelect={setSelectedId}
+              onSelect={(id) => {
+                setSelectedId(id);
+                onSelectEvent?.(event);
+              }}
             />
           ))}
       </div>

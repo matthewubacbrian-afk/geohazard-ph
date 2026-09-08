@@ -20,7 +20,10 @@ services:
     build:
       context: ./backend
     env_file:
-      - .env.example
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://geohazard:geohazard@postgres:5432/geohazard
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
@@ -32,7 +35,10 @@ services:
       context: ./backend
     command: ["python", "-m", "ingestion.scheduler"]
     env_file:
-      - .env.example
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://geohazard:geohazard@postgres:5432/geohazard
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       - postgres
       - redis

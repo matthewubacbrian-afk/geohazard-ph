@@ -1,0 +1,22 @@
+.panel {
+  padding: var(--space-4);
+  overflow-y: auto;
+  min-height: 0;
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+.panel h2 { font-size: var(--text-lg); }
+.panel p { color: var(--text-muted); }
+.bulletin {
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border);
+}
+.bulletin h3 { margin-bottom: var(--space-2); }
+.bulletin a { color: var(--text); text-decoration: underline; }
+.panel button {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+}

@@ -35,6 +35,73 @@ py -3.11 --version
 
 ## First-Time Setup
 
+### Linux (Bash)
+
+Use Python 3.11 and separate virtual environments for the API and ML packages.
+Run these commands from the repository root. Keep an existing `.env` if you
+have already configured it:
+
+```bash
+test -f .env || cp .env.example .env
+python3.11 -m venv backend/.venv
+backend/.venv/bin/python -m pip install -e './backend[dev]'
+python3.11 -m venv ml/.venv
+ml/.venv/bin/python -m pip install -e './ml[dev]'
+(cd web && npm ci)
+python3.11 scripts/verify_structure.py
+```
+
+On Linux, Docker Engine with the Compose plugin can be used in place of Docker
+Desktop. If the daemon is stopped, start it with `sudo systemctl start docker`.
+Your user must have access to the Docker daemon to run the commands below.
+
+Start Postgres and Redis, wait for Postgres to accept connections, and apply
+the database migrations before starting the API:
+
+```bash
+docker compose up -d postgres redis
+docker compose exec postgres pg_isready -U geohazard -d geohazard
+(cd backend && .venv/bin/alembic upgrade head)
+```
+
+Run the API and web app in separate terminals:
+
+```bash
+# Terminal 1, from the repository root
+cd backend
+.venv/bin/uvicorn app.main:app --reload
+```
+
+```bash
+# Terminal 2, from the repository root
+cd web
+npm run dev
+```
+
+Open `http://localhost:5173` for the dashboard or `http://localhost:8000/docs`
+for the API documentation. To populate the earthquake feed, run
+`(cd backend && .venv/bin/python -m ingestion.scheduler)` from the repository
+root after applying migrations. This fetches live USGS data.
+
+For local sample risk profiles, set `RISK_PROFILE_EXPORT_PATH=tests/fixtures/risk_profiles.json`
+in the root `.env`; the path is relative to the backend working directory.
+Kaggle credentials are only needed when downloading training datasets.
+
+Verify the installation from the repository root:
+
+```bash
+# Create the separate integration-test database once.
+docker compose exec postgres createdb -U geohazard geohazard_test
+(cd backend && .venv/bin/pytest -v)
+(cd ml && .venv/bin/pytest -v)
+(cd web && npm test && npm run build)
+```
+
+The mobile starter is optional for dashboard development. Install its dependencies
+with `(cd mobile && npm ci)` when working on mobile.
+
+### Windows (PowerShell)
+
 Run these commands from the repository root:
 
 ```powershell
@@ -111,7 +178,8 @@ The web app usually runs at:
 http://localhost:5173
 ```
 
-If the frontend needs a different API URL, set this in `.env`:
+If the frontend needs a different API URL, set this in `web/.env.local`
+(Vite reads environment files from `web/`):
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api/v1
@@ -290,3 +358,21 @@ npm run build
 Set-Location ..
 python scripts\verify_structure.py
 ```
+
+## Epic 2: Realtime And Volcano Bulletins
+
+The dashboard connects to `/ws/events` and updates its map/list from committed
+`EventChange` messages. It reconnects automatically and reconciles through REST
+every 30 seconds. Source selection applies to both map and list.
+`GET /api/v1/subscribe` reports broker connectivity.
+
+The **Volcano bulletins** dashboard view uses `GET /api/v1/volcanoes`, showing
+PHIVOLCS alert levels, source links, observation/retrieval dates and stale-cache
+status. No Kaggle credentials are required.
+
+**Integration dependency:** Person A must wire `on_committed=publish` in the
+canonical ingestion path before regular ingests emit realtime messages. This
+Person B slice leaves `ingest.py` unchanged. Live PHIVOLCS fetching also requires
+a valid trusted TLS chain; this environment currently reports a certificate
+validation failure. See [the runbook](docs/runbook.md) for configuration,
+failure behavior, verification and the exact Person A handoff.

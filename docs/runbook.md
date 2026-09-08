@@ -54,3 +54,78 @@ Run from the repository root:
 ```bash
 python scripts/verify_structure.py
 ```
+
+## Epic 2 realtime channel (Person B)
+
+Start Redis and the API, then open the dashboard. `GET /api/v1/subscribe` checks
+broker connectivity; the dashboard shows LIVE only while its socket is open.
+The Nginx configuration forwards `/ws/` with WebSocket upgrade headers.
+Container API/worker Redis and database addresses use Compose service names.
+
+For a custom browser API host, set `VITE_API_BASE_URL` in `web/.env.local`.
+The WebSocket URL is derived from that API base using ws/wss and `/ws/events`.
+An explicit `VITE_WS_URL=wss://your-host/ws/events` override is also supported in
+that file. Restart Vite after environment edits.
+
+**Person A handoff:** this branch still has the Epic 1
+`ingest_usgs_events(session, events)`; Person B intentionally does not edit
+`app/services/ingest.py`. When Person A's canonical ingestion lands, the scheduler
+must pass the implemented callback:
+
+```python
+from app.schemas.event_change import EventChange
+from app.services.events_publisher import publish
+
+# Inside the scheduler, using Person A's generalized service:
+processed = ingest_events(session, events, on_committed=publish)
+```
+
+Person A must construct `EventChange` for every touched row, including demotions,
+after assigning canonical fields, and invoke the callback strictly after commit.
+Until that lands, normal ingestion does not emit pushes; the dashboard's
+30-second REST refresh continues to work. The publisher and Redis/WebSocket
+integration tests exercise the sealed messages without pretending to implement
+Person A's canonicalization.
+
+Redis pub/sub is best-effort, without durable replay. Lost publications recover
+through REST; never retry the database transaction because publishing failed.
+Each browser uses its own Redis subscription, closed on disconnect. Revisit shared
+fan-out if concurrent-client volume warrants it. Multi-process APIs each have
+independent subscriptions. No mobile push or managed subscriptions are introduced.
+
+Run backend tests with local PostGIS and Redis available. Realtime integration
+tests use a unique test channel so fixture events never enter the live dashboard.
+The source tests use saved HTML and never make external network calls.
+
+Backend CI provisions both PostGIS and a health-checked Redis service and sets
+`REDIS_URL` explicitly. If the realtime integration test fails while opening a
+WebSocket with code 1013, check Redis availability first: subscription happens
+before the handshake is accepted. Adding sleeps after publication cannot repair
+a failed connection. `TestClient`'s `receive_json()` waits for the next message
+and does not accept a `timeout` argument.
+
+## PHIVOLCS volcano bulletins
+
+Use the dashboard's **Volcano bulletins** view or `GET /api/v1/volcanoes`.
+The API refreshes on demand at most once every five minutes per process.
+Concurrent requests share one fetch. Failed refresh attempts are rate-limited
+to once per minute. Cached failures are labelled stale for at most one hour;
+older or missing data produces a retryable 503, never synthetic bulletin data.
+
+Settings in the root environment:
+
+| Variable | Default |
+| --- | --- |
+| `PHIVOLCS_VOLCANO_URL` | `https://wovodat.phivolcs.dost.gov.ph/bulletin/list-of-bulletin` |
+| `PHIVOLCS_VOLCANO_TIMEOUT_SECONDS` | 15 |
+| `PHIVOLCS_VOLCANO_CACHE_SECONDS` | 300 |
+| `PHIVOLCS_VOLCANO_STALE_SECONDS` | 3600 |
+
+A TLS/network failure raises `PhivolcsFetchError`; changed/invalid HTML raises
+`PhivolcsParseError`. Both are logged by class without secret-bearing exception
+text. Diagnose the source outside the request path. If the network uses a private
+CA, configure a trusted CA bundle through Requests' `REQUESTS_CA_BUNDLE`; do not
+disable TLS verification. During implementation on 2026-09-08 the live host failed
+certificate-chain validation in this environment. Fixture parsing and endpoint
+behavior were verified; a verified live fetch must be retried once trust/source
+certificate configuration is corrected.

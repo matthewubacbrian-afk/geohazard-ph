@@ -148,3 +148,34 @@ Tracked as backlog items in `docs/superpowers/plans/2026-08-29-standards-gap-rem
 - `GET /api/v1/risk-profile/clusters` and `/risk-profile/{region_name}` omit `response_model`.
 - Mobile types (`mobile/src/types/hazard.ts`) are camelCase with no mapping layer yet; mobile does not currently consume the API.
 - `GET /api/v1/events/summary` accepts bare bbox query params without `min_`/`max_` prefixes; keep this shape unless the endpoint is versioned again.
+## Epic 2 Person B endpoints
+
+- `WS /ws/events` is **unversioned**, as sealed in ADR 0002. It is not
+  `/api/v1/ws/events`. Each text frame is one `EventChange`, with UUID `id` and
+  `canonical_id`, boolean `is_primary`, and the exact remaining fields in the ADR.
+  Subscription is acknowledged by Redis before the WebSocket handshake completes.
+  Non-primary messages retract the corresponding source row. There is no replay.
+- Browser origins must match `CORS_ORIGINS`; non-browser clients may omit Origin.
+  Redis failures close the stream with 1013; slow sends time out after five seconds.
+  Clients reconnect and reconcile through REST. Server WebSocket protocol
+  ping/pong handles idle connections; no application heartbeat frames are added.
+- `GET /api/v1/subscribe` returns HTTP 200 with
+  `{"status":"ok","channel":"events:updates","endpoint":"/ws/events"}` when Redis
+  responds, or `status: "unavailable"` otherwise. This reports broker connectivity,
+  not producer readiness or the existence of ingested data.
+- `GET /api/v1/volcanoes` returns a bounded bare array of `Volcano` objects:
+  `id`, `name`, nullable `latitude`/`longitude`, nullable integer
+  `current_alert_level` (0–5), `source: "phivolcs"`, nullable `source_url`,
+  `bulletin_url`, `bulletin_at`, `retrieved_at`, and boolean `stale`.
+  Coordinates are nullable because this source does not supply them; this widens
+  the former stub schema. Consumers must not place missing locations at (0, 0).
+  The timestamp is the bulletin observation heading, not alert issuance.
+- A cold or expired volcano cache with an unavailable/malformed source returns
+  HTTP 503 with `error.code: "volcano_feed_unavailable"` in the standard envelope.
+  A refresh failure can return cached rows with `stale: true`, unchanged
+  `retrieved_at`, and a maximum default age of one hour.
+
+The browser maintains one unfiltered events cache and applies source selection
+locally to both map and list. It refetches on every connection and every 30 seconds
+to recover missed or failed Redis publications. Person A still owns REST source
+filters, canonical persistence, primary-only REST defaults, and ingest wiring.

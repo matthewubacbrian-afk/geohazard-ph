@@ -7,8 +7,13 @@ import DashboardSidebar, {
 import TopNav from '../components/layout/TopNav';
 import EventFeed from '../components/events/EventFeed';
 import RiskProfilesPanel from '../components/risk/RiskProfilesPanel';
+import type { HazardEvent } from '../types/hazard';
 import type { View } from '../types/views';
 import type { BasemapId } from '../components/map/basemaps';
+import VolcanoPanel from '../components/volcanoes/VolcanoPanel';
+import EventFilterBar from '../components/events/EventFilterBar';
+import RealtimeStatus from '../components/dashboard/RealtimeStatus';
+import { useRealtimeAlerts } from '../hooks/useRealtimeAlerts';
 import { useEvents } from '../hooks/useEvents';
 
 const navItems = [
@@ -26,7 +31,10 @@ type DashboardProps = {
 };
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
-  const { data: events = [], isLoading, error, refetch } = useEvents();
+  const [source, setSource] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState<HazardEvent | null>(null);
+  const realtime = useRealtimeAlerts();
+  const { data: events = [], isLoading, error, refetch } = useEvents(source);
 
   const [basemap, setBasemap] = useState<BasemapId>('streets');
   const [activeView, setActiveView] = useState<DashboardView>('map');
@@ -79,15 +87,19 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           error={error as Error | null}
           onRetry={() => refetch()}
           basemap={basemap}
+          selectedEvent={selectedEvent}
         />
 
         <section className={styles.sidePanel} aria-label="Activity panel">
-          {showRisk ? <RiskProfilesPanel /> : (
+          <RealtimeStatus {...realtime} />
+          <EventFilterBar source={source} onChange={setSource} />
+          {activeView === 'volcanoes' ? <VolcanoPanel /> : showRisk ? <RiskProfilesPanel /> : (
             <EventFeed
               events={events}
               isLoading={isLoading}
               error={error as Error | null}
               onRetry={() => refetch()}
+              onSelectEvent={(event) => setSelectedEvent({ ...event })}
             />
           )}
         </section>

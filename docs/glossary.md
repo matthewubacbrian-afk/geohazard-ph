@@ -107,3 +107,16 @@ When a spec or plan introduces a new concept:
 1. Add the term here with the exact field/type name it will use.
 2. Use that name in the schema/model/type from the first commit.
 3. Reference the glossary in the spec (`Related documents`).
+## Epic 2 realtime and volcano feed
+
+| Term | Canonical field / meaning |
+| --- | --- |
+| EventChange | Committed source-row push schema in `app/schemas/event_change.py`; ADR 0002 defines its fields. |
+| canonical_id / is_primary | Resolved earthquake group UUID / display-primary flag, assigned inside Person A's ingest transaction. Neither the publisher nor the browser invents these values. |
+| events publisher | `app/services/events_publisher.py::publish`, the best-effort `on_committed` callback publishing individual JSON messages to Redis `events:updates`. |
+| realtime connection | Browser connection to `/ws/events`; LIVE indicates transport connectivity, not ingest-worker health or an official warning. |
+| current_alert_level | PHIVOLCS-published volcano alert integer 0–5; zero is a valid reported level, never a default for missing data. |
+| source_url / bulletin_url | Official listing URL / latest linked English bulletin URL. |
+| bulletin_at | Observation timestamp printed in the listing's English bulletin heading, converted from Asia/Manila to UTC; not the time the alert level changed. |
+| retrieved_at | UTC time of a successful source fetch, retained when serving cached results. |
+| stale | Cached volcano data returned after a failed refresh; bounded by the configured maximum cache age. |
