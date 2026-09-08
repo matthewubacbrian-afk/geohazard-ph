@@ -43,6 +43,11 @@ Standard verbs:
 
 Prefer read-only endpoints for imported public hazard data until persistence and authority rules exist. Only add mutating endpoints when the data lifecycle is clear.
 
+The events collection accepts optional `since`, `source`, and `include_duplicates` query
+parameters. By default it returns only rows where `is_primary=true`; set
+`include_duplicates=true` to inspect all source rows. The events summary accepts the bbox
+parameters plus optional `source` and counts canonical events through their primary rows.
+
 ## 2. Response Shapes
 
 Success responses are **not** wrapped in an envelope. Return the typed payload directly:

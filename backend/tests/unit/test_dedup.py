@@ -42,3 +42,26 @@ def test_dedup_key_with_external_id_uses_source_and_external_id():
         occurred_at=datetime(2026, 8, 27, tzinfo=UTC),
     )
     assert dedup_key(event) == ("usgs", "usgs-1")
+
+
+def test_hazard_event_model_has_canonical_identity_columns():
+    from app.models import HazardEvent as HazardEventORM
+
+    row = HazardEventORM(
+        hazard_type="earthquake",
+        source="usgs",
+        external_id="evt-1",
+        magnitude=5.4,
+        latitude=14.5,
+        longitude=121.0,
+        place_name="Sample",
+        location="SRID=4326;POINT(121 14.5)",
+        occurred_at=datetime(2026, 8, 27, tzinfo=UTC),
+        canonical_id=None,
+        is_primary=True,
+        match_confidence=0.95,
+    )
+
+    assert row.canonical_id is None
+    assert row.is_primary is True
+    assert row.match_confidence == 0.95

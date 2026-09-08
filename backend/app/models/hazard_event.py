@@ -3,6 +3,7 @@ from datetime import datetime
 
 from geoalchemy2 import Geography
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     Float,
@@ -30,12 +31,16 @@ class HazardEvent(Base):
         ),
         Index("idx_hazard_events_occurred_at", "occurred_at"),
         Index("idx_hazard_events_geo", "location"),
+        Index("idx_hazard_events_canonical", "canonical_id", "is_primary"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     hazard_type: Mapped[str] = mapped_column(Text)
     source: Mapped[str] = mapped_column(Text)
     external_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    canonical_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    is_primary: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))
+    match_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
     magnitude: Mapped[float | None] = mapped_column(Numeric, nullable=True)
     depth_km: Mapped[float | None] = mapped_column(Numeric, nullable=True)
     latitude: Mapped[float] = mapped_column(Float)

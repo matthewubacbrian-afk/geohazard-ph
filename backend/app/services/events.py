@@ -7,10 +7,19 @@ from app.models import HazardEvent as HazardEventORM
 from app.schemas.hazard_event import EventSummary, HazardEvent
 
 
-def list_events(session: Session, since: datetime | None = None) -> list[HazardEvent]:
+def list_events(
+    session: Session,
+    since: datetime | None = None,
+    source: str | None = None,
+    include_duplicates: bool = False,
+) -> list[HazardEvent]:
     stmt = select(HazardEventORM).order_by(HazardEventORM.occurred_at.desc())
+    if not include_duplicates:
+        stmt = stmt.where(HazardEventORM.is_primary.is_(True))
     if since is not None:
         stmt = stmt.where(HazardEventORM.occurred_at >= since)
+    if source is not None:
+        stmt = stmt.where(HazardEventORM.source == source)
     rows = session.execute(stmt).scalars().all()
     return [_to_schema(row) for row in rows]
 
@@ -22,16 +31,22 @@ def summarize_events(
     east: float,
     north: float,
     region_name: str | None = None,
+    source: str | None = None,
 ) -> EventSummary:
     stmt = select(
-        func.count(HazardEventORM.id).label("count"),
+        func.count(
+            func.distinct(func.coalesce(HazardEventORM.canonical_id, HazardEventORM.id))
+        ).label("count"),
         func.avg(HazardEventORM.magnitude).label("avg_mag"),
         func.max(HazardEventORM.magnitude).label("max_mag"),
         func.max(HazardEventORM.occurred_at).label("latest"),
     ).where(
         HazardEventORM.latitude.between(south, north),
         HazardEventORM.longitude.between(west, east),
+        HazardEventORM.is_primary.is_(True),
     )
+    if source is not None:
+        stmt = stmt.where(HazardEventORM.source == source)
     row = session.execute(stmt).one()
     return EventSummary(
         region_name=region_name,
@@ -48,6 +63,9 @@ def _to_schema(row: HazardEventORM) -> HazardEvent:
         hazard_type=row.hazard_type,
         source=row.source,
         external_id=row.external_id,
+        canonical_id=str(row.canonical_id) if row.canonical_id is not None else None,
+        is_primary=row.is_primary,
+        match_confidence=float(row.match_confidence) if row.match_confidence is not None else None,
         magnitude=float(row.magnitude) if row.magnitude is not None else None,
         depth_km=float(row.depth_km) if row.depth_km is not None else None,
         latitude=row.latitude,

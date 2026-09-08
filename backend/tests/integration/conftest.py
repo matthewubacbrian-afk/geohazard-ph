@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db_session
@@ -18,8 +19,23 @@ BASE_URL = os.environ.get(
 )
 
 
+def _ensure_test_database() -> None:
+    db_url = make_url(BASE_URL)
+    admin_url = db_url.set(database="postgres")
+    admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
+    with admin_engine.connect() as conn:
+        exists = conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = :database_name"),
+            {"database_name": db_url.database},
+        ).scalar()
+        if exists is None:
+            conn.execute(text(f'CREATE DATABASE "{db_url.database}"'))
+    admin_engine.dispose()
+
+
 @pytest.fixture(scope="session")
 def migrated_engine():
+    _ensure_test_database()
     admin_engine = create_engine(BASE_URL)
     with admin_engine.connect() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
