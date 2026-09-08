@@ -29,8 +29,15 @@ def ingest_events(session: Session, events: list[HazardEvent], on_committed=None
             _update_row(row, event)
         touched.add(row)
 
-    match_and_link(session)
     session.flush()
+    before_canonical_state = {
+        row.id: (row.canonical_id, row.is_primary)
+        for row in session.execute(select(HazardEventORM)).scalars().all()
+    }
+    match_and_link(session)
+    for row in session.execute(select(HazardEventORM)).scalars().all():
+        if before_canonical_state.get(row.id) != (row.canonical_id, row.is_primary):
+            touched.add(row)
     session.commit()
 
     if on_committed is not None:

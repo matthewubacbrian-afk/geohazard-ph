@@ -47,6 +47,11 @@ Related contracts:
 | latitude / longitude | `latitude`, `longitude` | Decimal degrees, North/East positive. GeoJSON coordinates arrays are `[longitude, latitude]`. |
 | location | `location` (model column) | PostGIS `Geography(Point, 4326)` kept in sync with `latitude`/`longitude` for spatial queries. |
 | raw_payload | `raw_payload` | The original source payload for the record, preserved for auditability. |
+| canonical_id | `canonical_id` | Shared identity UUID linking source rows that represent the same observed event. |
+| is_primary | `is_primary` | Display-authority flag; exactly one row in a canonical group should be primary. |
+| match_confidence | `match_confidence` | Numeric confidence assigned when cross-source rows are canonicalized. |
+| EventChange | `EventChange` | Post-commit event-change payload used by realtime consumers. |
+| match_and_link | `match_and_link` | Synchronous ingest operation that matches cross-source rows into canonical groups. |
 | event density | `event_density` | Coordinate-spread density proxy; not events per km² until authoritative boundaries exist. |
 
 ## 3. Risk Profiling Concepts

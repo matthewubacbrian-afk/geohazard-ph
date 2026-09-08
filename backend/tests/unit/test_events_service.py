@@ -55,6 +55,9 @@ def _row(external_id="live-1"):
         place_name="Seeded, Philippines",
         occurred_at=datetime(2026, 8, 28, tzinfo=UTC),
         alert_level=None,
+        canonical_id=None,
+        is_primary=True,
+        match_confidence=None,
     )
 
 
@@ -81,15 +84,35 @@ def test_list_events_queries_newest_first_with_optional_since_filter():
     list_events(session, since=since)
 
     statement = str(session.statement)
-    assert "WHERE hazard_events.occurred_at >=" in statement
+    assert "hazard_events.occurred_at >=" in statement
     assert "ORDER BY hazard_events.occurred_at DESC" in statement
+
+
+def test_list_events_defaults_to_primary_rows_and_supports_source_filter():
+    session = FakeSession([])
+
+    list_events(session, source="phivolcs")
+
+    statement = str(session.statement)
+    assert "hazard_events.is_primary IS true" in statement
+    assert "hazard_events.source = :source_1" in statement
+
+
+def test_list_events_can_include_duplicate_rows():
+    session = FakeSession([])
+
+    list_events(session, include_duplicates=True)
+
+    assert "hazard_events.is_primary IS true" not in str(session.statement)
 
 
 def test_summarize_events_aggregates_magnitudes_and_count():
     rows = [_row("e1"), _row("e2")]
     rows[1].magnitude = Decimal("5.8")
     rows[1].occurred_at = datetime(2026, 8, 29, tzinfo=UTC)
-    summary = summarize_events(FakeSession(rows), 116.0, 4.0, 128.0, 22.0, region_name="Test Region")
+    summary = summarize_events(
+        FakeSession(rows), 116.0, 4.0, 128.0, 22.0, region_name="Test Region"
+    )
     assert summary.region_name == "Test Region"
     assert summary.event_count == 2
     assert summary.avg_magnitude == 5.0

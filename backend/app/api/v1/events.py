@@ -14,9 +14,16 @@ router = APIRouter(prefix="/events", tags=["events"])
 @router.get("", response_model=list[HazardEvent])
 def get_events(
     since: datetime | None = Query(default=None, description="Return events at/after this time"),
+    source: str | None = Query(default=None),
+    include_duplicates: bool = Query(default=False),
     db: Session = Depends(get_db_session),
 ) -> list[HazardEvent]:
-    return list_events(db, since=since)
+    return list_events(
+        db,
+        since=since,
+        source=source,
+        include_duplicates=include_duplicates,
+    )
 
 
 @router.get("/summary", response_model=EventSummary)
@@ -26,6 +33,7 @@ def get_events_summary(
     east: float | None = Query(default=None),
     north: float | None = Query(default=None),
     region_name: str | None = Query(default=None),
+    source: str | None = Query(default=None),
     db: Session = Depends(get_db_session),
 ) -> EventSummary:
     west_default, south_default, east_default, north_default = get_settings().ph_bbox
@@ -36,4 +44,5 @@ def get_events_summary(
         east if east is not None else east_default,
         north if north is not None else north_default,
         region_name=region_name,
+        source=source,
     )
