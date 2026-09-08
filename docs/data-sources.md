@@ -34,3 +34,22 @@ Access requires a Kaggle account and API key (`KAGGLE_USERNAME` and `KAGGLE_KEY`
 ## Attribution
 
 Every client view that displays public hazard data should identify source and last-updated time. PHIVOLCS-derived scraped data should be labeled as unofficial aggregation and linked back to the source.
+
+### PHIVOLCS volcano listing adapter
+
+The Epic 2 adapter reads the [PHIVOLCS WOVODAT listing](https://wovodat.phivolcs.dost.gov.ph/bulletin/list-of-bulletin).
+It extracts the published alert ticker (`span.scroll-item`) and the English
+`/bulletin/activity-*` links/headings, selecting the latest observation per volcano.
+Alert ticker values are separate from bulletin observation times: a date is not
+evidence of when an alert level changed. Missing bulletin dates remain null.
+No coordinates are inferred from the volcano name, and no alert is inferred from
+seismic data. This is an unofficial aggregation linking back to PHIVOLCS.
+
+`backend/tests/fixtures/phivolcs_volcano.html` is a reduced structural excerpt
+captured on 2026-09-08, retaining the source's ticker and four English bulletin
+links. Navigation, scripts, images and unrelated content were removed.
+The local certificate-chain check failed during capture; the excerpt was inspected
+with verification bypassed solely for parser development. Runtime fetching always
+verifies TLS. The fixture is historical test input, never a fallback feed or a
+claim about current alert status. Levels, source links and Manila-to-UTC conversion
+are covered by deterministic tests.

@@ -656,6 +656,10 @@ Suggested PR description:
 
 Follow `README.md` for complete setup. Keep this quick reference aligned with README changes.
 
+Linux users should follow the README's **Linux (Bash)** setup, which uses separate
+`backend/.venv` and `ml/.venv` environments and applies database migrations before
+starting the API. The commands below use PowerShell.
+
 First-time setup:
 
 ```powershell

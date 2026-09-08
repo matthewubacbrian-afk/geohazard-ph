@@ -6,5 +6,6 @@ export function useEventSummary() {
   return useQuery({
     queryKey: ['event-summary'],
     queryFn: () => fetchEventSummary(),
+    refetchInterval: 30000,
   });
 }
