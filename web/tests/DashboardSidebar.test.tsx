@@ -23,6 +23,12 @@ function renderSidebar(
       onToggleLayer={overrides.onToggleLayer ?? vi.fn()}
       activeRiskLevels={['high', 'medium', 'low']}
       onToggleRiskLevel={vi.fn()}
+      startDate=""
+      endDate=""
+      onStartDateChange={vi.fn()}
+      onEndDateChange={vi.fn()}
+      minMagnitude={1}
+      onMinMagnitudeChange={vi.fn()}
     />,
   );
 }

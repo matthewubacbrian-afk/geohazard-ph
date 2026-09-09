@@ -2,8 +2,22 @@ import type { EventSummary, HazardEvent, RiskProfile } from '../types/hazard';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1';
 
-export async function fetchEvents(signal?: AbortSignal): Promise<HazardEvent[]> {
-  const response = await fetch(`${API_BASE_URL}/events`, { signal });
+export type EventQueryParams = {
+  since?: string;
+  source?: string;
+};
+
+export async function fetchEvents(
+  params?: EventQueryParams,
+  signal?: AbortSignal,
+): Promise<HazardEvent[]> {
+  const query = new URLSearchParams();
+  if (params?.since) query.set('since', params.since);
+  if (params?.source) query.set('source', params.source);
+  const queryString = query.toString();
+  const response = await fetch(`${API_BASE_URL}/events${queryString ? `?${queryString}` : ''}`, {
+    signal,
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch events');
   }

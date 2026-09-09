@@ -15,6 +15,7 @@ import EventFilterBar from '../components/events/EventFilterBar';
 import RealtimeStatus from '../components/dashboard/RealtimeStatus';
 import { useRealtimeAlerts } from '../hooks/useRealtimeAlerts';
 import { useEvents } from '../hooks/useEvents';
+import { eventRiskBucket } from '../lib/risk';
 
 const navItems = [
   'Dashboard',
@@ -28,13 +29,22 @@ type RiskLevelKey = 'high' | 'medium' | 'low';
 
 type DashboardProps = {
   onNavigate?: (view: View) => void;
+  onSettings?: () => void;
 };
 
-export default function Dashboard({ onNavigate }: DashboardProps) {
+export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
   const [source, setSource] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [minMagnitude, setMinMagnitude] = useState(1);
   const [selectedEvent, setSelectedEvent] = useState<HazardEvent | null>(null);
   const realtime = useRealtimeAlerts();
-  const { data: events = [], isLoading, error, refetch } = useEvents(source);
+  const { data: events = [], isLoading, error, refetch } = useEvents({
+    source,
+    since: startDate ? `${startDate}T00:00:00Z` : undefined,
+    until: endDate ? `${endDate}T23:59:59.999Z` : undefined,
+    minMagnitude,
+  });
 
   const [basemap, setBasemap] = useState<BasemapId>('streets');
   const [activeView, setActiveView] = useState<DashboardView>('map');
@@ -59,6 +69,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   }
 
   const showRisk = activeView === 'risk';
+  const visibleEvents = events.filter((event) => {
+    if (!activeLayers.events) return false;
+    const bucket = eventRiskBucket(event.alert_level);
+    const riskLevel = bucket === 'critical' ? 'high' : bucket === 'elevated' ? 'medium' : 'low';
+    return activeRiskLevels.includes(riskLevel);
+  });
 
   return (
     <div className={styles.page}>
@@ -67,6 +83,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         activeItem="Dashboard"
         theme="dashboard"
         onNavigate={onNavigate}
+        onSettings={onSettings}
       />
 
       <div className={styles.main}>
@@ -79,15 +96,24 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           onToggleLayer={toggleLayer}
           activeRiskLevels={activeRiskLevels}
           onToggleRiskLevel={toggleRiskLevel}
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          minMagnitude={minMagnitude}
+          onMinMagnitudeChange={setMinMagnitude}
         />
 
         <DashboardMapArea
-          events={events}
+          events={visibleEvents}
           isLoading={isLoading}
           error={error as Error | null}
           onRetry={() => refetch()}
           basemap={basemap}
           selectedEvent={selectedEvent}
+          showEvents={activeLayers.events}
+          showRiskLayer={activeLayers.risk}
+          onViewDetailedReport={() => setActiveView('risk')}
         />
 
         <section className={styles.sidePanel} aria-label="Activity panel">
@@ -95,7 +121,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           <EventFilterBar source={source} onChange={setSource} />
           {activeView === 'volcanoes' ? <VolcanoPanel /> : showRisk ? <RiskProfilesPanel /> : (
             <EventFeed
-              events={events}
+              events={visibleEvents}
               isLoading={isLoading}
               error={error as Error | null}
               onRetry={() => refetch()}

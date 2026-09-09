@@ -7,6 +7,7 @@ import type { View } from "../types/views";
 
 type HeroProps = {
   onNavigate?: (view: View) => void;
+  onSettings?: () => void;
 };
 
 const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Contact"];
@@ -34,13 +35,14 @@ const steps = [
   },
 ];
 
-export default function Hero({ onNavigate }: HeroProps) {
+export default function Hero({ onNavigate, onSettings }: HeroProps) {
   return (
     <main className={styles.page}>
       <TopNav
         items={navItems}
         activeItem="How It Works"
         onNavigate={onNavigate}
+        onSettings={onSettings}
         theme="hero"
       />
 
@@ -147,12 +149,19 @@ export default function Hero({ onNavigate }: HeroProps) {
 
           <div className={styles.footerLinks}>
             {[
-              "About Project",
-              "Data Credits",
-              "Privacy Policy",
-              "Contact Support",
-            ].map((item) => (
-              <a key={item} href="#">
+              ["About Project", "about"],
+              ["Data Credits", "data-sources"],
+              ["Privacy Policy", "about"],
+              ["Contact Support", "mailto:support@geohazard.ph"],
+            ].map(([item, target]) => (
+              <a
+                key={item}
+                href={target.startsWith("mailto:") ? target : "#"}
+                onClick={target.startsWith("mailto:") ? undefined : (event) => {
+                  event.preventDefault();
+                  onNavigate?.(target as View);
+                }}
+              >
                 {item}
               </a>
             ))}

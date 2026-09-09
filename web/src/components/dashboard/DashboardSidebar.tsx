@@ -42,6 +42,12 @@ type DashboardSidebarProps = {
   onToggleLayer: (key: string) => void;
   activeRiskLevels: RiskLevelKey[];
   onToggleRiskLevel: (level: RiskLevelKey) => void;
+  startDate: string;
+  endDate: string;
+  onStartDateChange: (date: string) => void;
+  onEndDateChange: (date: string) => void;
+  minMagnitude: number;
+  onMinMagnitudeChange: (magnitude: number) => void;
 };
 
 export default function DashboardSidebar({
@@ -53,6 +59,12 @@ export default function DashboardSidebar({
   onToggleLayer,
   activeRiskLevels,
   onToggleRiskLevel,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+  minMagnitude,
+  onMinMagnitudeChange,
 }: DashboardSidebarProps) {
   const [layersOpen, setLayersOpen] = useState(false);
 
@@ -177,22 +189,35 @@ export default function DashboardSidebar({
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>Date range</h3>
           <div className={styles.dateGrid}>
-            <input type="date" defaultValue="2023-01-01" className={styles.input} />
-            <input type="date" defaultValue="2024-01-01" className={styles.input} />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(event) => onStartDateChange(event.target.value)}
+              className={styles.input}
+              aria-label="Start date"
+            />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(event) => onEndDateChange(event.target.value)}
+              className={styles.input}
+              aria-label="End date"
+            />
           </div>
         </div>
 
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>
             <span>Magnitude</span>
-            <span className={styles.sectionValue}>4.0 - 9.0</span>
+            <span className={styles.sectionValue}>{minMagnitude.toFixed(1)} - 9.0</span>
           </h3>
           <input
             type="range"
             min="1"
             max="9"
             step="0.1"
-            defaultValue={4}
+            value={minMagnitude}
+            onChange={(event) => onMinMagnitudeChange(Number(event.target.value))}
             className={styles.range}
           />
           <div className={styles.scale}>
