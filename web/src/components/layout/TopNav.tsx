@@ -5,6 +5,7 @@ type TopNavProps = {
   items: string[];
   activeItem?: string;
   onNavigate?: (view: View) => void;
+  onSettings?: () => void;
   theme?: "hero" | "dashboard";
 };
 
@@ -22,6 +23,7 @@ export default function TopNav({
   items,
   activeItem,
   onNavigate,
+  onSettings,
   theme = "hero",
 }: TopNavProps) {
   const isDashboardTheme = theme === "dashboard";
@@ -55,7 +57,12 @@ export default function TopNav({
                   {item}
                 </button>
               ) : (
-                <a href="#" className={linkClassName} aria-current={isActive ? "page" : undefined}>
+                <a
+                  href={item === "Contact" ? "mailto:support@geohazard.ph" : "#"}
+                  className={linkClassName}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={item === "Contact" ? undefined : (event) => event.preventDefault()}
+                >
                   {item}
                 </a>
               )}
@@ -64,7 +71,7 @@ export default function TopNav({
         })}
       </ul>
 
-      <button type="button" className={styles.settingsBtn}>
+      <button type="button" className={styles.settingsBtn} onClick={onSettings}>
         Settings
       </button>
     </nav>

@@ -9,6 +9,7 @@ type MapViewProps = {
   events: HazardEvent[];
   basemap?: BasemapId;
   selectedEvent?: HazardEvent | null;
+  showEvents?: boolean;
 };
 
 const PH_CENTER: [number, number] = [121.774, 12.8797]; // Philippines
@@ -43,7 +44,12 @@ function toFeatureCollection(events: HazardEvent[]) {
   };
 }
 
-export default function MapView({ events, basemap = 'streets', selectedEvent }: MapViewProps) {
+export default function MapView({
+  events,
+  basemap = 'streets',
+  selectedEvent,
+  showEvents = true,
+}: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const appliedBasemap = useRef(basemap);
@@ -95,6 +101,8 @@ export default function MapView({ events, basemap = 'streets', selectedEvent }: 
         'circle-opacity': 0.9,
       },
     });
+
+    map.setLayoutProperty('event-circles', 'visibility', showEvents ? 'visible' : 'none');
 
     if (map.getLayer('label_country')) {
       map.setLayoutProperty('label_country', 'text-field', [
@@ -151,6 +159,12 @@ export default function MapView({ events, basemap = 'streets', selectedEvent }: 
     if (!source) return;
     source.setData(toFeatureCollection(events));
   }, [events]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.getLayer('event-circles')) return;
+    map.setLayoutProperty('event-circles', 'visibility', showEvents ? 'visible' : 'none');
+  }, [showEvents]);
 
   useEffect(() => {
     const map = mapRef.current;

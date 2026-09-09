@@ -6,12 +6,13 @@ const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Contact
 
 type AboutProps = {
   onNavigate?: (view: View) => void;
+  onSettings?: () => void;
 };
 
-export default function About({ onNavigate }: AboutProps) {
+export default function About({ onNavigate, onSettings }: AboutProps) {
   return (
     <main>
-      <TopNav items={navItems} activeItem="About" onNavigate={onNavigate} />
+      <TopNav items={navItems} activeItem="About" onNavigate={onNavigate} onSettings={onSettings} />
       <ComingSoon
         title="About GeoHazard"
         description="GeoHazard bridges complex geophysical data and pragmatic local governance for Philippine LGUs and disaster-response offices."

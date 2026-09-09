@@ -6,12 +6,13 @@ const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Contact
 
 type DataSourcesProps = {
   onNavigate?: (view: View) => void;
+  onSettings?: () => void;
 };
 
-export default function DataSources({ onNavigate }: DataSourcesProps) {
+export default function DataSources({ onNavigate, onSettings }: DataSourcesProps) {
   return (
     <main>
-      <TopNav items={navItems} activeItem="Data Sources" onNavigate={onNavigate} />
+      <TopNav items={navItems} activeItem="Data Sources" onNavigate={onNavigate} onSettings={onSettings} />
       <ComingSoon
         title="Data Sources"
         description="Seismic and geologic records aggregated from trusted public sources."
