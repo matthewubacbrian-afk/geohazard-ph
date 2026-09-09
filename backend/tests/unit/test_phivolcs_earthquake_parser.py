@@ -22,7 +22,7 @@ class FakeResponse:
 
 
 def test_parse_bulletin_table_maps_all_earthquake_rows():
-    html = (FIXTURES / "phivolcs_earthquake_sample.html").read_text()
+    html = (FIXTURES / "phivolcs_earthquake_sample.html").read_text(encoding="utf-8")
 
     events = _parse_bulletin_table(html)
     event = events[0]
@@ -49,7 +49,7 @@ def test_fetch_recent_events_uses_configured_feed(monkeypatch):
     import requests
 
     captured: dict[str, object] = {}
-    html = (FIXTURES / "phivolcs_earthquake_sample.html").read_text()
+    html = (FIXTURES / "phivolcs_earthquake_sample.html").read_text(encoding="utf-8")
 
     def fake_get(url: str, **kwargs: object) -> FakeResponse:
         captured["url"] = url
