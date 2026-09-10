@@ -20,6 +20,10 @@
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
+.itemSelected:hover {
+  background: var(--cream-100);
+}
+
 .row {
   display: flex;
   align-items: center;
