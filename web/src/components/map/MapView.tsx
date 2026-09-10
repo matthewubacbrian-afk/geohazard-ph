@@ -190,7 +190,7 @@ export default function MapView({
       syncReferenceLayers(map);
       setupEventLayers(map);
     };
-    const overlayError = (event: maplibregl.ErrorEvent & { sourceId?: string }) => {
+    const overlayError = (event: { sourceId?: string; error?: unknown }) => {
       if (remoteOverlaysEnabled() && isVolcanoOverlay(event.sourceId)) {
         overlayFailed.current = true;
         overlayCallback.current?.('error');
