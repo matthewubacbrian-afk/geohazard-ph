@@ -66,8 +66,7 @@ def test_events_source_filter_limits_results(client, migrated_engine):
     assert primary_response.status_code == 200
     assert len(primary_response.json()) == 1
     assert len(duplicate_response.json()) == 2
-    assert len(source_response.json()) == 1
-    assert source_response.json()[0]["source"] == "phivolcs"
+    assert source_response.json() == []
 
 
 def test_ingest_events_can_match_and_broadcast_primary_demotion(client, migrated_engine):

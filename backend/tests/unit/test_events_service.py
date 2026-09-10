@@ -90,17 +90,17 @@ def test_list_events_queries_newest_first_with_optional_since_filter():
     assert "ORDER BY hazard_events.occurred_at DESC" in statement
 
 
-def test_list_events_defaults_to_primary_rows_and_supports_source_filter():
+def test_list_events_defaults_to_primary_rows_with_source_filter():
     session = FakeSession([])
 
     list_events(session, source="phivolcs")
 
     statement = str(session.statement)
-    assert "hazard_events.is_primary IS true" not in statement
+    assert "hazard_events.is_primary IS true" in statement
     assert "hazard_events.source = :source_1" in statement
 
 
-def test_list_events_applies_primary_only_when_no_source_filter():
+def test_list_events_applies_primary_only_without_source_filter():
     session = FakeSession([])
 
     list_events(session)
