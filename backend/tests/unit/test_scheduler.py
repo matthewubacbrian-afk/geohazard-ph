@@ -13,6 +13,7 @@ def test_scheduler_runs_usgs_and_phivolcs_ingest(monkeypatch):
         lambda settings: ["phivolcs", "phivolcs-2"],
     )
     ingested = []
+    callbacks = []
 
     class SessionContext:
         def __enter__(self):
@@ -22,12 +23,18 @@ def test_scheduler_runs_usgs_and_phivolcs_ingest(monkeypatch):
             return False
 
     monkeypatch.setattr(scheduler, "SessionLocal", lambda: SessionContext())
-    monkeypatch.setattr(
-        scheduler,
-        "ingest_events",
-        lambda session, events: ingested.append(events) or len(events),
-    )
+
+    def fake_ingest(session, events, on_committed=None):
+        ingested.append(events)
+        callbacks.append(on_committed)
+        if on_committed is not None:
+            on_committed(["published"])
+        return len(events)
+
+    monkeypatch.setattr(scheduler, "ingest_events", fake_ingest)
+    monkeypatch.setattr(scheduler, "publish", lambda changes: changes)
 
     assert scheduler.run_usgs_ingest() == (1, 1)
     assert scheduler.run_phivolcs_ingest() == (2, 2)
     assert ingested == [["usgs"], ["phivolcs", "phivolcs-2"]]
+    assert callbacks == [scheduler.publish, scheduler.publish]

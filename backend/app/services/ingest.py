@@ -2,7 +2,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import HazardEvent as HazardEventORM
-from app.schemas.hazard_event import EventChange, HazardEvent
+from app.schemas.event_change import EventChange
+from app.schemas.hazard_event import HazardEvent
 from app.services.dedup import dedup_key, match_and_link
 
 
@@ -78,14 +79,15 @@ def _update_row(row: HazardEventORM, event: HazardEvent) -> None:
 
 
 def _to_event_change(row: HazardEventORM) -> EventChange:
+    if row.canonical_id is None or row.is_primary is None:
+        raise ValueError("cannot emit EventChange for an unresolved row")
     return EventChange(
-        id=str(row.id),
+        id=row.id,
         hazard_type=row.hazard_type,
         source=row.source,
         external_id=row.external_id,
-        canonical_id=str(getattr(row, "canonical_id", None)) if getattr(row, "canonical_id", None) is not None else None,
-        is_primary=getattr(row, "is_primary", None),
-        match_confidence=float(row.match_confidence) if row.match_confidence is not None else None,
+        canonical_id=row.canonical_id,
+        is_primary=row.is_primary,
         latitude=row.latitude,
         longitude=row.longitude,
         magnitude=float(row.magnitude) if row.magnitude is not None else None,

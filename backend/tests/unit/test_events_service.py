@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 from types import SimpleNamespace
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from app.services.events import list_events, summarize_events
 
@@ -24,8 +24,9 @@ class FakeExecuteResult:
     def one(self):
         magnitudes = [float(row.magnitude) for row in self._rows if row.magnitude is not None]
         occurred_at = [row.occurred_at for row in self._rows if row.occurred_at is not None]
+        distinct_ids = {str(getattr(row, "canonical_id", None) or row.id) for row in self._rows}
         return SimpleNamespace(
-            count=len(self._rows),
+            count=len(distinct_ids),
             avg_mag=sum(magnitudes) / len(magnitudes) if magnitudes else None,
             max_mag=max(magnitudes) if magnitudes else None,
             latest=max(occurred_at) if occurred_at else None,
@@ -43,8 +44,9 @@ class FakeSession:
 
 
 def _row(external_id="live-1"):
+    row_id = UUID("12345678-1234-5678-1234-567812345678") if external_id is None else uuid4()
     return SimpleNamespace(
-        id=UUID("12345678-1234-5678-1234-567812345678"),
+        id=row_id,
         hazard_type="earthquake",
         source="usgs",
         external_id=external_id,
@@ -88,7 +90,7 @@ def test_list_events_queries_newest_first_with_optional_since_filter():
     assert "ORDER BY hazard_events.occurred_at DESC" in statement
 
 
-def test_list_events_defaults_to_primary_rows_and_supports_source_filter():
+def test_list_events_defaults_to_primary_rows_with_source_filter():
     session = FakeSession([])
 
     list_events(session, source="phivolcs")
@@ -96,6 +98,15 @@ def test_list_events_defaults_to_primary_rows_and_supports_source_filter():
     statement = str(session.statement)
     assert "hazard_events.is_primary IS true" in statement
     assert "hazard_events.source = :source_1" in statement
+
+
+def test_list_events_applies_primary_only_without_source_filter():
+    session = FakeSession([])
+
+    list_events(session)
+
+    statement = str(session.statement)
+    assert "hazard_events.is_primary IS true" in statement
 
 
 def test_list_events_can_include_duplicate_rows():
@@ -126,6 +137,13 @@ def test_summarize_events_returns_none_aggregates_when_no_rows():
     assert summary.avg_magnitude is None
     assert summary.max_magnitude is None
     assert summary.latest_occurred_at is None
+
+
+def test_summarize_events_counts_distinct_canonical_ids():
+    rows = [_row("e1"), _row("e2")]
+    rows[1].canonical_id = rows[0].canonical_id = rows[0].id
+    summary = summarize_events(FakeSession(rows), 116.0, 4.0, 128.0, 22.0)
+    assert summary.event_count == 1
 
 
 def test_summarize_events_rounds_average_to_two_decimals():
