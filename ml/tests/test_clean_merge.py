@@ -1,10 +1,10 @@
-from pathlib import Path
+from conftest import FIXTURES
 
 from ml.clean_merge import load_and_merge_sources, normalize_csv
 
 
 def test_normalize_csv_maps_phivolcs_headers():
-    rows, report = normalize_csv(Path("tests/fixtures/phivolcs_sample.csv"), source="phivolcs")
+    rows, report = normalize_csv((FIXTURES / "phivolcs_sample.csv"), source="phivolcs")
 
     assert report.accepted_rows == 2
     assert report.rejected_rows == 0
@@ -15,7 +15,7 @@ def test_normalize_csv_maps_phivolcs_headers():
 
 
 def test_normalize_csv_maps_usgs_headers():
-    rows, report = normalize_csv(Path("tests/fixtures/usgs_sample.csv"), source="usgs")
+    rows, report = normalize_csv((FIXTURES / "usgs_sample.csv"), source="usgs")
 
     assert report.accepted_rows == 2
     assert rows[0]["source_event_id"] == "usgs-001"
@@ -24,8 +24,8 @@ def test_normalize_csv_maps_usgs_headers():
 
 def test_load_and_merge_sources_deduplicates_overlapping_events():
     rows, reports = load_and_merge_sources(
-        phivolcs_paths=[Path("tests/fixtures/phivolcs_sample.csv")],
-        usgs_paths=[Path("tests/fixtures/usgs_sample.csv")],
+        phivolcs_paths=[(FIXTURES / "phivolcs_sample.csv")],
+        usgs_paths=[(FIXTURES / "usgs_sample.csv")],
     )
 
     assert len(rows) == 3

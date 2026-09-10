@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from 'react-dom/server';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import RiskProfileCard from '../src/components/risk/RiskProfileCard';
@@ -30,18 +30,18 @@ const profiles: RiskProfile[] = [
 
 describe('Risk profile components', () => {
   it('renders risk label confidence and feature drivers', () => {
-    const html = renderToStaticMarkup(<RiskProfileCard profile={profiles[0]} />);
+    render(<RiskProfileCard profile={profiles[0]} />);
 
-    expect(html).toContain('Bicol Region');
-    expect(html).toContain('High');
-    expect(html).toContain('82%');
-    expect(html).toContain('event_count');
+    expect(screen.getAllByText('Bicol Region', { exact: false }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('High', { exact: false }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('82%', { exact: false }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('event_count', { exact: false }).length).toBeGreaterThan(0);
   });
 
   it('filters region lookup by query', () => {
-    const html = renderToStaticMarkup(<RegionLookup profiles={profiles} query="pal" />);
+    render(<RegionLookup profiles={profiles} query="pal" />);
 
-    expect(html).toContain('Palawan');
-    expect(html).not.toContain('Bicol Region');
+    expect(screen.getAllByText('Palawan', { exact: false }).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Bicol Region', { exact: false })).not.toBeInTheDocument();
   });
 });

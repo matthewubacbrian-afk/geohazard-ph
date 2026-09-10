@@ -101,7 +101,7 @@ Risk labels are descriptive statistical profiles of historical records. They are
 | offline cache | `mobile/src/services/offlineCache.ts` — in-memory (currently) key-value store for mobile reads without network. |
 | risk profile explorer | `web/src/pages/RiskProfileExplorer.tsx` — dashboard panel for region lookup and profile cards. |
 | realtime alerts | Planned push channel; sources are not wired yet (`mobile/src/services/pushNotifications.ts` reports `not-configured`). |
-| static layers | Fault, volcano, landslide, and InSAR layers from labeled datasets (GEM, PHIVOLCS Fault Atlas); stretch work. |
+| static layers | Imported fault and volcano reference vectors (Epic 3); landslide and InSAR remain stretch work. |
 
 ---
 
@@ -125,3 +125,16 @@ When a spec or plan introduces a new concept:
 | bulletin_at | Observation timestamp printed in the listing's English bulletin heading, converted from Asia/Manila to UTC; not the time the alert level changed. |
 | retrieved_at | UTC time of a successful source fetch, retained when serving cached results. |
 | stale | Cached volcano data returned after a failed refresh; bounded by the configured maximum cache age. |
+
+## Epic 3 static reference layers
+
+- `FaultLine`: imported LineString/MultiLineString, served by `/faults`.
+- `VolcanoZone`: imported Polygon/MultiPolygon, served by `/volcano-zones`.
+- `external_id`: source feature identifier; content SHA-256 when no identifier exists.
+- `geometry`: validated WGS84 GeoJSON, coordinates `[longitude, latitude]`.
+- `source_url`, `license_name`, `dataset_version`: required import provenance.
+- `imported_at`: UTC import timestamp; not a source observation time.
+- `source_properties`: original source attributes retained without renaming.
+- PHIVOLCS volcano overlays: source-rendered base-surge, lava, pyroclastic-density-current
+  and lahar reference images used when local `VolcanoZone` vectors are absent.
+  These are remotely rendered hazard maps, not imported polygons or live alert levels.

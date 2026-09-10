@@ -2,13 +2,27 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.v1 import alerts, events, faults, hazards, realtime, risk_profile, subscribe, volcanoes
+from app.api.v1 import (
+    alerts,
+    events,
+    faults,
+    hazards,
+    realtime,
+    risk_profile,
+    subscribe,
+    volcano_zones,
+    volcanoes,
+)
 from app.config import get_settings
+from app.core.errors import register_error_handlers
+from app.core.logging import configure_logging
 from app.services.volcanoes import VolcanoFeedUnavailable
 
+configure_logging()
 settings = get_settings()
 
 app = FastAPI(title=settings.project_name, version="0.1.0")
+register_error_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,6 +35,7 @@ app.add_middleware(
 app.include_router(events.router, prefix="/api/v1")
 app.include_router(hazards.router, prefix="/api/v1")
 app.include_router(faults.router, prefix="/api/v1")
+app.include_router(volcano_zones.router, prefix="/api/v1")
 app.include_router(volcanoes.router, prefix="/api/v1")
 app.include_router(alerts.router, prefix="/api/v1")
 app.include_router(subscribe.router, prefix="/api/v1")

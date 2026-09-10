@@ -1,12 +1,14 @@
 import re
 from datetime import UTC, datetime
+from urllib.error import URLError
 from urllib.parse import urljoin, urlparse
+from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
-import requests
 from bs4 import BeautifulSoup
 
 from app.config import Settings, get_settings
+from app.core.phivolcs_tls import bulletin_ssl_context
 from app.schemas.volcano import Volcano
 
 
@@ -71,15 +73,19 @@ def parse_volcano_bulletins(html: str, source_url: str, retrieved_at: datetime) 
 
 def fetch_volcano_bulletins(settings: Settings) -> list[Volcano]:
     try:
-        response = requests.get(
+        request = Request(
             settings.phivolcs_volcano_url,
-            timeout=settings.phivolcs_volcano_timeout_seconds,
             headers={"User-Agent": "GeoHazardPH/0.1 (public bulletin reader)"},
         )
-        response.raise_for_status()
-    except requests.RequestException as exc:
+        with urlopen(
+            request,
+            timeout=settings.phivolcs_volcano_timeout_seconds,
+            context=bulletin_ssl_context(),
+        ) as response:
+            html = response.read().decode("utf-8")
+    except (URLError, OSError, UnicodeError) as exc:
         raise PhivolcsFetchError("PHIVOLCS volcano source unavailable") from exc
-    return parse_volcano_bulletins(response.text, settings.phivolcs_volcano_url, datetime.now(UTC))
+    return parse_volcano_bulletins(html, settings.phivolcs_volcano_url, datetime.now(UTC))
 
 
 def fetch_latest_volcano_bulletins() -> list[Volcano]:

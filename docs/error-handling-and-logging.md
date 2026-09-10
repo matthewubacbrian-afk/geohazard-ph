@@ -164,8 +164,4 @@ Route-level `HTTPException` uses the envelope when rendered through a handler or
 
 Tracked as backlog items in `docs/superpowers/plans/2026-08-29-standards-gap-remediation.md`. New code must conform to the contract above.
 
-- Backend: no global exception handler or error envelope registered yet; validation errors return FastAPI's default shape.
-- Backend: no structured logging wired; `app/core/logging.py::configure_logging` is unused.
-- Backend: `ingestion/scheduler.py` uses `print()` for its completion summary.
-- Web: API client throws generic `Error("Failed to fetch <resource>")` with no status or typed code.
-- Mobile: `services/` have no error handling at all; the API base URL is hardcoded.
+The previously listed remediation gaps have been addressed on `epic3`.

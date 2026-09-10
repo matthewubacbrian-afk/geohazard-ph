@@ -72,10 +72,10 @@ describe('DashboardSidebar layers', () => {
     expect(onToggleLayer).toHaveBeenCalledWith('events');
   });
 
-  it('disables unavailable layers', () => {
+  it('enables imported reference layer controls', () => {
     renderSidebar();
 
     const faults = screen.getByLabelText(/fault lines/i) as HTMLInputElement;
-    expect(faults.disabled).toBe(true);
+    expect(faults.disabled).toBe(false);
   });
 });

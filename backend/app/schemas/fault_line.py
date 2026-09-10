@@ -1,8 +1,5 @@
-from pydantic import BaseModel
+from app.schemas.static_layer import StaticLayer
 
 
-class FaultLine(BaseModel):
-    id: str
-    name: str
-    source: str
+class FaultLine(StaticLayer):
     max_magnitude_estimate: float | None = None

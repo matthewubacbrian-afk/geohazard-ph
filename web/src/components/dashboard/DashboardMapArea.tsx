@@ -1,3 +1,5 @@
+import type { StaticLayer } from '../../types/staticLayer';
+import type { VolcanoOverlayState } from '../map/volcanoOverlays';
 import { useState } from 'react';
 import styles from "./DashboardMapArea.module.css";
 import Skeleton from "../common/Skeleton";
@@ -8,6 +10,12 @@ import { useEventSummary } from "../../hooks/useEventSummary";
 
 type DashboardMapAreaProps = {
   events: HazardEvent[];
+  faults?: StaticLayer[];
+  volcanoZones?: StaticLayer[];
+  showFaults?: boolean;
+  showVolcanoZones?: boolean;
+  volcanoOverlayRevision?: number;
+  onVolcanoOverlayState?: (state: VolcanoOverlayState) => void;
   isLoading: boolean;
   error: Error | null;
   onRetry: () => void;
@@ -20,6 +28,8 @@ type DashboardMapAreaProps = {
 
 export default function DashboardMapArea({
   events,
+  faults, volcanoZones, showFaults, showVolcanoZones,
+  volcanoOverlayRevision, onVolcanoOverlayState,
   isLoading,
   error,
   onRetry,
@@ -49,6 +59,10 @@ export default function DashboardMapArea({
     <main className={styles.mapArea} aria-label="Geospatial risk dashboard map">
       <MapView
         events={events}
+        faults={faults} volcanoZones={volcanoZones}
+        showFaults={showFaults} showVolcanoZones={showVolcanoZones}
+        volcanoOverlayRevision={volcanoOverlayRevision}
+        onVolcanoOverlayState={onVolcanoOverlayState}
         basemap={basemap}
         selectedEvent={selectedEvent}
         showEvents={showEvents}

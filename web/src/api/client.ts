@@ -1,3 +1,4 @@
+import { responseError } from './errors';
 import type { EventSummary, HazardEvent, RiskProfile } from '../types/hazard';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1';
@@ -19,7 +20,7 @@ export async function fetchEvents(
     signal,
   });
   if (!response.ok) {
-    throw new Error('Failed to fetch events');
+    throw await responseError(response, 'Failed to fetch events');
   }
   return response.json();
 }
@@ -27,7 +28,7 @@ export async function fetchEvents(
 export async function fetchRiskProfiles(): Promise<RiskProfile[]> {
   const response = await fetch(`${API_BASE_URL}/risk-profile/clusters`);
   if (!response.ok) {
-    throw new Error('Failed to fetch risk profiles');
+    throw await responseError(response, 'Failed to fetch risk profiles');
   }
   return response.json();
 }
@@ -35,7 +36,7 @@ export async function fetchRiskProfiles(): Promise<RiskProfile[]> {
 export async function fetchRiskProfile(regionName: string): Promise<RiskProfile> {
   const response = await fetch(`${API_BASE_URL}/risk-profile/${encodeURIComponent(regionName)}`);
   if (!response.ok) {
-    throw new Error('Failed to fetch risk profile');
+    throw await responseError(response, 'Failed to fetch risk profile');
   }
   return response.json();
 }
@@ -57,7 +58,7 @@ export async function fetchEventSummary(params?: EventSummaryParams): Promise<Ev
   }
   const response = await fetch(`${API_BASE_URL}/events/summary?${query.toString()}`);
   if (!response.ok) {
-    throw new Error('Failed to fetch event summary');
+    throw await responseError(response, 'Failed to fetch event summary');
   }
   return response.json();
 }

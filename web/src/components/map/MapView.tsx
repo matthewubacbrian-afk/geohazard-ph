@@ -1,12 +1,23 @@
+import type { StaticLayer } from '../../types/staticLayer';
 import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { HazardEvent } from '../../types/hazard';
 import { BASEMAPS, type BasemapId } from './basemaps';
 import styles from './MapView.module.css';
+import {
+  isVolcanoOverlay, removeVolcanoOverlays, syncVolcanoOverlays, VOLCANO_OVERLAYS,
+  type VolcanoOverlayState,
+} from './volcanoOverlays';
 
 type MapViewProps = {
   events: HazardEvent[];
+  faults?: StaticLayer[];
+  volcanoZones?: StaticLayer[];
+  showFaults?: boolean;
+  showVolcanoZones?: boolean;
+  volcanoOverlayRevision?: number;
+  onVolcanoOverlayState?: (state: VolcanoOverlayState) => void;
   basemap?: BasemapId;
   selectedEvent?: HazardEvent | null;
   showEvents?: boolean;
@@ -46,10 +57,49 @@ function toFeatureCollection(events: HazardEvent[]) {
 
 export default function MapView({
   events,
+  faults = [], volcanoZones = [], showFaults = false, showVolcanoZones = false,
+  volcanoOverlayRevision = 0, onVolcanoOverlayState,
   basemap = 'streets',
   selectedEvent,
   showEvents = true,
 }: MapViewProps) {
+  const referenceLayers = useRef({ faults, volcanoZones, showFaults, showVolcanoZones, showEvents });
+  referenceLayers.current = { faults, volcanoZones, showFaults, showVolcanoZones, showEvents };
+  const overlayCallback = useRef(onVolcanoOverlayState);
+  overlayCallback.current = onVolcanoOverlayState;
+  const overlayFailed = useRef(false);
+  const appliedOverlayRevision = useRef(volcanoOverlayRevision);
+  const remoteOverlaysEnabled = () => referenceLayers.current.showVolcanoZones &&
+    referenceLayers.current.volcanoZones.length === 0;
+
+  function syncReferenceLayers(map: maplibregl.Map) {
+    const current = referenceLayers.current;
+    for (const [id, rows, visible] of [
+      ['faults', current.faults, current.showFaults],
+      ['volcano-zones', current.volcanoZones, current.showVolcanoZones],
+    ] as const) {
+      const data = { type: 'FeatureCollection' as const, features: rows.map(row => ({
+        type: 'Feature' as const, id: row.id, geometry: row.geometry,
+        properties: { name: row.name, source: row.source },
+      })) };
+      const existing = map.getSource(id) as maplibregl.GeoJSONSource | undefined;
+      if (existing) existing.setData(data);
+      else map.addSource(id, { type: 'geojson', data });
+      if (!map.getLayer(id)) {
+        const before = map.getLayer('event-circles') ? 'event-circles' : undefined;
+        if (id === 'faults') map.addLayer({ id, type: 'line', source: id,
+          paint: { 'line-color': cssVar('--hazard-fault'), 'line-width': 2 },
+        }, before);
+        else map.addLayer({ id, type: 'fill', source: id,
+          paint: { 'fill-color': cssVar('--hazard-volcano'), 'fill-opacity': 0.25,
+            'fill-outline-color': cssVar('--hazard-volcano') },
+        }, map.getLayer('faults') ? 'faults' : before);
+      }
+      map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+    }
+    syncVolcanoOverlays(map, remoteOverlaysEnabled());
+  }
+
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const appliedBasemap = useRef(basemap);
@@ -102,7 +152,7 @@ export default function MapView({
       },
     });
 
-    map.setLayoutProperty('event-circles', 'visibility', showEvents ? 'visible' : 'none');
+    map.setLayoutProperty('event-circles', 'visibility', referenceLayers.current.showEvents ? 'visible' : 'none');
 
     if (map.getLayer('label_country')) {
       map.setLayoutProperty('label_country', 'text-field', [
@@ -134,12 +184,39 @@ export default function MapView({
 
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-    const restoreEvents = () => setupEventLayers(map);
+    const restoreEvents = () => {
+      overlayFailed.current = false;
+      if (remoteOverlaysEnabled()) overlayCallback.current?.('loading');
+      syncReferenceLayers(map);
+      setupEventLayers(map);
+    };
+    const overlayError = (event: maplibregl.ErrorEvent & { sourceId?: string }) => {
+      if (remoteOverlaysEnabled() && isVolcanoOverlay(event.sourceId)) {
+        overlayFailed.current = true;
+        overlayCallback.current?.('error');
+      }
+    };
+    const overlayIdle = () => {
+      if (remoteOverlaysEnabled() && !overlayFailed.current && VOLCANO_OVERLAYS.every(
+        layer => map.getSource(layer.id) && map.isSourceLoaded(layer.id),
+      )) overlayCallback.current?.('ready');
+    };
+    const overlayLoading = (event: maplibregl.MapSourceDataEvent) => {
+      if (remoteOverlaysEnabled() && !overlayFailed.current && isVolcanoOverlay(event.sourceId)) {
+        overlayCallback.current?.('loading');
+      }
+    };
     map.on('style.load', restoreEvents);
+    map.on('error', overlayError);
+    map.on('idle', overlayIdle);
+    map.on('sourcedataloading', overlayLoading);
     appliedBasemap.current = basemap;
 
     return () => {
       map.off('style.load', restoreEvents);
+      map.off('error', overlayError);
+      map.off('idle', overlayIdle);
+      map.off('sourcedataloading', overlayLoading);
       map.remove();
       mapRef.current = null;
     };
@@ -147,6 +224,21 @@ export default function MapView({
     // is captured here; later changes are handled by the basemap effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map?.getLayer('event-circles')) syncReferenceLayers(map);
+  }, [faults, volcanoZones, showFaults, showVolcanoZones]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || appliedOverlayRevision.current === volcanoOverlayRevision) return;
+    appliedOverlayRevision.current = volcanoOverlayRevision;
+    overlayFailed.current = false;
+    overlayCallback.current?.('loading');
+    removeVolcanoOverlays(map);
+    if (map.getLayer('event-circles')) syncVolcanoOverlays(map, remoteOverlaysEnabled());
+  }, [volcanoOverlayRevision]);
 
   // Sync updated event data into the already-existing source. This runs on
   // every `events` change WITHOUT touching the map instance or camera.

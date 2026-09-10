@@ -2,6 +2,7 @@ import logging
 
 from app.config import get_settings
 from app.core.db import SessionLocal
+from app.core.logging import configure_logging
 from app.services.events_publisher import publish
 from app.services.ingest import ingest_events
 from ingestion.sources.phivolcs_earthquake import fetch_recent_events as fetch_phivolcs_events
@@ -27,6 +28,7 @@ def run_phivolcs_ingest() -> tuple[int, int]:
 
 
 def main() -> None:
+    configure_logging()
     usgs_fetched, usgs_processed = run_usgs_ingest()
     logger.info(
         "USGS ingest complete",

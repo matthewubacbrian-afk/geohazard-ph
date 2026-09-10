@@ -183,8 +183,4 @@ describe('MapView', () => {
 
 Tracked as backlog items in `docs/superpowers/plans/2026-08-29-standards-gap-remediation.md`. New tests must conform today.
 
-- `ml/tests/*` use CWD-relative fixture paths (`Path("tests/fixtures/...")`) instead of absolute paths.
-- `ml/tests/` has no `conftest.py`.
-- `web/tests/` mixes two styles: regex-over-`renderToStaticMarkup` and @testing-library; the vitest setup file and jest-dom registration are missing.
-- `mobile/` has a single test (`offlineCache.test.ts`) in bare `test()` style, with no `describe`/`it` grouping and no service or mapping coverage.
-- `backend/app/api/v1/risk_profile.py` has no `response_model`, so its API tests cannot assert the documented shape.
+The previously listed remediation gaps have been addressed on `epic3`.

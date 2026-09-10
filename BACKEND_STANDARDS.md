@@ -253,8 +253,5 @@ Follow `docs/testing-standards.md`. Summary for backend:
 
 The following current code does not yet conform to this contract. These are tracked as backlog items in `docs/superpowers/plans/2026-08-29-standards-gap-remediation.md`; new code must conform, and this list shrinks one item at a time.
 
-- `backend/ingestion/scheduler.py` uses `print()` instead of the `logging` module.
-- No global exception handler or error envelope is registered yet; endpoints return ad-hoc error shapes.
-- `backend/app/core/logging.py` (`.configure_logging`) exists but is not imported or called anywhere.
 - Several route modules and services return placeholder data (`[]`, stub dicts) in `backend/app/api/v1/*` and `backend/ingestion/sources/*`.
 - `app/services/risk_profile.py` and a few routes call `get_settings()` multiple times per request instead of once; acceptable for small modules but consolidate when the module grows.

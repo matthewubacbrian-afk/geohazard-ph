@@ -1,6 +1,11 @@
 # Standards Gap Remediation — Implementation Plan (Backlog)
 
-> **Status:** BACKLOG — tracked, not queued. Do NOT execute these tasks in the current change. This plan exists so the "Known deviations" sections of the standards docs do not silently become permanent.
+> **Status (2026-09-10):** Implemented on `epic3` at the user's request. Backend (including integration), web,
+> ML and mobile verification completed against the local Docker services.
+> No commits created in this working-tree change. Historical steps below retain their
+> original ordering; not all tests were demonstrated failing before implementation.
+> Mapping stays in `services/api.ts` per the current glossary contract and takes the
+> base URL from the application caller, avoiding bundler-specific environment assumptions.
 >
 > **Orthogonal to:** `2026-08-29-epic1-polish.md`. No task overlap — epic1-polish covers the events summary endpoint, dashboard card wiring, loading/error UI, and dedup hardening; this plan covers standards-compliance work only.
 
@@ -140,3 +145,17 @@
 - Tasks can run in any order (each self-contained), but Task 1 is the highest-value first fix per the standards-sequencing decision.
 - Task 1 integration tests need the PostGIS test harness from `backend/tests/integration/conftest.py`.
 - Before starting any task, re-read the "Known deviations" section it targets — sections may have been partially fixed by other work since this plan was written.
+
+## Verification record (2026-09-10)
+
+- Backend suite: 86 passed (67 unit and 19 integration) after starting Docker
+  PostGIS and Redis. Coverage includes import refresh, rollback, provenance,
+  projection, API contracts, canonical events and realtime delivery.
+- Development database migrated from `0001` through `0003`; PostGIS 3.4 verified.
+  Integration tests used the separate `geohazard_test` database.
+- ML: 16 passed from `ml/` and the repository root.
+- Web: 47 passed; production build passed (existing bundle-size warning remains).
+- Mobile: 4 passed.
+- Structure verifier, changed backend Ruff checks and `git diff --check` passed.
+- GEM: 155 validated reference features imported into the development database.
+  Local ignored subset retains provenance/checksums. PHIVOLCS vector loading remains pending.

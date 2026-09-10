@@ -1,10 +1,10 @@
-from pathlib import Path
+from conftest import FIXTURES
 
 from ml.features import RegionFeatures, build_region_features, load_region_events
 
 
 def test_build_region_features_aggregates_region_events():
-    events = load_region_events(Path("tests/fixtures/sample_region_events.csv"))
+    events = load_region_events((FIXTURES / "sample_region_events.csv"))
 
     features = build_region_features(events)
     bicol = features["Bicol Region"]

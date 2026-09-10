@@ -45,10 +45,8 @@ Prefer read-only endpoints for imported public hazard data until persistence and
 
 The events collection accepts optional `since`, `source`, and `include_duplicates` query
 parameters. By default it returns only rows where `is_primary=true`; set
-`include_duplicates=true` to inspect all source rows. When `source` is specified, the
-primary-only filter is bypassed so all rows from that source are returned (including
-demoted duplicates) — this is intentional for source-level auditing without needing the
-global `include_duplicates` flag. The events summary accepts the bbox parameters plus
+`include_duplicates=true` to inspect all source rows. A source filter remains primary-only unless
+`include_duplicates=true` is explicitly supplied. The events summary accepts the bbox parameters plus
 optional `source` and counts canonical events through their primary rows.
 
 ## 2. Response Shapes
@@ -151,10 +149,7 @@ When adding or changing an endpoint:
 
 Tracked as backlog items in `docs/superpowers/plans/2026-08-29-standards-gap-remediation.md`. New and edited endpoints must conform today.
 
-- No error envelope exists yet; errors return ad-hoc shapes or FastAPI defaults.
 - Cursor pagination is not implemented anywhere; the events list returns a bare array (fine at current volume, but the contract now exists).
-- `GET /api/v1/risk-profile/clusters` and `/risk-profile/{region_name}` omit `response_model`.
-- Mobile types (`mobile/src/types/hazard.ts`) are camelCase with no mapping layer yet; mobile does not currently consume the API.
 - `GET /api/v1/events/summary` accepts bare bbox query params without `min_`/`max_` prefixes; keep this shape unless the endpoint is versioned again.
 ## Epic 2 Person B endpoints
 
@@ -187,3 +182,22 @@ The browser maintains one unfiltered events cache and applies source selection
 locally to both map and list. It refetches on every connection and every 30 seconds
 to recover missed or failed Redis publications. Person A still owns REST source
 filters, canonical persistence, primary-only REST defaults, and ingest wiring.
+
+## Epic 3 static reference endpoints
+
+- `GET /api/v1/faults` returns `FaultLine[]`; `GET /api/v1/volcano-zones` returns `VolcanoZone[]`.
+- Optional `source=gem|phivolcs`; invalid values return `422 validation_error`.
+- These are bounded national reference snapshots, returned in full for map rendering;
+  no pagination or implicit truncation. Unimported tables return `[]`.
+- Every row contains `id`, `external_id`, `name`, `source`, `source_url`, `license_name`,
+  `dataset_version`, `imported_at`, `source_properties`, and `geometry`. Faults retain
+  nullable `max_magnitude_estimate` for compatibility, without deriving estimates.
+- Geometry is WGS84 GeoJSON: faults use LineString/MultiLineString; volcano zones
+  use Polygon/MultiPolygon with holes preserved. Coordinates are longitude, latitude.
+- Stable row IDs derive from layer, source and external ID. Refresh replaces only one
+  source/layer in a transaction. Source timestamps, where supplied, remain in original properties.
+- Static imports run through a local CLI, not a public mutation endpoint.
+
+Mobile `fetchEvents(baseUrl)` takes the environment URL from the application caller
+and maps the snake_case payload through `mapHazardEvent`. Nullable canonical state
+is preserved; the service never invents primary status.

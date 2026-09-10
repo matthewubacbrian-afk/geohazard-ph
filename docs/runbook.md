@@ -129,3 +129,52 @@ disable TLS verification. During implementation on 2026-09-08 the live host fail
 certificate-chain validation in this environment. Fixture parsing and endpoint
 behavior were verified; a verified live fetch must be retried once trust/source
 certificate configuration is corrected.
+
+## Import static layers (Epic 3)
+
+Start PostGIS, install backend dependencies, and apply migration `0003`:
+
+```bash
+docker compose up -d postgres redis
+backend/.venv/bin/pip install -e 'backend[dev]'
+(cd backend && .venv/bin/alembic upgrade head)
+```
+
+Obtain reviewed source files using `docs/data-sources.md`. From the repository root:
+
+```bash
+PYTHONPATH=backend backend/.venv/bin/python scripts/import_fault_lines.py \
+  data/fault_lines/gem_active_faults_harmonized.geojson \
+  --source gem \
+  --source-url https://github.com/GEMScienceTools/gem-global-active-faults \
+  --license-name CC-BY-SA-4.0 --dataset-version YOUR_SOURCE_COMMIT --dry-run
+```
+
+Repeat without `--dry-run` to persist the validated snapshot. Use `--source phivolcs`
+for reviewed atlas vectors, supplying their source URL, version and license/permission.
+For volcano polygons add `--kind volcano_zones`. The command accepts `.geojson`, `.json`
+or `.shp` with its sibling files; PDF digitization is a separate GIS task.
+
+A refresh atomically replaces that source in the selected layer, preserving other
+sources. Use complete snapshots, not partial updates. Stable identifiers survive
+reimport; obsolete features are removed. Invalid or empty imports retain prior data.
+Concurrent refreshes serialize using a transaction advisory lock.
+
+Enable **Fault lines** or **Volcano zones** in the dashboard. Loading, empty and retry
+states appear independently of live events; source attribution accompanies loaded layers.
+Changing basemaps restores the current overlays and visibility settings.
+
+Smoke check `/api/v1/faults` and `/api/v1/volcano-zones` after import. Verify source names,
+versions, counts and geometry against the source map. An empty response means no
+reference features have been imported, not that an area has no hazard.
+
+For PowerShell, set `$env:PYTHONPATH = "backend"`, use the backend virtual environment's
+`Scripts/python.exe`, and pass the same CLI arguments on one line.
+
+Rollback code only after exporting imported data if needed: migration downgrade to
+`0002` drops both reference tables.
+
+For this working session a validated 155-feature GEM subset is available locally at
+`data/fault_lines/local/gem-ph.geojson`, with source/subset SHA-256 checksums and provenance
+in `gem-ph.metadata.json`. It is intentionally ignored by Git. Use it as the CLI input
+with `--dataset-version downloaded-2026-09-10` after starting PostGIS.

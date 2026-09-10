@@ -1,0 +1,8 @@
+.panel {
+  padding: 0.75rem;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.8rem;
+}
+.panel p { margin: 0.4rem 0; }
+.panel a { color: var(--accent); }

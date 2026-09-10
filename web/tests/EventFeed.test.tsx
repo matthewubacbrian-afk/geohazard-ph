@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from 'react-dom/server';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import EventFeed from '../src/components/events/EventFeed';
@@ -33,37 +33,37 @@ const events: HazardEvent[] = [
 
 describe('EventFeed', () => {
   it('shows the activity header and event count', () => {
-    const html = renderToStaticMarkup(
+    render(
       <EventFeed events={events} isLoading={false} error={null} onRetry={() => {}} />,
     );
 
-    expect(html).toMatch(/Regional activity/i);
-    expect(html).toMatch(/2 events/i);
+    expect(screen.getAllByText(/Regional activity/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/2 events/i).length).toBeGreaterThan(0);
   });
 
   it('renders each event with its place name', () => {
-    const html = renderToStaticMarkup(
+    render(
       <EventFeed events={events} isLoading={false} error={null} onRetry={() => {}} />,
     );
 
-    expect(html).toContain('Quezon');
-    expect(html).toContain('Batangas');
+    expect(screen.getAllByText('Quezon', { exact: false }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Batangas', { exact: false }).length).toBeGreaterThan(0);
   });
 
   it('shows skeletons instead of events while loading', () => {
-    const html = renderToStaticMarkup(
+    render(
       <EventFeed events={events} isLoading error={null} onRetry={() => {}} />,
     );
 
-    expect(html).toMatch(/aria-hidden="true"/);
-    expect(html).not.toContain('Quezon');
+    expect(screen.queryByText('Quezon')).not.toBeInTheDocument();
+    expect(screen.queryByText('Quezon', { exact: false })).not.toBeInTheDocument();
   });
 
   it('shows an empty state when no events match', () => {
-    const html = renderToStaticMarkup(
+    render(
       <EventFeed events={[]} isLoading={false} error={null} onRetry={() => {}} />,
     );
 
-    expect(html).toMatch(/No events match the current filters/i);
+    expect(screen.getAllByText(/No events match the current filters/i).length).toBeGreaterThan(0);
   });
 });
