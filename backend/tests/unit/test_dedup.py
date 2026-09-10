@@ -1,7 +1,9 @@
 from datetime import UTC, datetime
 
+import pytest
+
 from app.schemas.hazard_event import HazardEvent
-from app.services.dedup import dedup_key
+from app.services.dedup import _match_confidence, dedup_key
 
 
 def test_dedup_key_uses_source_and_external_id():
@@ -65,3 +67,40 @@ def test_hazard_event_model_has_canonical_identity_columns():
     assert row.canonical_id is None
     assert row.is_primary is True
     assert row.match_confidence == 0.95
+
+
+def test_match_confidence_raises_value_error_for_missing_magnitude():
+    from app.models import HazardEvent as HazardEventORM
+
+    row = HazardEventORM(
+        hazard_type="earthquake",
+        source="usgs",
+        external_id="evt-2",
+        magnitude=None,
+        latitude=14.5,
+        longitude=121.0,
+        place_name="Sample",
+        location="SRID=4326;POINT(121 14.5)",
+        occurred_at=datetime(2026, 8, 27, tzinfo=UTC),
+        canonical_id=None,
+        is_primary=True,
+    )
+    primary = HazardEventORM(
+        hazard_type="earthquake",
+        source="phivolcs",
+        external_id="evt-3",
+        magnitude=4.5,
+        latitude=14.5,
+        longitude=121.0,
+        place_name="Sample",
+        location="SRID=4326;POINT(121 14.5)",
+        occurred_at=datetime(2026, 8, 27, tzinfo=UTC),
+        canonical_id=None,
+        is_primary=True,
+    )
+
+    with pytest.raises(ValueError, match="magnitude"):
+        _match_confidence(row, primary)
+
+    with pytest.raises(ValueError, match="magnitude"):
+        _match_confidence(primary, row)

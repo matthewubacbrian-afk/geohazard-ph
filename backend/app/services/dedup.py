@@ -100,6 +100,9 @@ def _primary_sort_key(row: HazardEventORM) -> tuple[int, object, object, str]:
 
 
 def _match_confidence(row: HazardEventORM, primary: HazardEventORM) -> float:
+    if row.magnitude is None or primary.magnitude is None:
+        raise ValueError("magnitude is required to compute match confidence")
+
     time_score = (
         1
         - abs((row.occurred_at - primary.occurred_at).total_seconds())

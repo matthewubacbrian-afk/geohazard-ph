@@ -45,8 +45,11 @@ Prefer read-only endpoints for imported public hazard data until persistence and
 
 The events collection accepts optional `since`, `source`, and `include_duplicates` query
 parameters. By default it returns only rows where `is_primary=true`; set
-`include_duplicates=true` to inspect all source rows. The events summary accepts the bbox
-parameters plus optional `source` and counts canonical events through their primary rows.
+`include_duplicates=true` to inspect all source rows. When `source` is specified, the
+primary-only filter is bypassed so all rows from that source are returned (including
+demoted duplicates) — this is intentional for source-level auditing without needing the
+global `include_duplicates` flag. The events summary accepts the bbox parameters plus
+optional `source` and counts canonical events through their primary rows.
 
 ## 2. Response Shapes
 

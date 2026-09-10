@@ -2,6 +2,7 @@ import logging
 
 from app.config import get_settings
 from app.core.db import SessionLocal
+from app.services.events_publisher import publish
 from app.services.ingest import ingest_events
 from ingestion.sources.phivolcs_earthquake import fetch_recent_events as fetch_phivolcs_events
 from ingestion.sources.usgs import fetch_recent_events
@@ -13,7 +14,7 @@ def run_usgs_ingest() -> tuple[int, int]:
     settings = get_settings()
     events = fetch_recent_events(settings)
     with SessionLocal() as session:
-        processed = ingest_events(session, events)
+        processed = ingest_events(session, events, on_committed=publish)
     return len(events), processed
 
 
@@ -21,7 +22,7 @@ def run_phivolcs_ingest() -> tuple[int, int]:
     settings = get_settings()
     events = fetch_phivolcs_events(settings)
     with SessionLocal() as session:
-        processed = ingest_events(session, events)
+        processed = ingest_events(session, events, on_committed=publish)
     return len(events), processed
 
 

@@ -14,7 +14,7 @@ def list_events(
     include_duplicates: bool = False,
 ) -> list[HazardEvent]:
     stmt = select(HazardEventORM).order_by(HazardEventORM.occurred_at.desc())
-    if not include_duplicates:
+    if not include_duplicates and source is None:
         stmt = stmt.where(HazardEventORM.is_primary.is_(True))
     if since is not None:
         stmt = stmt.where(HazardEventORM.occurred_at >= since)

@@ -75,12 +75,12 @@ Key files:
 
 Cache improvements:
 
-| Behavior | Default |
-| --- | --- |
-| Source request timeout | 15 seconds |
-| Successful cache lifetime | 5 minutes per API process |
-| Retry delay after source failure | 1 minute |
-| Maximum age for stale fallback | 1 hour |
+| Behavior                         | Default                   |
+| -------------------------------- | ------------------------- |
+| Source request timeout           | 15 seconds                |
+| Successful cache lifetime        | 5 minutes per API process |
+| Retry delay after source failure | 1 minute                  |
+| Maximum age for stale fallback   | 1 hour                    |
 
 Concurrent requests share one fetch per process. Failed refreshes can return
 explicitly marked stale data while preserving its retrieval time. Missing or
@@ -110,18 +110,18 @@ separate setup work and are not part of the Epic 2 feature implementation.
 
 These results were recorded after the implementation and review fixes:
 
-| Check | Result |
-| --- | --- |
-| Backend suite with local PostGIS and Redis | 47 tests passed |
-| Web suite | 35 tests passed |
-| Web TypeScript/production build | Passed |
-| Ruff on changed Python files | Passed |
-| Project structure verifier | Passed: 139 expected scaffold paths |
-| `git diff --check` | Passed |
-| `docker compose config --quiet` | Passed |
-| Running API `/api/v1/subscribe` | Reported `status: ok` |
-| Running API `/ws/events` handshake | Passed |
-| Verified live PHIVOLCS fetch | Failed certificate validation; endpoint returned 503 |
+| Check                                      | Result                                               |
+| ------------------------------------------ | ---------------------------------------------------- |
+| Backend suite with local PostGIS and Redis | 47 tests passed                                      |
+| Web suite                                  | 35 tests passed                                      |
+| Web TypeScript/production build            | Passed                                               |
+| Ruff on changed Python files               | Passed                                               |
+| Project structure verifier                 | Passed: 139 expected scaffold paths                  |
+| `git diff --check`                         | Passed                                               |
+| `docker compose config --quiet`            | Passed                                               |
+| Running API `/api/v1/subscribe`            | Reported `status: ok`                                |
+| Running API `/ws/events` handshake         | Passed                                               |
+| Verified live PHIVOLCS fetch               | Failed certificate validation; endpoint returned 503 |
 
 Tests cover primary/demoted message delivery through real Redis to two clients,
 publish-failure containment, WebSocket cleanup/origin rejection, reconnect/cache
@@ -139,7 +139,7 @@ deprecation warnings in backend tests.
 
 ### Person A: connect canonical ingestion to publishing
 
-Person A must provide the generalized ingestion service and wire the callback:
+Person A has now wired the generalized ingestion service to the publisher callback:
 
 ```python
 from app.services.events_publisher import publish
@@ -147,14 +147,15 @@ from app.services.events_publisher import publish
 processed = ingest_events(session, events, on_committed=publish)
 ```
 
-Inside Person A's service, canonicalization must finish before commit. Invoke the
-callback strictly after commit with every touched `EventChange`, including any
-previously primary row that was demoted. The shared schema lives in
-`app.schemas.event_change`.
+Canonicalization still completes before commit, and the callback is invoked
+strictly after commit with every touched `EventChange`, including any previously
+primary row that was demoted. The shared ADR schema remains in
+`app.schemas.event_change` and the realtime chain is now wired end-to-end.
 
 Person A retains ownership of PHIVOLCS earthquake ingestion, canonical persistence,
-matching, and REST source/duplicate filters. The tests in this slice do not claim
-to verify that unfinished ingest-to-publisher integration.
+matching, and REST source/duplicate filters. The completed integration path keeps
+Person B's publisher implementation as the callback implementation while Person A
+remains the owner of the ingest commit seam and the emitted contract.
 
 ### Environment/source: restore verified PHIVOLCS access
 

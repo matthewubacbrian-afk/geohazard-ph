@@ -7,6 +7,7 @@
 **Scope:** Person A owns the earthquake adapter, ingest transaction seam, canonical matching, persistence migration, `/events` queries, and scheduler integration. Person B owns Redis publishing, `/ws/events`, web live updates, and the PHIVOLCS volcano feed.
 
 **References:**
+
 - `docs/adr/0002-epic2-realtime-phivolcs-contracts.md`
 - `docs/superpowers/specs/2026-08-29-epic2-realtime-phivolcs-design.md`
 - `docs/superpowers/plans/2026-08-29-epic2-realtime-phivolcs.md`
@@ -102,10 +103,10 @@ This order is important: the database is authoritative, canonicalization happens
 
 **How to implement:** Have the scheduler fetch USGS and PHIVOLCS data independently, pass both lists through `ingest_events`, and log source, fetched count, changed count, and failures. The scheduler may wire Person B's callback, but must not contain Redis or WebSocket logic.
 
-- [ ] Add PHIVOLCS earthquake ingestion to `backend/ingestion/scheduler.py`.
-- [ ] Route both USGS and PHIVOLCS through `ingest_events`.
-- [ ] Replace scheduler `print()` calls with structured logging.
-- [ ] Confirm the scheduler passes Person B's publisher callback without importing or implementing publisher logic.
+- [x] Add PHIVOLCS earthquake ingestion to `backend/ingestion/scheduler.py`.
+- [x] Route both USGS and PHIVOLCS through `ingest_events`.
+- [x] Replace scheduler `print()` calls with structured logging.
+- [x] Confirm the scheduler passes Person B's publisher callback without importing or implementing publisher logic.
 
 ## Testing
 
