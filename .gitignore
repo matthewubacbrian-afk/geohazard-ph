@@ -27,3 +27,7 @@ ml/model_artifacts/
 !ml/data/raw/.gitkeep
 !ml/data/processed/.gitkeep
 !ml/model_artifacts/.gitkeep
+
+# Local downloaded reference snapshots and import receipts
+data/fault_lines/local/
+data/volcano_hazard_zones/local/

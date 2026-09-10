@@ -376,3 +376,14 @@ Person B slice leaves `ingest.py` unchanged. Live PHIVOLCS fetching also require
 a valid trusted TLS chain; this environment currently reports a certificate
 validation failure. See [the runbook](docs/runbook.md) for configuration,
 failure behavior, verification and the exact Person A handoff.
+
+## Epic 3: static hazard layers
+
+Fault and volcano-zone overlays now have validated vector import, PostGIS storage,
+read endpoints, source attribution, and independent dashboard toggles. Apply migration
+`0003` and import reviewed datasets using [the import runbook](docs/runbook.md#import-static-layers-epic-3).
+Empty layers remain explicitly labeled until source data is loaded.
+
+The Epic 2 integration and event-feed hover fixes are already merged. Standards
+remediation adds consistent API errors, structured startup logging, portable ML tests,
+Testing Library web tests, and a typed mobile API mapping boundary.

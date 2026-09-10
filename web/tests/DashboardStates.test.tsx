@@ -1,12 +1,9 @@
-import { renderToStaticMarkup } from 'react-dom/server';
+import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('maplibre-gl', () => ({
-  default: {
-    Map: vi.fn(),
-    NavigationControl: vi.fn(),
-  },
+vi.mock('../src/components/map/MapView', () => ({
+  default: () => <div aria-label="Hazard map" />,
 }));
 
 import DashboardMapArea from '../src/components/dashboard/DashboardMapArea';
@@ -27,7 +24,7 @@ function renderArea({
     defaultOptions: { queries: { retry: false } },
   });
 
-  return renderToStaticMarkup(
+  return render(
     <QueryClientProvider client={queryClient}>
       <DashboardMapArea
         events={events}
@@ -41,22 +38,22 @@ function renderArea({
 
 describe('Dashboard map states', () => {
   it('keeps the map visible and shows a loading indicator while events are loading', () => {
-    const html = renderArea({ isLoading: true, error: null });
-    expect(html).toContain('aria-label="Hazard map"');
-    expect(html).toMatch(/Loading events/i);
+    renderArea({ isLoading: true, error: null });
+    expect(screen.getByLabelText('Hazard map')).toBeInTheDocument();
+    expect(screen.getAllByText(/Loading events/i).length).toBeGreaterThan(0);
   });
 
   it('keeps the map visible and shows a retry-able error banner when the events request fails', () => {
-    const html = renderArea({ isLoading: false, error: new Error('boom') });
-    expect(html).toContain('aria-label="Hazard map"');
-    expect(html).toMatch(/Failed to load events/i);
-    expect(html).toMatch(/Retry/i);
+    renderArea({ isLoading: false, error: new Error('boom') });
+    expect(screen.getByLabelText('Hazard map')).toBeInTheDocument();
+    expect(screen.getAllByText(/Failed to load events/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Retry/i).length).toBeGreaterThan(0);
   });
 
   it('renders the map without any status overlay when events load successfully', () => {
-    const html = renderArea({ isLoading: false, error: null, events: [] });
-    expect(html).toContain('aria-label="Hazard map"');
-    expect(html).not.toMatch(/Failed to load events/i);
-    expect(html).not.toMatch(/Loading events/i);
+    renderArea({ isLoading: false, error: null, events: [] });
+    expect(screen.getByLabelText('Hazard map')).toBeInTheDocument();
+    expect(screen.queryByText(/Failed to load events/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Loading events/i)).not.toBeInTheDocument();
   });
 });

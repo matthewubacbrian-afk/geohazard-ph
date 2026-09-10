@@ -1,12 +1,9 @@
-import { renderToStaticMarkup } from 'react-dom/server';
+import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('maplibre-gl', () => ({
-  default: {
-    Map: vi.fn(),
-    NavigationControl: vi.fn(),
-  },
+vi.mock('../src/components/map/MapView', () => ({
+  default: () => <div aria-label="Hazard map" />,
 }));
 
 import DashboardMapArea from '../src/components/dashboard/DashboardMapArea';
@@ -18,7 +15,7 @@ function renderCard(summary: EventSummary) {
   });
   queryClient.setQueryData(['event-summary'], summary);
 
-  return renderToStaticMarkup(
+  return render(
     <QueryClientProvider client={queryClient}>
       <DashboardMapArea
         events={[]}
@@ -40,13 +37,13 @@ const summary: EventSummary = {
 
 describe('Dashboard floating card', () => {
   it('shows the real average magnitude and event frequency from the summary', () => {
-    const html = renderCard(summary);
-    expect(html).toContain('4.6');
-    expect(html).toContain('7');
+    renderCard(summary);
+    expect(screen.getAllByText('4.6', { exact: false }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('7', { exact: false }).length).toBeGreaterThan(0);
   });
 
   it('shows a coming-soon state for classification and dominant fault system', () => {
-    const html = renderCard(summary);
-    expect(html).toMatch(/Coming soon/i);
+    renderCard(summary);
+    expect(screen.getAllByText(/Coming soon/i).length).toBeGreaterThan(0);
   });
 });

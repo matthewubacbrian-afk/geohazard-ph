@@ -1,3 +1,7 @@
+import { useStaticLayers } from '../hooks/useStaticLayers';
+import StaticLayerStatus from '../components/map/StaticLayerStatus';
+import VolcanoOverlayStatus from '../components/map/VolcanoOverlayStatus';
+import type { VolcanoOverlayState } from '../components/map/volcanoOverlays';
 import { useState } from 'react';
 import styles from './Dashboard.module.css';
 import DashboardMapArea from '../components/dashboard/DashboardMapArea';
@@ -34,6 +38,8 @@ type DashboardProps = {
 
 export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
   const [source, setSource] = useState('');
+  const [volcanoOverlayState, setVolcanoOverlayState] = useState<VolcanoOverlayState>('loading');
+  const [volcanoOverlayRevision, setVolcanoOverlayRevision] = useState(0);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [minMagnitude, setMinMagnitude] = useState(1);
@@ -51,12 +57,17 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
     events: true,
     risk: false,
+    faults: false,
+    volcanoes: false,
   });
   const [activeRiskLevels, setActiveRiskLevels] = useState<RiskLevelKey[]>([
     'high',
     'medium',
     'low',
   ]);
+
+  const faults = useStaticLayers('faults', Boolean(activeLayers.faults));
+  const volcanoZones = useStaticLayers('volcano-zones', Boolean(activeLayers.volcanoes));
 
   function toggleLayer(key: string) {
     setActiveLayers((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -113,10 +124,23 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
           selectedEvent={selectedEvent}
           showEvents={activeLayers.events}
           showRiskLayer={activeLayers.risk}
+          faults={faults.data}
+          volcanoZones={volcanoZones.data}
+          showFaults={activeLayers.faults}
+          showVolcanoZones={activeLayers.volcanoes}
+          volcanoOverlayRevision={volcanoOverlayRevision}
+          onVolcanoOverlayState={setVolcanoOverlayState}
           onViewDetailedReport={() => setActiveView('risk')}
         />
 
         <section className={styles.sidePanel} aria-label="Activity panel">
+          {activeLayers.faults && <StaticLayerStatus label="Fault lines" rows={faults.data}
+            loading={faults.isLoading} error={faults.error} onRetry={() => { void faults.refetch(); }} />}
+          {activeLayers.volcanoes && (volcanoZones.data?.length ?
+            <StaticLayerStatus label="Volcano zones" rows={volcanoZones.data}
+              loading={volcanoZones.isLoading} error={volcanoZones.error} onRetry={() => { void volcanoZones.refetch(); }} /> :
+            <VolcanoOverlayStatus state={volcanoOverlayState}
+              onRetry={() => setVolcanoOverlayRevision(value => value + 1)} />)}
           <RealtimeStatus {...realtime} />
           <EventFilterBar source={source} onChange={setSource} />
           {activeView === 'volcanoes' ? <VolcanoPanel /> : showRisk ? <RiskProfilesPanel /> : (

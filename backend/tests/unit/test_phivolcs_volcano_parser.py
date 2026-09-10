@@ -1,8 +1,8 @@
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.error import URLError
 
 import pytest
-import requests
 
 from app.config import Settings
 from ingestion.sources.phivolcs_volcano import (
@@ -39,8 +39,8 @@ def test_changed_or_invalid_source_fails_visibly(html):
 
 def test_network_failure_is_distinct_from_parse_failure(monkeypatch):
     def fail(*args, **kwargs):
-        raise requests.Timeout("private details")
+        raise URLError("private details")
 
-    monkeypatch.setattr(requests, "get", fail)
+    monkeypatch.setattr("ingestion.sources.phivolcs_volcano.urlopen", fail)
     with pytest.raises(PhivolcsFetchError):
         fetch_volcano_bulletins(Settings())

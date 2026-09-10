@@ -99,3 +99,8 @@
   --bp-md: 900px;
   --bp-sm: 640px;
 }
+
+:root {
+  --hazard-fault: var(--accent);
+  --hazard-volcano: var(--risk-medium);
+}

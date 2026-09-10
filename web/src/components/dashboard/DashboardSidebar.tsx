@@ -21,8 +21,8 @@ type LayerDef = {
 const LAYERS: LayerDef[] = [
   { key: 'events', label: 'Live events', available: true },
   { key: 'risk', label: 'Risk overlay', available: true },
-  { key: 'faults', label: 'Fault lines', available: false },
-  { key: 'volcanoes', label: 'Volcano zones', available: false },
+  { key: 'faults', label: 'Fault lines', available: true },
+  { key: 'volcanoes', label: 'Volcano zones', available: true },
 ];
 
 type RiskLevelKey = 'high' | 'medium' | 'low';

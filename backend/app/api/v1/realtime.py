@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 import logging
 from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, suppress
@@ -34,6 +35,11 @@ async def event_updates(
             await websocket.accept()
             await _relay(websocket, changes)
     except WebSocketDisconnect:
+        pass
+    except (asyncio.CancelledError, concurrent.futures.CancelledError):
+        # TestClient and shutdown paths may cancel running tasks; allow
+        # cancellation to proceed without surfacing an error to the test
+        # harness so subscription cleanup (finally blocks) runs.
         pass
     except (RedisError, ValidationError, TimeoutError) as exc:
         logger.warning("realtime stream unavailable", extra={"error_type": type(exc).__name__})

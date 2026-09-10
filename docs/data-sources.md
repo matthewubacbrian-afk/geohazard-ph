@@ -53,3 +53,39 @@ with verification bypassed solely for parser development. Runtime fetching alway
 verifies TLS. The fixture is historical test input, never a fallback feed or a
 claim about current alert status. Levels, source links and Manila-to-UTC conversion
 are covered by deterministic tests.
+
+## Static reference vectors (Epic 3)
+
+- GEM: [official repository](https://github.com/GEMScienceTools/gem-global-active-faults),
+  `geojson/gem_active_faults_harmonized.geojson` or accompanying shapefile.
+  [License](https://github.com/GEMScienceTools/gem-global-active-faults/blob/master/LICENSE.txt):
+  CC-BY-SA-4.0. Retain attribution and ShareAlike terms for redistributed derivatives.
+  Prefer `catalog_id` for identity. GEM's legacy CRS84 declaration is accepted;
+  other GeoJSON CRS declarations require conversion before import.
+- PHIVOLCS: [hazard map download instructions](https://www.phivolcs.dost.gov.ph/gisweb-download-hazard-maps-instruction/)
+  and [official GIS portal](https://gisweb.phivolcs.dost.gov.ph/gisweb/earthquake-volcano-related-hazard-gis-information).
+  Import supplied vector exports or reviewed manual GIS digitization of atlas maps.
+  Record the actual source map URL, publication/review version, and applicable permission/license.
+  Public viewing alone does not establish a redistribution license.
+- Atlas PDFs and raster images are not automatically converted to hazard geometry.
+  Georeference/digitize in GIS and review against the original legend and scale;
+  export a WGS84 FeatureCollection or a shapefile with `.prj`.
+- Polygon hazard boundaries are imported as published/digitized, never inferred from
+  volcano alert levels or generated as arbitrary radius circles.
+- Imports retain original properties, require provenance, validate geometry, and
+  select features intersecting `(116, 4, 128, 22)` without clipping the source shape.
+  Missing source IDs use a content SHA-256; geometry/attribute revisions then change identity.
+  Invalid intersecting geometry or duplicate IDs abort import; a zero-feature result
+  cannot erase an existing snapshot. Shapefiles are reprojected from their declared CRS.
+- Raw reference files stay local under `data/`; do not commit large source datasets.
+  Refresh quarterly or after a source revision. `imported_at` is not an observation date.
+
+Verification on 2026-09-10: the downloaded GEM harmonized GeoJSON validated in dry-run
+with 155 features intersecting the Philippines bounds. These were subsequently
+imported into the local development database after migration `0003`. This does not
+establish completeness of national hazard coverage. PHIVOLCS digitization and
+production dataset import still require reviewed source vectors.
+
+The PHIVOLCS ActiveFault service advertises query support, but its count query
+returned "Requested operation is not supported" during this session. No PHIVOLCS
+geometry was downloaded or substituted with illustrative traces.

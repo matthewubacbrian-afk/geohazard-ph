@@ -7,6 +7,9 @@ const event = {
   latitude: 14.6, longitude: 120.97, place_name: 'Luzon earthquake',
   magnitude: 4.5, occurred_at: '2026-08-29T00:00:00Z',
 };
+vi.mock('../src/hooks/useStaticLayers', () => ({
+  useStaticLayers: () => ({ data: [], isLoading: false, error: null, refetch: vi.fn() }),
+}));
 vi.mock('../src/hooks/useEvents', () => ({
   useEvents: () => ({ data: [event], isLoading: false, error: null, refetch: vi.fn() }),
 }));

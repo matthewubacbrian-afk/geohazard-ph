@@ -17,7 +17,8 @@ The backend (FastAPI) exposes the following REST endpoints under `/api/v1`:
 - `GET /events` — live earthquake events, newest first, optional `since` (ISO 8601) filter.
 - `GET /events/summary` — aggregate statistics (event_count, avg_magnitude, max_magnitude, latest_occurred_at) for events within a bounding box (optional west/south/east/north, defaulting to the Philippines; optional region_name).
 - `GET /hazards/{hazard_type}` — hazard summary (stub).
-- `GET /faults` — active fault lines (stub).
+- `GET /faults` — imported active fault reference vectors.
+- `GET /volcano-zones` — imported volcano hazard polygons.
 - `GET /volcanoes` — volcano reference list (stub).
 - `GET /alerts` — alert subscriptions (stub).
 - `GET /subscribe` — realtime channel subscription status (stub).

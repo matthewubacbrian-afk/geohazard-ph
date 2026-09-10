@@ -1,13 +1,13 @@
-﻿import json
-from pathlib import Path
+import json
+from conftest import FIXTURES
 
 from ml.train import run_training
 
 
 def test_run_training_from_existing_csvs_writes_artifacts(tmp_path):
     result = run_training(
-        phivolcs_paths=[Path("tests/fixtures/phivolcs_sample.csv")],
-        usgs_paths=[Path("tests/fixtures/usgs_sample.csv")],
+        phivolcs_paths=[(FIXTURES / "phivolcs_sample.csv")],
+        usgs_paths=[(FIXTURES / "usgs_sample.csv")],
         artifact_dir=tmp_path,
         artifact_version="v-test",
         download=False,
@@ -26,8 +26,8 @@ def test_run_training_from_existing_csvs_writes_artifacts(tmp_path):
 
 def test_run_training_uses_labels_from_saved_kmeans_result(tmp_path):
     run_training(
-        phivolcs_paths=[Path("tests/fixtures/phivolcs_sample.csv")],
-        usgs_paths=[Path("tests/fixtures/usgs_sample.csv")],
+        phivolcs_paths=[(FIXTURES / "phivolcs_sample.csv")],
+        usgs_paths=[(FIXTURES / "usgs_sample.csv")],
         artifact_dir=tmp_path,
         artifact_version="v-test",
         download=False,
