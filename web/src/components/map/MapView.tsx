@@ -3,8 +3,11 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { HazardEvent } from "../../types/hazard";
+import type { RiskProfile } from "../../types/hazard";
 import { BASEMAPS, type BasemapId } from "./basemaps";
 import styles from "./MapView.module.css";
+import { PHILIPPINE_REGIONS } from "../../data/philippine-regions";
+import { riskProfilesToFeatureCollection } from "./riskOverlay";
 import {
   isVolcanoOverlay,
   removeVolcanoOverlays,
@@ -24,6 +27,8 @@ type MapViewProps = {
   basemap?: BasemapId;
   selectedEvent?: HazardEvent | null;
   showEvents?: boolean;
+  riskProfiles?: RiskProfile[];
+  showRiskLayer?: boolean;
 };
 
 const PH_CENTER: [number, number] = [121.774, 12.8797]; // Philippines
@@ -69,6 +74,8 @@ export default function MapView({
   basemap = "streets",
   selectedEvent,
   showEvents = true,
+  riskProfiles = [],
+  showRiskLayer = false,
 }: MapViewProps) {
   const referenceLayers = useRef({
     faults,
@@ -76,6 +83,8 @@ export default function MapView({
     showFaults,
     showVolcanoZones,
     showEvents,
+    riskProfiles,
+    showRiskLayer,
   });
   referenceLayers.current = {
     faults,
@@ -83,6 +92,8 @@ export default function MapView({
     showFaults,
     showVolcanoZones,
     showEvents,
+    riskProfiles,
+    showRiskLayer,
   };
   const overlayCallback = useRef(onVolcanoOverlayState);
   overlayCallback.current = onVolcanoOverlayState;
@@ -158,6 +169,8 @@ export default function MapView({
   // `events` was on the render that registered them, not later updates).
   const eventsRef = useRef(events);
   eventsRef.current = events;
+  const riskProfilesRef = useRef(riskProfiles);
+  riskProfilesRef.current = riskProfiles;
 
   // Setup the events source and event-circles layer.
   // Must run after initial map load AND after every style change
@@ -223,6 +236,60 @@ export default function MapView({
     }
   };
 
+  const syncRiskLayer = (map: maplibregl.Map) => {
+    const data = riskProfilesToFeatureCollection(
+      riskProfilesRef.current,
+      PHILIPPINE_REGIONS,
+    );
+    const source = map.getSource("risk-regions") as
+      | maplibregl.GeoJSONSource
+      | undefined;
+    if (source) source.setData(data);
+    else map.addSource("risk-regions", { type: "geojson", data });
+
+    if (!map.getLayer("risk-regions-fill")) {
+      map.addLayer(
+        {
+          id: "risk-regions-fill",
+          type: "fill",
+          source: "risk-regions",
+          paint: {
+            "fill-color": [
+              "match",
+              ["get", "label"],
+              "Very High",
+              cssVar("--risk-high"),
+              "High",
+              cssVar("--risk-high"),
+              "Moderate",
+              cssVar("--risk-medium"),
+              "Low",
+              cssVar("--risk-low"),
+              cssVar("--text-faint"),
+            ],
+            "fill-opacity": 0.35,
+          },
+        },
+        map.getLayer("event-circles") ? "event-circles" : undefined,
+      );
+    }
+    if (!map.getLayer("risk-regions-outline")) {
+      map.addLayer({
+        id: "risk-regions-outline",
+        type: "line",
+        source: "risk-regions",
+        paint: {
+          "line-color": cssVar("--text-muted"),
+          "line-width": 1,
+          "line-opacity": 0.7,
+        },
+      });
+    }
+    const visibility = referenceLayers.current.showRiskLayer ? "visible" : "none";
+    map.setLayoutProperty("risk-regions-fill", "visibility", visibility);
+    map.setLayoutProperty("risk-regions-outline", "visibility", visibility);
+  };
+
   // Keep the map and camera while replacing only its style.
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -241,6 +308,7 @@ export default function MapView({
       overlayFailed.current = false;
       if (remoteOverlaysEnabled()) overlayCallback.current?.("loading");
       syncReferenceLayers(map);
+      syncRiskLayer(map);
       setupEventLayers(map);
     };
     const overlayError = (event: { sourceId?: string; error?: unknown }) => {
@@ -290,7 +358,13 @@ export default function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (map?.getLayer("event-circles")) syncReferenceLayers(map);
-  }, [faults, volcanoZones, showFaults, showVolcanoZones]);
+  }, [faults, volcanoZones, showFaults, showVolcanoZones, riskProfiles, showRiskLayer]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.getLayer("event-circles")) return;
+    syncRiskLayer(map);
+  }, [riskProfiles, showRiskLayer]);
 
   useEffect(() => {
     const map = mapRef.current;

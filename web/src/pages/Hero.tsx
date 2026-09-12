@@ -10,7 +10,7 @@ type HeroProps = {
   onSettings?: () => void;
 };
 
-const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Contact"];
+const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Historical", "Contact"];
 
 const steps = [
   {
@@ -142,7 +142,7 @@ export default function Hero({ onNavigate, onSettings }: HeroProps) {
           <div className={styles.footerBrand}>
             <div className={styles.footerLogo}>GeoHazard</div>
             <p className={styles.footerTagline}>
-              © 2024 GeoHazard Philippines. Seismic Risk Intelligence for Local
+              © 2026 GeoHazard Philippines. Seismic Risk Intelligence for Local
               Governance.
             </p>
           </div>

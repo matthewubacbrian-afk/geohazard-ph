@@ -4,6 +4,7 @@ import MapView from '../src/components/map/MapView';
 import { BASEMAPS, BASEMAP_IDS } from '../src/components/map/basemaps';
 import type { StaticLayer } from '../src/types/staticLayer';
 import type { HazardEvent } from '../src/types/hazard';
+import type { RiskProfile } from '../src/types/hazard';
 
 const handlers = new Map<string, Set<() => void>>();
 let source: { setData: ReturnType<typeof vi.fn> } | undefined;
@@ -45,6 +46,16 @@ const event: HazardEvent = {
   depth_km: 10, latitude: 14.6, longitude: 120.97, place_name: 'Luzon',
   occurred_at: '2026-08-29T00:00:00Z',
 };
+const riskProfile: RiskProfile = {
+  region_name: 'Bicol Region',
+  cluster: 2,
+  label: 'High',
+  confidence: 0.82,
+  feature_importances: {},
+  model_version: 'v1',
+  generated_at: '2026-08-29T00:00:00Z',
+  dataset_snapshot: 'fixture',
+};
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 beforeEach(() => {
   vi.clearAllMocks();
@@ -56,6 +67,27 @@ describe('MapView style lifecycle', () => {
   it('shows an empty state', () => {
     render(<MapView events={[]} />);
     expect(screen.getByText(/no events/i)).toBeTruthy();
+  });
+  it('renders risk regions and toggles their visibility', () => {
+    const view = render(
+      <MapView events={[event]} riskProfiles={[riskProfile]} showRiskLayer />,
+    );
+    act(() => emit('style.load'));
+
+    expect(sources.has('risk-regions')).toBe(true);
+    expect(layers.has('risk-regions-fill')).toBe(true);
+    expect(mapInstance.setLayoutProperty).toHaveBeenCalledWith(
+      'risk-regions-fill',
+      'visibility',
+      'visible',
+    );
+
+    view.rerender(<MapView events={[event]} riskProfiles={[riskProfile]} showRiskLayer={false} />);
+    expect(mapInstance.setLayoutProperty).toHaveBeenLastCalledWith(
+      'risk-regions-outline',
+      'visibility',
+      'none',
+    );
   });
   it.each(BASEMAP_IDS)('renders markers after the initial %s style loads', (basemap) => {
     render(<MapView events={[event]} basemap={basemap} />);

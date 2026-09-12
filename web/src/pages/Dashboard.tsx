@@ -2,7 +2,8 @@ import { useStaticLayers } from '../hooks/useStaticLayers';
 import StaticLayerStatus from '../components/map/StaticLayerStatus';
 import VolcanoOverlayStatus from '../components/map/VolcanoOverlayStatus';
 import type { VolcanoOverlayState } from '../components/map/volcanoOverlays';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 import DashboardMapArea from '../components/dashboard/DashboardMapArea';
 import DashboardSidebar, {
@@ -20,12 +21,18 @@ import RealtimeStatus from '../components/dashboard/RealtimeStatus';
 import { useRealtimeAlerts } from '../hooks/useRealtimeAlerts';
 import { useEvents } from '../hooks/useEvents';
 import { eventRiskBucket } from '../lib/risk';
+import {
+  parseDashboardQuery,
+  serializeDashboardQuery,
+  type DashboardQueryState,
+} from '../lib/dashboardQueryState';
 
 const navItems = [
   'Dashboard',
   'How It Works',
   'About',
   'Data Sources',
+  'Historical',
   'Contact',
 ];
 
@@ -37,12 +44,14 @@ type DashboardProps = {
 };
 
 export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
-  const [source, setSource] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = parseDashboardQuery(searchParams.toString());
+  const [source, setSource] = useState(initialQuery.source);
   const [volcanoOverlayState, setVolcanoOverlayState] = useState<VolcanoOverlayState>('loading');
   const [volcanoOverlayRevision, setVolcanoOverlayRevision] = useState(0);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [minMagnitude, setMinMagnitude] = useState(1);
+  const [startDate, setStartDate] = useState(initialQuery.startDate);
+  const [endDate, setEndDate] = useState(initialQuery.endDate);
+  const [minMagnitude, setMinMagnitude] = useState(initialQuery.minMagnitude);
   const [selectedEvent, setSelectedEvent] = useState<HazardEvent | null>(null);
   const realtime = useRealtimeAlerts();
   const { data: events = [], isLoading, error, refetch } = useEvents({
@@ -52,8 +61,8 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
     minMagnitude,
   });
 
-  const [basemap, setBasemap] = useState<BasemapId>('streets');
-  const [activeView, setActiveView] = useState<DashboardView>('map');
+  const [basemap, setBasemap] = useState<BasemapId>(initialQuery.basemap);
+  const [activeView, setActiveView] = useState<DashboardView>(initialQuery.view);
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
     events: true,
     risk: false,
@@ -65,6 +74,16 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
     'medium',
     'low',
   ]);
+
+  useEffect(() => {
+    const query = parseDashboardQuery(searchParams.toString());
+    setSource(query.source);
+    setStartDate(query.startDate);
+    setEndDate(query.endDate);
+    setMinMagnitude(query.minMagnitude);
+    setBasemap(query.basemap);
+    setActiveView(query.view);
+  }, [searchParams]);
 
   const faults = useStaticLayers('faults', Boolean(activeLayers.faults));
   const volcanoZones = useStaticLayers('volcano-zones', Boolean(activeLayers.volcanoes));
@@ -87,6 +106,50 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
     return activeRiskLevels.includes(riskLevel);
   });
 
+  function updateQuery(patch: Partial<DashboardQueryState>) {
+    const next: DashboardQueryState = {
+      view: activeView,
+      source,
+      startDate,
+      endDate,
+      minMagnitude,
+      basemap,
+      ...patch,
+    };
+    const query = serializeDashboardQuery(next);
+    setSearchParams(query, { replace: true });
+  }
+
+  function changeView(view: DashboardView) {
+    setActiveView(view);
+    updateQuery({ view });
+  }
+
+  function changeSource(value: string) {
+    setSource(value);
+    updateQuery({ source: value });
+  }
+
+  function changeStartDate(value: string) {
+    setStartDate(value);
+    updateQuery({ startDate: value });
+  }
+
+  function changeEndDate(value: string) {
+    setEndDate(value);
+    updateQuery({ endDate: value });
+  }
+
+  function changeMinMagnitude(value: number) {
+    setMinMagnitude(value);
+    updateQuery({ minMagnitude: value });
+  }
+
+  function changeBasemap(value: BasemapId) {
+    setBasemap(value);
+    updateQuery({ basemap: value });
+  }
+
   return (
     <div className={styles.page}>
       <TopNav
@@ -100,19 +163,19 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
       <div className={styles.main}>
         <DashboardSidebar
           basemap={basemap}
-          onBasemapChange={setBasemap}
+          onBasemapChange={changeBasemap}
           activeView={activeView}
-          onViewChange={setActiveView}
+          onViewChange={changeView}
           activeLayers={activeLayers}
           onToggleLayer={toggleLayer}
           activeRiskLevels={activeRiskLevels}
           onToggleRiskLevel={toggleRiskLevel}
           startDate={startDate}
           endDate={endDate}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
+          onStartDateChange={changeStartDate}
+          onEndDateChange={changeEndDate}
           minMagnitude={minMagnitude}
-          onMinMagnitudeChange={setMinMagnitude}
+          onMinMagnitudeChange={changeMinMagnitude}
         />
 
         <DashboardMapArea
@@ -142,7 +205,7 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
             <VolcanoOverlayStatus state={volcanoOverlayState}
               onRetry={() => setVolcanoOverlayRevision(value => value + 1)} />)}
           <RealtimeStatus {...realtime} />
-          <EventFilterBar source={source} onChange={setSource} />
+          <EventFilterBar source={source} onChange={changeSource} />
           {activeView === 'volcanoes' ? <VolcanoPanel /> : showRisk ? <RiskProfilesPanel /> : (
             <EventFeed
               events={visibleEvents}
