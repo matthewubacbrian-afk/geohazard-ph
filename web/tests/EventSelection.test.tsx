@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import Dashboard from '../src/pages/Dashboard';
 
 const event = {
@@ -24,7 +25,11 @@ vi.mock('../src/components/dashboard/DashboardMapArea', () => ({
 afterEach(cleanup);
 describe('activity selection', () => {
   it('sends the selected activity coordinates to the map while showing its details', () => {
-    render(<Dashboard />);
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>,
+    );
     expect(screen.getByText('No map target')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Luzon earthquake/i }));
     expect(screen.getByText('Map target: 120.97, 14.6')).toBeTruthy();
