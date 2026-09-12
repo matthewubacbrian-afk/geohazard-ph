@@ -30,6 +30,16 @@ Access requires a Kaggle account and API key (`KAGGLE_USERNAME` and `KAGGLE_KEY`
 - GEM Global Active Faults Database: fault-line reference data.
 - PHIVOLCS Active Fault Atlas: manual or semi-manual digitization source.
 - Landslide susceptibility and InSAR datasets: stretch work, validate licensing before use.
+- Philippine administrative regions: the version-pinned geoBoundaries open ADM1
+  derivative for the Philippines, sourced from NAMRIA, PSA, and OCHA Philippines.
+  The web risk overlay uses the simplified WGS84 FeatureCollection from boundary
+  `PHL-ADM1-36201628`, represented in 2020 and built July 5, 2023. License:
+  Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO).
+  Source: https://www.geoboundaries.org/api/current/gbOpen/PHL/ADM1/.
+  The derived file is `web/src/data/philippine-regions.json`, simplified and quantized
+  for browser rendering; its `region_name` property is normalized from the source
+  `shapeName` field. The overlay also maps province-level `Palawan` profiles to the
+  `Mimaropa` ADM1 boundary. Unmapped names are omitted rather than assigned guessed geometry.
 
 ## Attribution
 
@@ -89,3 +99,43 @@ production dataset import still require reviewed source vectors.
 The PHIVOLCS ActiveFault service advertises query support, but its count query
 returned "Requested operation is not supported" during this session. No PHIVOLCS
 geometry was downloaded or substituted with illustrative traces.
+
+<!-- REGION_BOUNDARY_PROVENANCE:START -->
+### Generated Philippine region boundary asset
+
+- Boundary ID: PHL-ADM1-36201628
+- Represented year: 2020
+- Source build date: Jul 05, 2023
+- Source providers: National Mapping and Resource Information Authority (NAMRIA), Philippines Statistics Authority (PSA), OCHA Philippines
+- Source GeoJSON: https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/41af8f1/releaseData/gbOpen/PHL/ADM1/geoBoundaries-PHL-ADM1.geojson
+- Metadata API: https://www.geoboundaries.org/api/current/gbOpen/PHL/ADM1/
+- License: Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)
+- Attribution: Philippine administrative boundaries © geoBoundaries, sourced from NAMRIA, PSA, and OCHA Philippines, licensed under CC BY 3.0 IGO.
+- Generated at: 2026-09-12T09:45:28.218Z
+- Simplification tolerance: 0.01
+- Coordinate quantization: 3 decimal places
+- Output bytes: 346,121
+- Feature count: 17
+- Total vertex count: 20,104
+
+| Region | Vertices |
+| --- | ---: |
+| ARMM | 4200 |
+| CAR | 113 |
+| NCR | 39 |
+| Ilocos Region | 710 |
+| Cagayan Valley | 590 |
+| Central Luzon | 278 |
+| Calabarzon | 789 |
+| Mimaropa | 4346 |
+| Zamboanga Peninsula | 744 |
+| Bicol Region | 2128 |
+| Western Visayas | 1315 |
+| Central Visayas | 1019 |
+| Eastern Visayas | 1665 |
+| Northern Mindanao | 200 |
+| Davao Region | 310 |
+| Soccsksargen | 206 |
+| Caraga | 1452 |
+
+<!-- REGION_BOUNDARY_PROVENANCE:END -->
