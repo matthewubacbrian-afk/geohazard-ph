@@ -6,6 +6,7 @@ import Skeleton from "../common/Skeleton";
 import MapView from "../map/MapView";
 import type { BasemapId } from "../map/basemaps";
 import type { HazardEvent } from "../../types/hazard";
+import { useRiskProfiles } from "../../hooks/useRiskProfiles";
 import { useEventSummary } from "../../hooks/useEventSummary";
 
 type DashboardMapAreaProps = {
@@ -44,7 +45,13 @@ export default function DashboardMapArea({
     data: summary,
     isLoading: summaryLoading,
     error: summaryError,
+    refetch: refetchSummary,
   } = useEventSummary();
+  const {
+    data: riskProfiles = [],
+    error: riskProfilesError,
+    refetch: refetchRiskProfiles,
+  } = useRiskProfiles();
 
   const avgMagnitude =
     !summaryLoading && !summaryError && summary?.avg_magnitude != null
@@ -66,6 +73,8 @@ export default function DashboardMapArea({
         basemap={basemap}
         selectedEvent={selectedEvent}
         showEvents={showEvents}
+        riskProfiles={riskProfiles}
+        showRiskLayer={showRiskLayer}
       />
 
       {isLoading && !error && (
@@ -80,6 +89,19 @@ export default function DashboardMapArea({
           <p className={styles.statusText}>Failed to load events.</p>
           <button type="button" className={styles.retryBtn} onClick={onRetry}>
             Retry
+          </button>
+        </div>
+      )}
+
+      {showRiskLayer && riskProfilesError && (
+        <div className={`${styles.status} ${styles["status--error"]}`} role="alert">
+          <p className={styles.statusText}>Risk overlay unavailable.</p>
+          <button
+            type="button"
+            className={styles.retryBtn}
+            onClick={() => { void refetchRiskProfiles(); }}
+          >
+            Retry risk overlay
           </button>
         </div>
       )}
@@ -147,6 +169,27 @@ export default function DashboardMapArea({
             <div className={`${styles.stat} ${styles.statFull}`}>
               <Skeleton width={120} height={10} />
               <Skeleton width="100%" height={40} />
+            </div>
+          </div>
+        ) : summaryError ? (
+          <div className={styles.statGrid} role="alert">
+            <div className={`${styles.stat} ${styles.statFull}`}>
+              <span className={styles.statLabel}>Regional summary</span>
+              <p className={styles.faultBox}>Summary unavailable.</p>
+              <button
+                type="button"
+                className={styles.retryBtn}
+                onClick={() => { void refetchSummary(); }}
+              >
+                Retry summary
+              </button>
+            </div>
+          </div>
+        ) : !summary ? (
+          <div className={styles.statGrid}>
+            <div className={`${styles.stat} ${styles.statFull}`}>
+              <span className={styles.statLabel}>Regional summary</span>
+              <p className={styles.faultBox}>No regional summary available.</p>
             </div>
           </div>
         ) : (
