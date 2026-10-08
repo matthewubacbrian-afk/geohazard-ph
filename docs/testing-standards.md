@@ -91,7 +91,7 @@ FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
   Tests must pass when run from `ml/` AND from any other directory.
 - Generated artifacts and model outputs go to pytest's `tmp_path`; do not write into the repo tree during tests.
-- Network and credentials are banned: Kaggle download paths are tested with a fake API object and missing-credential cases use `monkeypatch` + a redirected `Path.home()`.
+- Network and credentials are banned: Kaggle download paths are tested with a fake downloader and missing-credential cases use `monkeypatch` + a redirected `Path.home()`.
 - Keep training deterministic with explicit `random_state` arguments; tests assert explicit values.
 - Assert on dataclass fields and exported artifact shapes (metadata keys, profile fields), not on floating-point equality of model internals.
 

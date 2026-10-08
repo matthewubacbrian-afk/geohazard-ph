@@ -248,12 +248,29 @@ KAGGLE_USERNAME=
 KAGGLE_KEY=
 ```
 
-Train from Kaggle:
+Training downloads the latest version of each Kaggle dataset by default. When
+fresh monthly data is published, rerun training without a manual download step.
+Training runs are started manually; no schedule is configured.
+
+Train with the latest Kaggle data:
 
 ```powershell
 .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1
+```
+
+Preserve the local CSVs under `ml/data/raw/` and use `-Offline` to reuse saved
+inputs without downloading (`--offline` for the Python CLI):
+
+```powershell
 .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline
 ```
+
+Automatic CLI local discovery currently treats all CSVs as PHIVOLCS inputs.
+For mixed PHIVOLCS/USGS snapshots, this applies Manila time normalization to USGS
+timestamps and can change deduplication, so these flags alone may not reproduce
+download-mode output. For source-correct reproducible processing of saved inputs,
+call `ml.train.run_training(download=False, phivolcs_paths=[...], usgs_paths=[...])`
+with separate explicit lists of `Path` objects for each source.
 
 Generated artifacts are written under:
 
@@ -269,6 +286,10 @@ Expected outputs include:
 - `kmeans_model.joblib`
 - `scaler.joblib`
 - `random_forest_model.joblib`
+
+In `metadata.json`, `datasets[].version` records the integer Kaggle version for
+each downloaded dataset, distinguishing retrains that used different source
+versions. Offline runs record `null` because no Kaggle version is resolved.
 
 The generated labels are descriptive statistical profiles based on historical records. They are not earthquake predictions.
 
