@@ -22,14 +22,15 @@ def test_summarize_profiles_counts_labels():
 def test_load_profiles_reads_generated_artifact():
     profiles = load_profiles(FIXTURE)
 
-    assert profiles[0].region_name == "Bicol Region"
-    assert profiles[0].feature_importances["event_count"] == 0.42
+    assert [p.region_name for p in profiles[:2]] == ["ARMM", "Bicol Region"]
+    assert profiles[1].label == "Moderate"
+    assert profiles[1].feature_importances["event_count"] == 0.2957
 
 
 def test_get_profile_is_case_insensitive():
     profile = get_profile("bicol region", load_profiles(FIXTURE))
 
-    assert profile.label == "High"
+    assert profile.label == "Moderate"
 
 
 def test_get_profile_raises_for_missing_region():

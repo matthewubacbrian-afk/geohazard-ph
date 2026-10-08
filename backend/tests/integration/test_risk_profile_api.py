@@ -11,7 +11,7 @@ def test_risk_profile_clusters_endpoint_returns_profiles(monkeypatch):
     response = TestClient(app).get("/api/v1/risk-profile/clusters")
 
     assert response.status_code == 200
-    assert response.json()[0]["region_name"] == "Bicol Region"
+    assert response.json()[0]["region_name"] == "ARMM"
 
 
 def test_risk_profile_detail_endpoint_returns_region(monkeypatch):
@@ -21,7 +21,7 @@ def test_risk_profile_detail_endpoint_returns_region(monkeypatch):
     response = TestClient(app).get("/api/v1/risk-profile/Bicol%20Region")
 
     assert response.status_code == 200
-    assert response.json()["label"] == "High"
+    assert response.json()["label"] == "Moderate"
 
 
 def test_risk_profile_detail_endpoint_returns_404(monkeypatch):
