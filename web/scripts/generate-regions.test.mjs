@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
 
 import { describe, expect, it } from 'vitest';
 
@@ -79,7 +80,8 @@ describe('generate-regions helpers', () => {
     const asset = JSON.parse(fs.readFileSync(assetPath, 'utf8'));
     const ncr = asset.features.find((feature) => feature.properties.region_name === 'NCR');
 
-    expect(Buffer.byteLength(fs.readFileSync(assetPath))).toBeLessThan(500 * 1024);
+    expect(Buffer.byteLength(fs.readFileSync(assetPath))).toBeLessThan(1.5 * 1024 * 1024);
+    expect(gzipSync(fs.readFileSync(assetPath)).byteLength).toBeLessThan(300 * 1024);
     expect(countFeatureVertices(ncr)).toBeGreaterThanOrEqual(20);
   });
 

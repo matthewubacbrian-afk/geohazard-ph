@@ -1,22 +1,274 @@
 [
   {
-    "region_name": "Bicol Region",
+    "region_name": "ARMM",
     "cluster": 2,
-    "label": "High",
-    "confidence": 0.82,
-    "feature_importances": {"event_count": 0.42, "max_magnitude": 0.31},
-    "model_version": "v-test",
-    "generated_at": "2026-08-27T00:00:00Z",
-    "dataset_snapshot": "Kaggle PHIVOLCS and USGS fixture"
+    "label": "Moderate",
+    "confidence": 0.78,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
   },
   {
-    "region_name": "Palawan",
+    "region_name": "Bicol Region",
+    "cluster": 2,
+    "label": "Moderate",
+    "confidence": 0.96,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "CAR",
     "cluster": 0,
+    "label": "High",
+    "confidence": 0.93,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Cagayan Valley",
+    "cluster": 2,
+    "label": "Moderate",
+    "confidence": 0.88,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Calabarzon",
+    "cluster": 2,
+    "label": "Moderate",
+    "confidence": 0.93,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Caraga",
+    "cluster": 0,
+    "label": "High",
+    "confidence": 0.98,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Central Luzon",
+    "cluster": 2,
+    "label": "Moderate",
+    "confidence": 0.83,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Central Visayas",
+    "cluster": 2,
+    "label": "Moderate",
+    "confidence": 0.93,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Davao Region",
+    "cluster": 0,
+    "label": "High",
+    "confidence": 0.93,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Eastern Visayas",
+    "cluster": 2,
+    "label": "Moderate",
+    "confidence": 0.73,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Ilocos Region",
+    "cluster": 2,
+    "label": "Moderate",
+    "confidence": 0.89,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Mimaropa",
+    "cluster": 2,
+    "label": "Moderate",
+    "confidence": 0.94,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "NCR",
+    "cluster": 1,
     "label": "Low",
-    "confidence": 0.91,
-    "feature_importances": {"event_count": 0.39, "mean_magnitude": 0.22},
-    "model_version": "v-test",
-    "generated_at": "2026-08-27T00:00:00Z",
-    "dataset_snapshot": "Kaggle PHIVOLCS and USGS fixture"
+    "confidence": 0.99,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Northern Mindanao",
+    "cluster": 2,
+    "label": "Moderate",
+    "confidence": 0.93,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Soccsksargen",
+    "cluster": 0,
+    "label": "High",
+    "confidence": 0.99,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Western Visayas",
+    "cluster": 2,
+    "label": "Moderate",
+    "confidence": 0.86,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
+  },
+  {
+    "region_name": "Zamboanga Peninsula",
+    "cluster": 2,
+    "label": "Moderate",
+    "confidence": 0.88,
+    "feature_importances": {
+      "event_count": 0.2957,
+      "mean_magnitude": 0.1307,
+      "max_magnitude": 0.1486,
+      "mean_depth_km": 0.1588,
+      "event_density": 0.2662
+    },
+    "model_version": "v1",
+    "generated_at": "2026-10-08T04:50:46.384315+00:00",
+    "dataset_snapshot": "Philippine Earthquakes from PHIVOLCS, Philippine Earthquakes 1900-2026 from USGS"
   }
 ]
