@@ -85,7 +85,7 @@ root after applying migrations. This fetches live USGS data.
 
 For local sample risk profiles, set `RISK_PROFILE_EXPORT_PATH=tests/fixtures/risk_profiles.json`
 in the root `.env`; the path is relative to the backend working directory.
-Kaggle credentials are only needed when downloading training datasets.
+Kaggle credentials are needed for training unless you pass `--offline`.
 
 Verify the installation from the repository root:
 
@@ -251,7 +251,8 @@ KAGGLE_KEY=
 Train from Kaggle:
 
 ```powershell
-.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Download
+.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1
+.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline
 ```
 
 Generated artifacts are written under:
@@ -342,7 +343,8 @@ npm run dev
 Train risk-profile models:
 
 ```powershell
-.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Download
+.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1
+.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline
 ```
 
 Run the full local verification set:

@@ -29,7 +29,7 @@ def run_training(
     usgs_paths: list[Path] | None = None,
     artifact_dir: Path = Path("model_artifacts"),
     artifact_version: str = "v1",
-    download: bool = False,
+    download: bool = True,
     k_values: list[int] | None = None,
     random_state: int = 42,
 ) -> TrainingResult:
@@ -144,7 +144,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Train seismic risk profile models")
     parser.add_argument("--artifact-version", default="v1", help="Version tag for artifacts")
     parser.add_argument("--artifact-dir", default="model_artifacts", help="Output directory")
-    parser.add_argument("--download", action="store_true", help="Download datasets from Kaggle")
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="Train from local data/raw CSVs instead of downloading",
+    )
     parser.add_argument("--random-state", type=int, default=42, help="Random seed")
     args = parser.parse_args(argv)
 
@@ -152,7 +156,7 @@ def main(argv: list[str] | None = None) -> int:
         result = run_training(
             artifact_dir=Path(args.artifact_dir),
             artifact_version=args.artifact_version,
-            download=args.download,
+            download=not args.offline,
             random_state=args.random_state,
         )
         print(f"Training complete: {result.profile_count} profiles written to {result.artifact_dir}")

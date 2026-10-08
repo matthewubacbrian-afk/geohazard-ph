@@ -1,6 +1,6 @@
 param(
   [string]$ArtifactVersion = "v1",
-  [switch]$Download
+  [switch]$Offline
 )
 
 $ErrorActionPreference = "Stop"
@@ -8,8 +8,8 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location (Join-Path $RepoRoot "ml")
 
 $Arguments = @("-m", "ml.train", "--artifact-version", $ArtifactVersion)
-if ($Download) {
-  $Arguments += "--download"
+if ($Offline) {
+  $Arguments += "--offline"
 }
 
 $PreviousPythonPath = $env:PYTHONPATH

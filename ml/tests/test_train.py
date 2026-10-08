@@ -4,6 +4,36 @@ from conftest import FIXTURES
 from ml.train import run_training
 
 
+def test_main_offline_disables_download(monkeypatch, tmp_path):
+    from ml import train as train_module
+
+    captured = {}
+
+    def fake_run_training(**kwargs):
+        captured.update(kwargs)
+        return train_module.TrainingResult(0, tmp_path, "v1")
+
+    monkeypatch.setattr(train_module, "run_training", fake_run_training)
+
+    assert train_module.main(["--offline"]) == 0
+    assert captured["download"] is False
+
+
+def test_main_defaults_to_download(monkeypatch, tmp_path):
+    from ml import train as train_module
+
+    captured = {}
+
+    def fake_run_training(**kwargs):
+        captured.update(kwargs)
+        return train_module.TrainingResult(0, tmp_path, "v1")
+
+    monkeypatch.setattr(train_module, "run_training", fake_run_training)
+
+    assert train_module.main([]) == 0
+    assert captured["download"] is True
+
+
 def test_run_training_from_existing_csvs_writes_artifacts(tmp_path):
     result = run_training(
         phivolcs_paths=[(FIXTURES / "phivolcs_sample.csv")],
