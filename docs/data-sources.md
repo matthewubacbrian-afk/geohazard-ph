@@ -40,6 +40,11 @@ Access requires a Kaggle account and API key (`KAGGLE_USERNAME` and `KAGGLE_KEY`
   for browser rendering; its `region_name` property is normalized from the source
   `shapeName` field. The overlay also maps province-level `Palawan` profiles to the
   `Mimaropa` ADM1 boundary. Unmapped names are omitted rather than assigned guessed geometry.
+  The checked-in asset must stay under 1.5 MB raw and 300 KB gzipped, enforced by
+  `web/scripts/generate-regions.test.mjs` together with the small-region vertex and
+  ring-closure checks. The raw budget was raised from 500 KB on 2026-10-08 when the
+  asset was refreshed at tolerance 0.001 (measured 1,233,793 bytes raw and 266 KB
+  gzipped; the main JS bundle measured 576 KB gzipped with the asset included).
 
 ## Attribution
 
