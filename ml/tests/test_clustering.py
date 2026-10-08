@@ -1,4 +1,14 @@
-﻿from ml.clustering import assign_risk_labels, choose_k, fit_kmeans
+﻿import numpy as np
+import pandas as pd
+
+from ml.clustering import (
+    FEATURE_COLUMNS,
+    RISK_LABELS,
+    _cluster_severity_order,
+    assign_risk_labels,
+    choose_k,
+    fit_kmeans,
+)
 from ml.features import RegionFeatures
 
 
@@ -46,3 +56,28 @@ def test_fit_kmeans_returns_labels_from_same_cluster_assignments():
         ]
         labels = {result.risk_labels[other_region] for other_region in same_cluster_regions}
         assert len(labels) == 1
+
+
+def test_fit_kmeans_pins_labels_by_ascending_mean_magnitude():
+    result = fit_kmeans(_rows(), k_values=[3], random_state=42)
+    labels = result.risk_labels
+
+    assert labels["Palawan"] == "Low"
+    assert RISK_LABELS.index(labels["Eastern Visayas"]) > RISK_LABELS.index(labels["Palawan"])
+
+
+def test_cluster_severity_order_ignores_cluster_id_numbering():
+    matrix = pd.DataFrame(
+        [
+            [2, 3.4, 3.6, 22.0, 0.2],
+            [3, 3.6, 3.8, 23.0, 0.3],
+            [12, 6.0, 6.2, 39.5, 0.8],
+            [10, 5.8, 6.0, 30.0, 0.7],
+        ],
+        columns=FEATURE_COLUMNS,
+    )
+
+    severity_map = _cluster_severity_order(matrix, np.array([1, 1, 0, 0]), 2)
+
+    assert severity_map[1] == 0
+    assert severity_map[0] == 1

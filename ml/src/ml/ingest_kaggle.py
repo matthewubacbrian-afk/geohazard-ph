@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-
 
 PHIVOLCS_DATASET = "bwandowando/philippine-earthquakes-from-phivolcs"
 USGS_DATASET = "bwandowando/philippine-earthquakes-1900-2025-from-usgs"
@@ -26,6 +26,7 @@ class DownloadedDataset:
     title: str
     license_name: str
     path: Path
+    version: int
 
 
 DEFAULT_DATASETS = (
@@ -40,18 +41,41 @@ def _has_credentials() -> bool:
     return env_credentials or config_file.exists()
 
 
-def _load_default_api():
+def _read_dataset_version(output_dir: Path, slug: str) -> int:
+    owner, dataset_slug = slug.split("/", maxsplit=1)
+    marker_root = output_dir / ".complete" / "datasets" / owner / dataset_slug
+    versions = (
+        [
+            int(version_dir.name)
+            for version_dir in marker_root.iterdir()
+            if version_dir.is_dir() and (version_dir / "bundle.complete").exists()
+        ]
+        if marker_root.exists()
+        else []
+    )
+
+    if not versions:
+        raise RuntimeError(f"Could not determine Kaggle dataset version for {slug}.")
+
+    return max(versions)
+
+
+def _kagglehub_download(slug: str, output_dir: Path) -> tuple[str, int]:
     try:
-        from kaggle.api.kaggle_api_extended import KaggleApi
+        import kagglehub
     except ImportError as exc:
-        raise KaggleCredentialError("Install the kaggle package before downloading datasets.") from exc
-    return KaggleApi()
+        raise KaggleCredentialError(
+            "Install the kagglehub package before downloading datasets."
+        ) from exc
+
+    path = kagglehub.dataset_download(slug, output_dir=str(output_dir), force_download=True)
+    return str(Path(path)), _read_dataset_version(output_dir, slug)
 
 
 def download_datasets(
     raw_dir: Path,
     datasets: tuple[KaggleDataset, ...] | list[KaggleDataset] = DEFAULT_DATASETS,
-    api=None,
+    downloader: Callable[[str, Path], tuple[str, int]] | None = None,
 ) -> list[DownloadedDataset]:
     if not _has_credentials():
         raise KaggleCredentialError(
@@ -60,15 +84,20 @@ def download_datasets(
         )
 
     raw_dir.mkdir(parents=True, exist_ok=True)
-    kaggle_api = api or _load_default_api()
-    kaggle_api.authenticate()
+    dl = downloader or _kagglehub_download
 
     downloaded: list[DownloadedDataset] = []
     for dataset in datasets:
         dataset_dir = raw_dir / dataset.slug.replace("/", "_")
         dataset_dir.mkdir(parents=True, exist_ok=True)
-        kaggle_api.dataset_download_files(dataset.slug, path=dataset_dir, unzip=True)
+        path, version = dl(dataset.slug, dataset_dir)
         downloaded.append(
-            DownloadedDataset(dataset.slug, dataset.title, dataset.license_name, dataset_dir)
+            DownloadedDataset(
+                dataset.slug,
+                dataset.title,
+                dataset.license_name,
+                Path(path),
+                version,
+            )
         )
     return downloaded

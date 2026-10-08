@@ -29,12 +29,21 @@ def run_training(
     usgs_paths: list[Path] | None = None,
     artifact_dir: Path = Path("model_artifacts"),
     artifact_version: str = "v1",
-    download: bool = False,
+    download: bool = True,
     k_values: list[int] | None = None,
     random_state: int = 42,
 ) -> TrainingResult:
     if download:
         downloaded = download_datasets(Path("data/raw"))
+        dataset_entries = [
+            {
+                "slug": dataset.slug,
+                "title": dataset.title,
+                "license": dataset.license_name,
+                "version": dataset.version,
+            }
+            for dataset in downloaded
+        ]
         phivolcs_paths = []
         usgs_paths = []
         for dataset in downloaded:
@@ -44,6 +53,15 @@ def run_training(
             else:
                 usgs_paths.extend(csvs)
     else:
+        dataset_entries = [
+            {
+                "slug": dataset.slug,
+                "title": dataset.title,
+                "license": dataset.license_name,
+                "version": None,
+            }
+            for dataset in DEFAULT_DATASETS
+        ]
         if phivolcs_paths is None:
             phivolcs_paths = list(Path("data/raw").rglob("*.csv")) if Path("data/raw").exists() else []
         if usgs_paths is None:
@@ -99,10 +117,7 @@ def run_training(
             "model_version": artifact_version,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "region_count": len(region_features_list),
-            "datasets": [
-                {"slug": dataset.slug, "title": dataset.title, "license": dataset.license_name}
-                for dataset in DEFAULT_DATASETS
-            ],
+            "datasets": dataset_entries,
             "source_reports": {
                 key: {"accepted": report.accepted_rows, "rejected": report.rejected_rows}
                 for key, report in source_reports.items()
@@ -144,7 +159,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Train seismic risk profile models")
     parser.add_argument("--artifact-version", default="v1", help="Version tag for artifacts")
     parser.add_argument("--artifact-dir", default="model_artifacts", help="Output directory")
-    parser.add_argument("--download", action="store_true", help="Download datasets from Kaggle")
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="Train from local data/raw CSVs instead of downloading",
+    )
     parser.add_argument("--random-state", type=int, default=42, help="Random seed")
     args = parser.parse_args(argv)
 
@@ -152,7 +171,7 @@ def main(argv: list[str] | None = None) -> int:
         result = run_training(
             artifact_dir=Path(args.artifact_dir),
             artifact_version=args.artifact_version,
-            download=args.download,
+            download=not args.offline,
             random_state=args.random_state,
         )
         print(f"Training complete: {result.profile_count} profiles written to {result.artifact_dir}")
