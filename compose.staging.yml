@@ -57,8 +57,10 @@ services:
 
   worker:
     image: ${IMAGE_PREFIX}-api:${IMAGE_TAG}
-    command: ["sh", "-c", "while true; do python -m ingestion.scheduler; sleep 300; done"]
-    environment: *backend_environment
+    command: ["python", "-m", "ingestion.scheduler"]
+    environment:
+      <<: *backend_environment
+      INGEST_POLL_INTERVAL_SECONDS: ${INGEST_POLL_INTERVAL_SECONDS:-300}
     depends_on:
       api:
         condition: service_healthy
