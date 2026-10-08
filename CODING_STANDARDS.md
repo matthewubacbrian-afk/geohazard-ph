@@ -699,7 +699,8 @@ npm run dev
 ML training:
 
 ```powershell
-.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Download
+.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1
+.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline
 ```
 
 ---
