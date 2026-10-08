@@ -207,15 +207,17 @@ Useful local ports:
 
 ## Live Earthquake Ingestion
 
-A USGS ingestion worker fetches recent earthquakes inside the Philippines bounding box and upserts them into Postgres. Run a one-shot ingest locally from `backend/`:
+The ingestion worker polls USGS and PHIVOLCS sources on a configurable interval and upserts events into Postgres. Start the polling worker locally from `backend/`:
 
 ```powershell
 python -m ingestion.scheduler
 ```
 
-The command prints a summary such as `USGS ingest complete: fetched=42, processed=42`. The worker polls the USGS Earthquakes feed no faster than once per minute to respect the source cache.
+By default the worker runs in a long-running polling loop, waiting at least 60 seconds after each cycle to respect source caching. Configure the interval with `INGEST_POLL_INTERVAL_SECONDS` (seconds, minimum 60). Each cycle runs USGS and PHIVOLCS independently; if one source fails, the other still runs. `SIGTERM`/`SIGINT` interrupts the wait immediately; an active cycle finishes before shutdown.
 
-In Docker, the `worker` service runs the same ingestion:
+For a local one-shot run, set `INGEST_MAX_CYCLES=1` in the command's environment. Leave it unset for the Docker worker: a bounded worker combined with `restart: unless-stopped` would repeatedly restart.
+
+In Docker, the `worker` service runs the same long-running scheduler:
 
 ```powershell
 docker compose up --build worker

@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     phivolcs_volcano_timeout_seconds: float = Field(default=15, ge=1, le=60)
     phivolcs_volcano_cache_seconds: int = Field(default=300, ge=60)
     phivolcs_volcano_stale_seconds: int = Field(default=3600, ge=60)
+    ingest_poll_interval_seconds: int = Field(default=60, ge=60)
+    ingest_max_cycles: int | None = Field(default=None, ge=1)
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[2] / ".env",
