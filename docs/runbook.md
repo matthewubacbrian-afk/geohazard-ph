@@ -10,13 +10,13 @@
 
 ## Ingestion & Worker
 
-Run a one-shot USGS ingest locally from `backend/`:
+Run a one-shot USGS and PHIVOLCS earthquake ingest locally from `backend/`:
 
 ```bash
 python -m ingestion.scheduler
 ```
 
-The command fetches recent earthquakes in the Philippines bounding box and upserts them into Postgres, printing `USGS ingest complete: fetched=<n>, processed=<n>`.
+The command fetches recent earthquakes and upserts them into Postgres, logging fetched and processed counts for each source.
 
 Apply database migrations from `backend/`:
 
@@ -55,6 +55,74 @@ Run from the repository root:
 python scripts/verify_structure.py
 ```
 
+## Canonical Event Reconciliation
+
+The matcher now rebuilds groups from current source rows during nonempty ingestion.
+Before rolling this change into a database that already contains events, take a
+database backup and inspect the proposed changes during a maintenance window:
+
+```bash
+cd backend
+python -m ingestion.reconcile
+python -m ingestion.reconcile --apply
+```
+
+The first command rolls back its changes and logs inspected and changed row counts.
+The second commits them. Check `/api/v1/events` and `/api/v1/events/summary`
+afterward. Browsers reconcile through their periodic REST refresh; the maintenance
+command does not publish WebSocket messages. Rows without a stable source
+`external_id` use a content key and need source-level review if revised.
+
+## Portable Staging Release
+
+The manual **Prepare Staging Release** workflow runs backend and web checks,
+publishes API and web images to GHCR under the commit SHA, and uploads a deployment
+bundle. It does not connect to a host. The bundle contains `compose.staging.yml`,
+the Caddyfile, the deploy script, and `.env.staging.example`.
+
+Prepare a Linux host with Docker Compose v2, a DNS name pointing to the host,
+inbound ports 80 and 443, and outbound access to GHCR and the event sources.
+Log in to GHCR if the images are private. Extract the bundle to one directory,
+copy `.env.staging.example` to `.env.staging`, and set its image prefix, domain,
+database credentials, CORS origin, and risk-profile export file. Keep
+`.env.staging` and the export out of version control. The browser bundle uses
+same-origin `/api/v1` and derives `wss://` from the public HTTPS origin.
+
+Before the first deployment to a populated database, back up Postgres and run
+the canonical reconciliation preview and apply commands using the release API
+image during a maintenance window. From the extracted bundle directory, after
+setting `.env.staging`, run:
+
+```bash
+export IMAGE_TAG=<release-commit-sha>
+docker compose --env-file .env.staging -f compose.staging.yml pull
+docker compose --env-file .env.staging -f compose.staging.yml up -d postgres redis
+docker compose --env-file .env.staging -f compose.staging.yml run --rm migrate
+docker compose --env-file .env.staging -f compose.staging.yml run --rm --no-deps api python -m ingestion.reconcile
+docker compose --env-file .env.staging -f compose.staging.yml run --rm --no-deps api python -m ingestion.reconcile --apply
+```
+
+For an empty database, migrations run automatically as a one-shot Compose
+service before the API starts. Postgres and Redis health checks gate startup,
+and the worker waits for a healthy API. The staging worker runs ingestion once
+per cycle and waits five minutes after each attempt, including failed attempts.
+
+Run from the extracted bundle directory:
+
+```bash
+bash scripts/deploy_staging.sh <release-commit-sha> https://staging.example.com
+```
+
+The script validates Compose, pulls the immutable images, starts the stack,
+waits for health, and checks `/health`, `/api/v1/events`, and
+`/api/v1/risk-profile/clusters`. Caddy obtains and
+renews TLS certificates for `SITE_DOMAIN` and forwards `/api/` and `/ws/` to
+the API. Its certificate state and Postgres data use persistent Docker volumes.
+The old release SHA is the rollback target: rerun the script with that SHA after
+checking schema compatibility. Restore the database backup if a migration or
+data reconciliation must be undone. Review `docker compose -f compose.staging.yml
+ps` and service logs when health checks fail.
+
 ## Epic 2 realtime channel (Person B)
 
 Start Redis and the API, then open the dashboard. `GET /api/v1/subscribe` checks
@@ -67,25 +135,8 @@ The WebSocket URL is derived from that API base using ws/wss and `/ws/events`.
 An explicit `VITE_WS_URL=wss://your-host/ws/events` override is also supported in
 that file. Restart Vite after environment edits.
 
-**Person A handoff:** this branch still has the Epic 1
-`ingest_usgs_events(session, events)`; Person B intentionally does not edit
-`app/services/ingest.py`. When Person A's canonical ingestion lands, the scheduler
-must pass the implemented callback:
-
-```python
-from app.schemas.event_change import EventChange
-from app.services.events_publisher import publish
-
-# Inside the scheduler, using Person A's generalized service:
-processed = ingest_events(session, events, on_committed=publish)
-```
-
-Person A must construct `EventChange` for every touched row, including demotions,
-after assigning canonical fields, and invoke the callback strictly after commit.
-Until that lands, normal ingestion does not emit pushes; the dashboard's
-30-second REST refresh continues to work. The publisher and Redis/WebSocket
-integration tests exercise the sealed messages without pretending to implement
-Person A's canonicalization.
+The scheduler passes committed canonical event changes to the publisher.
+The browser also refreshes the REST event list every 30 seconds.
 
 Redis pub/sub is best-effort, without durable replay. Lost publications recover
 through REST; never retry the database transaction because publishing failed.

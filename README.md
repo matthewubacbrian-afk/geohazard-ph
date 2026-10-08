@@ -8,7 +8,7 @@ GeoHazard PH is a Project NOAH-inspired geologic hazard monitoring platform for 
 - `web/` - React, TypeScript, Vite, and MapLibre dashboard.
 - `ml/` - Kaggle-backed regional seismic risk profiling pipeline using K-Means and Random Forest.
 - `mobile/` - React Native starter shell.
-- `infra/` - CI/CD, reverse proxy, and deployment placeholders.
+- `infra/` - reverse proxy configuration for the portable staging release.
 - `data/` - local static data drop zones.
 - `docs/` - project documentation, specs, implementation plans, ADRs, and runbooks.
 - `scripts/` - helper scripts for verification, imports, and ML training.
@@ -16,6 +16,11 @@ GeoHazard PH is a Project NOAH-inspired geologic hazard monitoring platform for 
 ## Coding Standards
 
 All human-written and generated changes should follow [CODING_STANDARDS.md](CODING_STANDARDS.md). Coding agents should also read [AGENTS.md](AGENTS.md) before modifying the repository.
+
+Staging images and a portable Compose deployment bundle can be produced by the
+manual workflow in `.github/workflows/deploy-staging.yml`. See
+[docs/runbook.md](docs/runbook.md) for host setup, reconciliation, deployment,
+and rollback commands.
 
 ## Prerequisites
 
