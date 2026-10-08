@@ -111,31 +111,31 @@ geometry was downloaded or substituted with illustrative traces.
 - Metadata API: https://www.geoboundaries.org/api/current/gbOpen/PHL/ADM1/
 - License: Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)
 - Attribution: Philippine administrative boundaries © geoBoundaries, sourced from NAMRIA, PSA, and OCHA Philippines, licensed under CC BY 3.0 IGO.
-- Generated at: 2026-09-12T09:45:28.218Z
-- Simplification tolerance: 0.01
+- Generated at: 2026-10-08T04:46:52.631Z
+- Simplification tolerance: 0.001
 - Coordinate quantization: 3 decimal places
-- Output bytes: 346,121
+- Output bytes: 1,233,793
 - Feature count: 17
-- Total vertex count: 20,104
+- Total vertex count: 74,219
 
 | Region | Vertices |
 | --- | ---: |
-| ARMM | 4200 |
-| CAR | 113 |
-| NCR | 39 |
-| Ilocos Region | 710 |
-| Cagayan Valley | 590 |
-| Central Luzon | 278 |
-| Calabarzon | 789 |
-| Mimaropa | 4346 |
-| Zamboanga Peninsula | 744 |
-| Bicol Region | 2128 |
-| Western Visayas | 1315 |
-| Central Visayas | 1019 |
-| Eastern Visayas | 1665 |
-| Northern Mindanao | 200 |
-| Davao Region | 310 |
-| Soccsksargen | 206 |
-| Caraga | 1452 |
+| ARMM | 10453 |
+| CAR | 571 |
+| NCR | 389 |
+| Ilocos Region | 2135 |
+| Cagayan Valley | 2263 |
+| Central Luzon | 2106 |
+| Calabarzon | 4225 |
+| Mimaropa | 14311 |
+| Zamboanga Peninsula | 3732 |
+| Bicol Region | 7843 |
+| Western Visayas | 4524 |
+| Central Visayas | 4302 |
+| Eastern Visayas | 6920 |
+| Northern Mindanao | 1967 |
+| Davao Region | 2057 |
+| Soccsksargen | 1359 |
+| Caraga | 5062 |
 
 <!-- REGION_BOUNDARY_PROVENANCE:END -->
