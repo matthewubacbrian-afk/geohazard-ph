@@ -617,6 +617,7 @@ GitHub Actions workflows must live under `.github/workflows`.
 Current workflow responsibilities:
 
 - `backend-ci.yml`: install backend package and run backend pytest.
+- `ml-ci.yml`: install `ml[dev]` and run ML pytest (blocking); Ruff runs as a non-blocking report until the baseline is clean.
 - `web-ci.yml`: install web dependencies and run web build.
 - `mobile-ci.yml`: install mobile dependencies and run mobile tests.
 - `deploy-staging.yml`: manual staging deployment placeholder.
