@@ -258,7 +258,7 @@ export default function MapView({
               "match",
               ["get", "label"],
               "Very High",
-              cssVar("--risk-high"),
+              cssVar("--risk-very-high"),
               "High",
               cssVar("--risk-high"),
               "Moderate",

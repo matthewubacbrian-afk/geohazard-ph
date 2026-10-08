@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styles from './DashboardSidebar.module.css';
 import { BASEMAPS, BASEMAP_IDS, type BasemapId } from '../map/basemaps';
+import type { RiskBucket } from '../../lib/risk';
 
 export type DashboardView = 'map' | 'filters' | 'history' | 'risk' | 'volcanoes';
 
@@ -25,12 +26,10 @@ const LAYERS: LayerDef[] = [
   { key: 'volcanoes', label: 'Volcano zones', available: true },
 ];
 
-type RiskLevelKey = 'high' | 'medium' | 'low';
-
-const RISK_LEVELS: { key: RiskLevelKey; label: string; swatch: string }[] = [
-  { key: 'high', label: 'High Risk', swatch: styles['swatch--high'] },
-  { key: 'medium', label: 'Moderate Risk', swatch: styles['swatch--medium'] },
-  { key: 'low', label: 'Low Risk', swatch: styles['swatch--low'] },
+const EVENT_CATEGORIES: { key: RiskBucket; label: string }[] = [
+  { key: 'critical', label: 'Critical events' },
+  { key: 'elevated', label: 'Elevated events' },
+  { key: 'baseline', label: 'Baseline events' },
 ];
 
 type DashboardSidebarProps = {
@@ -40,8 +39,8 @@ type DashboardSidebarProps = {
   onViewChange: (view: DashboardView) => void;
   activeLayers: Record<string, boolean>;
   onToggleLayer: (key: string) => void;
-  activeRiskLevels: RiskLevelKey[];
-  onToggleRiskLevel: (level: RiskLevelKey) => void;
+  activeEventCategories: RiskBucket[];
+  onToggleEventCategory: (level: RiskBucket) => void;
   startDate: string;
   endDate: string;
   onStartDateChange: (date: string) => void;
@@ -57,8 +56,8 @@ export default function DashboardSidebar({
   onViewChange,
   activeLayers,
   onToggleLayer,
-  activeRiskLevels,
-  onToggleRiskLevel,
+  activeEventCategories,
+  onToggleEventCategory,
   startDate,
   endDate,
   onStartDateChange,
@@ -170,16 +169,15 @@ export default function DashboardSidebar({
         </div>
 
         <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Risk level</h3>
+          <h3 className={styles.sectionTitle}>Event feed categories</h3>
           <div className={styles.checklist}>
-            {RISK_LEVELS.map((level) => (
+            {EVENT_CATEGORIES.map((level) => (
               <label key={level.key} className={styles.checkItem}>
                 <input
                   type="checkbox"
-                  checked={activeRiskLevels.includes(level.key)}
-                  onChange={() => onToggleRiskLevel(level.key)}
+                  checked={activeEventCategories.includes(level.key)}
+                  onChange={() => onToggleEventCategory(level.key)}
                 />
-                <span className={`${styles.swatch} ${level.swatch}`} />
                 <span>{level.label}</span>
               </label>
             ))}

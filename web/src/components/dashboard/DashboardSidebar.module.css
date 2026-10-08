@@ -258,7 +258,7 @@
   border-radius: var(--radius-sm);
 }
 
-/* ---- Risk level checklist ---- */
+/* ---- Event feed categories ---- */
 .checklist {
   display: flex;
   flex-direction: column;
@@ -285,26 +285,6 @@
 .checkItem input {
   accent-color: var(--accent);
   margin: 0;
-}
-
-.swatch {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-.swatch--high {
-  background: var(--risk-high);
-}
-
-.swatch--medium {
-  background: var(--risk-medium);
-}
-
-.swatch--low {
-  background: var(--risk-low);
 }
 
 /* ---- Date range ---- */

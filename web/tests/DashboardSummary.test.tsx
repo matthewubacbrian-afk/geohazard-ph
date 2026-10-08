@@ -34,6 +34,25 @@ function renderSummary() {
 }
 
 describe('Dashboard summary states', () => {
+  it('uses canonical risk labels and describes the unfiltered area count', () => {
+    mockedUseEventSummary.mockReturnValue({
+      data: { event_count: 12, avg_magnitude: 4.5 },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    mockedUseRiskProfiles.mockReturnValue({ data: [], error: null, refetch: vi.fn() } as never);
+
+    renderSummary();
+
+    expect(screen.getByText('Regional risk profile')).toBeInTheDocument();
+    for (const label of ['Low', 'Moderate', 'High', 'Very High']) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+    expect(screen.queryByText(/PGA|Critical|Elevated|Baseline/)).not.toBeInTheDocument();
+    expect(screen.getByText('Events in area')).toBeInTheDocument();
+    expect(screen.queryByText('Frequency (YTD)')).not.toBeInTheDocument();
+  });
   it('shows a retry action when the summary request fails', () => {
     const refetch = vi.fn();
     mockedUseEventSummary.mockReturnValue({
