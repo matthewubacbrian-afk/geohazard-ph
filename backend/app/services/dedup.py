@@ -25,41 +25,45 @@ def dedup_key(event: HazardEvent) -> tuple[str, str | None]:
 
 
 def match_and_link(session: Session) -> None:
-    rows = session.execute(select(HazardEventORM)).scalars().all()
+    rows = sorted(session.execute(select(HazardEventORM)).scalars().all(), key=_primary_sort_key)
+    groups: list[list[HazardEventORM]] = []
     for row in rows:
-        if row.canonical_id is None:
-            row.canonical_id = row.id
-            row.is_primary = True
+        compatible = [
+            (min(_match_confidence(row, member) for member in group), group)
+            for group in groups
+            if all(row.source != member.source and _events_match(row, member) for member in group)
+        ]
+        if compatible:
+            compatible.sort(key=lambda item: (-item[0], str(min(member.id for member in item[1]))))
+            compatible[0][1].append(row)
+        else:
+            groups.append([row])
 
-    groups: dict[object, list[HazardEventORM]] = {}
-    for row in rows:
-        groups.setdefault(row.canonical_id, []).append(row)
-
-    for index, row in enumerate(rows):
-        for candidate in rows[index + 1 :]:
-            if row.source == candidate.source or not _events_match(row, candidate):
-                continue
-
-            row_group = groups[row.canonical_id]
-            candidate_group = groups[candidate.canonical_id]
-            if row_group is candidate_group:
-                continue
-
-            merged_group = row_group + candidate_group
-            canonical_id = min(event.id for event in merged_group)
-            groups[canonical_id] = merged_group
-            if row.canonical_id != canonical_id:
-                del groups[row.canonical_id]
-            if candidate.canonical_id != canonical_id:
-                del groups[candidate.canonical_id]
-            for event in merged_group:
-                event.canonical_id = canonical_id
-
-    for group in groups.values():
+    for group in groups:
+        canonical_id = min(row.id for row in group)
         primary = min(group, key=_primary_sort_key)
         for row in group:
+            row.canonical_id = canonical_id
             row.is_primary = row is primary
             row.match_confidence = _match_confidence(row, primary) if len(group) > 1 else None
+
+
+def reconcile_canonical_events(session: Session, *, apply: bool = False) -> tuple[int, int]:
+    rows = session.execute(select(HazardEventORM)).scalars().all()
+    before = {
+        row.id: (row.canonical_id, row.is_primary, row.match_confidence)
+        for row in rows
+    }
+    match_and_link(session)
+    changed = sum(
+        before[row.id] != (row.canonical_id, row.is_primary, row.match_confidence)
+        for row in rows
+    )
+    if apply:
+        session.commit()
+    else:
+        session.rollback()
+    return len(rows), changed
 
 
 def _events_match(left: HazardEventORM, right: HazardEventORM) -> bool:
