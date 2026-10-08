@@ -35,6 +35,15 @@ def run_training(
 ) -> TrainingResult:
     if download:
         downloaded = download_datasets(Path("data/raw"))
+        dataset_entries = [
+            {
+                "slug": dataset.slug,
+                "title": dataset.title,
+                "license": dataset.license_name,
+                "version": dataset.version,
+            }
+            for dataset in downloaded
+        ]
         phivolcs_paths = []
         usgs_paths = []
         for dataset in downloaded:
@@ -44,6 +53,15 @@ def run_training(
             else:
                 usgs_paths.extend(csvs)
     else:
+        dataset_entries = [
+            {
+                "slug": dataset.slug,
+                "title": dataset.title,
+                "license": dataset.license_name,
+                "version": None,
+            }
+            for dataset in DEFAULT_DATASETS
+        ]
         if phivolcs_paths is None:
             phivolcs_paths = list(Path("data/raw").rglob("*.csv")) if Path("data/raw").exists() else []
         if usgs_paths is None:
@@ -99,10 +117,7 @@ def run_training(
             "model_version": artifact_version,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "region_count": len(region_features_list),
-            "datasets": [
-                {"slug": dataset.slug, "title": dataset.title, "license": dataset.license_name}
-                for dataset in DEFAULT_DATASETS
-            ],
+            "datasets": dataset_entries,
             "source_reports": {
                 key: {"accepted": report.accepted_rows, "rejected": report.rejected_rows}
                 for key, report in source_reports.items()
