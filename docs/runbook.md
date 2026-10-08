@@ -10,13 +10,15 @@
 
 ## Ingestion & Worker
 
-Run a one-shot USGS ingest locally from `backend/`:
+Start the polling worker locally from `backend/`:
 
 ```bash
 python -m ingestion.scheduler
 ```
 
-The command fetches recent earthquakes in the Philippines bounding box and upserts them into Postgres, printing `USGS ingest complete: fetched=<n>, processed=<n>`.
+By default the scheduler waits at least 60 seconds after each cycle (configured via `INGEST_POLL_INTERVAL_SECONDS` in environment/settings). Each cycle runs USGS and PHIVOLCS ingests independently; if one source fails, the other continues and the error is logged with structured fields (`source` and exception). `SIGTERM`/`SIGINT` interrupts the wait immediately; an active cycle finishes before shutdown.
+
+For a local one-shot run, set `INGEST_MAX_CYCLES=1` in the command's environment. Positive values bound the number of cycles; unset means continuous polling. Leave this variable unset for the Docker worker, whose production `restart: unless-stopped` policy would otherwise repeatedly restart bounded runs.
 
 Apply database migrations from `backend/`:
 
@@ -30,12 +32,13 @@ To target a specific database (for example the integration test database), pass 
 alembic -x db_url=postgresql+psycopg://geohazard:geohazard@localhost:5432/geohazard_test upgrade head
 ```
 
-When the USGS feed is unreachable:
+When a source feed is unreachable:
 
-1. Confirm the ingest raises `USGSFetchError` and check the underlying HTTP/network error in the logs.
+1. Confirm the ingest logs `ingest source failed` with `extra={"source": "usgs"|"phivolcs"}` and check the underlying exception in the logs.
 2. Verify the source status, URL, and credentials (USGS requires no API key; verify network egress).
-3. Respect the one-minute minimum poll cadence; do not hammer the feed.
-4. Confirm the bounding box (`PH_BBOX`) and `eventtype` filter are still valid if ingest runs but returns zero events.
+3. Respect the one-minute minimum poll cadence (default 60s, configurable via `INGEST_POLL_INTERVAL_SECONDS`); do not hammer the feed.
+4. Confirm the bounding box (`PH_BBOX`) and filters are still valid if an ingest runs but returns zero events.
+5. For USGS-specific failures, `USGSFetchError` may be raised by the adapter; inspect logs for details.
 
 ### API — regional event summary
 
