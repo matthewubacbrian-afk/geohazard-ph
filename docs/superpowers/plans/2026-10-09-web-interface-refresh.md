@@ -145,13 +145,13 @@ The tokens task refines the existing primitive/semantic structure. Maintain a 4p
 - Modify: `web/src/components/events/EventFeed.tsx`, `EventFeed.module.css`, `EventFeedItem.module.css`, `EventDetailPanel.module.css` (JSX only for necessary semantic/accessibility markup)
 - Test: `web/tests/DashboardCard.test.tsx`, `DashboardSummary.test.tsx`, `DashboardStates.test.tsx`, `EventFeed.test.tsx`, `EventListLive.test.tsx`, `EventSelection.test.tsx`
 
-- [ ] **Step 1: Confirm tests cover summary loading, populated values, unavailable/null fields, error and Retry; event feed loading/error/retry/empty, source labels, category selection, event selection/details; and realtime connected/disconnected semantics. Add a failing behavior assertion first only for any uncovered interaction that markup work could break.**
-- [ ] **Step 2: Restyle summary** as a compact map-supporting instrument panel. Continue rendering values exclusively from `useEventSummary` fields `event_count`, `avg_magnitude`, `max_magnitude`, `latest_occurred_at`; retain `DashboardMapArea` loading, error, Retry, and no-summary content. Do not add defaults that display fake metrics.
-- [ ] **Step 3: Restyle realtime status** with labeled LIVE/disconnected state and accessible status semantics. Preserve the hook as connectivity-only and do not imply ingest health or an official alert.
-- [ ] **Step 4: Restyle event feed rows and filter pills** for compact scanability, tabular magnitude/time, source clarity, visible selection, hover/focus/pressed states, and responsive overflow behavior. Keep categories and event totals derived from existing filtered rows.
-- [ ] **Step 5: Restyle event detail** with readable definition list, source, coordinates, timestamps, units, and keyboard-accessible close action; render optional magnitude/depth only when present.
-- [ ] **Step 6: Run `cd web; npm test -- tests/DashboardCard.test.tsx tests/DashboardSummary.test.tsx tests/DashboardStates.test.tsx tests/EventFeed.test.tsx tests/EventListLive.test.tsx tests/EventSelection.test.tsx` and `npm run build`.** Expected: all current data/state and selection assertions pass.
-- [ ] **Step 7: Commit** `style: refine dashboard activity panels`.
+- [x] **Step 1: Confirm tests cover summary loading, populated values, unavailable/null fields, error and Retry; event feed loading/error/retry/empty, source labels, category selection, event selection/details; and realtime connected/disconnected semantics. Add a failing behavior assertion first only for any uncovered interaction that markup work could break.**
+- [x] **Step 2: Restyle summary** as a compact map-supporting instrument panel. Continue rendering values exclusively from `useEventSummary` fields `event_count`, `avg_magnitude`, `max_magnitude`, `latest_occurred_at`; retain `DashboardMapArea` loading, error, Retry, and no-summary content. Do not add defaults that display fake metrics.
+- [x] **Step 3: Restyle realtime status** with labeled LIVE/disconnected state and accessible status semantics. Preserve the hook as connectivity-only and do not imply ingest health or an official alert.
+- [x] **Step 4: Restyle event feed rows and filter pills** for compact scanability, tabular magnitude/time, source clarity, visible selection, hover/focus/pressed states, and responsive overflow behavior. Keep categories and event totals derived from existing filtered rows.
+- [x] **Step 5: Restyle event detail** with readable definition list, source, coordinates, timestamps, units, and keyboard-accessible close action; render optional magnitude/depth only when present.
+- [x] **Step 6: Run `cd web; npm test -- tests/DashboardCard.test.tsx tests/DashboardSummary.test.tsx tests/DashboardStates.test.tsx tests/EventFeed.test.tsx tests/EventListLive.test.tsx tests/EventSelection.test.tsx` and `npm run build`.** Expected: all current data/state and selection assertions pass.
+- [x] **Step 7: Commit** `style: refine dashboard activity panels`.
 
 ### Task 5: Restyle risk and volcano panels without changing their meaning
 
