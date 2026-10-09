@@ -30,7 +30,7 @@
 - Consumes: `.github/workflows/mobile-ci.yml`.
 - Produces: a standard-library test that requires an empty `packages` input on the setup action and confirms the explicit SDK install and Android build remain present.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `scripts/tests/test_mobile_ci_workflow.py` with:
 
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     unittest.main()
 ```
 
-- [ ] **Step 2: Run the test and verify the expected failure**
+- [x] **Step 2: Run the test and verify the expected failure**
 
 Run from the repository root:
 
@@ -76,12 +76,9 @@ python -m unittest discover -s scripts/tests -p test_mobile_ci_workflow.py
 
 Expected: `test_android_setup_skips_obsolete_default_tools_package` fails because the current workflow does not pass an explicit `packages` input. The package-list/build-preservation test passes.
 
-- [ ] **Step 3: Commit the failing regression test**
+- [x] **Step 3: Keep the test in the working tree for the fix**
 
-```powershell
-git add scripts/tests/test_mobile_ci_workflow.py
-git commit -m "test: cover android ci sdk package setup"
-```
+Do not commit an intermediate failing test. The repository commit checklist requires package tests to pass, so commit the test together with the passing workflow fix in Task 2.
 
 ### Task 2: Prevent setup from installing the obsolete SDK package
 
@@ -92,7 +89,7 @@ git commit -m "test: cover android ci sdk package setup"
 - Consumes: the regression test from Task 1.
 - Produces: the Android setup action receives `packages: ""`; the following `sdkmanager` step remains the sole installer of the required SDK packages.
 
-- [ ] **Step 1: Configure the action to skip additional default packages**
+- [x] **Step 1: Configure the action to skip additional default packages**
 
 Change the setup step to:
 
@@ -104,7 +101,7 @@ Change the setup step to:
 
 Keep the existing `Install Android SDK packages` step and its explicit package list unchanged.
 
-- [ ] **Step 2: Run the regression test and confirm it passes**
+- [x] **Step 2: Run the regression test and confirm it passes**
 
 ```powershell
 python -m unittest discover -s scripts/tests -p test_mobile_ci_workflow.py
@@ -112,10 +109,10 @@ python -m unittest discover -s scripts/tests -p test_mobile_ci_workflow.py
 
 Expected: both workflow tests pass.
 
-- [ ] **Step 3: Commit the workflow fix**
+- [ ] **Step 3: Commit the test and workflow fix together**
 
 ```powershell
-git add .github/workflows/mobile-ci.yml
+git add scripts/tests/test_mobile_ci_workflow.py .github/workflows/mobile-ci.yml
 git commit -m "fix: skip obsolete android sdk tools package"
 ```
 
@@ -124,7 +121,7 @@ git commit -m "fix: skip obsolete android sdk tools package"
 **Files:**
 - Verify: `mobile/`, `scripts/tests/`, `.github/workflows/mobile-ci.yml`.
 
-- [ ] **Step 1: Install the lockfile dependencies and run mobile tests**
+- [x] **Step 1: Install the lockfile dependencies and run mobile tests**
 
 ```powershell
 Set-Location mobile
@@ -135,7 +132,7 @@ Set-Location ..
 
 Expected: the mobile Jest suite passes without modifying `mobile/package-lock.json`.
 
-- [ ] **Step 2: Run the workflow regression test and structure verifier**
+- [x] **Step 2: Run the workflow regression test and structure verifier**
 
 ```powershell
 python -m unittest discover -s scripts/tests -p test_mobile_ci_workflow.py
