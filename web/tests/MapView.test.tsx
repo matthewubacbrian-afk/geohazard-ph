@@ -247,20 +247,20 @@ describe('map symbol palette', () => {
     expect(legend).toHaveTextContent('large');
     expect(legend).toHaveTextContent('largest');
   });
-  it('uses a bounded neutral magnitude ramp and a high-contrast marker halo', () => {
-    const tokens = { '--magnitude-low': '#69645a', '--magnitude-moderate': '#58544d', '--magnitude-high': '#413d37', '--magnitude-very-high': '#292824', '--surface-card': '#fffefa' };
+  it('uses an escalating Warm Field magnitude ramp and a high-contrast marker halo', () => {
+    const tokens = { '--magnitude-low': '#4d6038', '--magnitude-moderate': '#645024', '--magnitude-high': '#873d2d', '--magnitude-very-high': '#6d2c24', '--surface-card': '#fffcf5' };
     for (const [name, value] of Object.entries(tokens)) document.documentElement.style.setProperty(name, value);
     render(<MapView events={[event]} />);
     act(() => emit('style.load'));
     const paint = mapInstance.addLayer.mock.calls.find(([layer]) => layer.id === 'event-circles')?.[0].paint;
     expect(paint?.['circle-color']).toEqual([
-      'step', ['coalesce', ['get', 'magnitude'], 0], '#69645a', 3, '#58544d', 5, '#413d37', 7, '#292824',
+      'step', ['coalesce', ['get', 'magnitude'], 0], '#4d6038', 3, '#645024', 5, '#873d2d', 7, '#6d2c24',
     ]);
     expect(paint?.['circle-radius']).toEqual([
       'interpolate', ['linear'], ['max', 0, ['min', 9, ['coalesce', ['get', 'magnitude'], 0]]], 0, 4, 9, 13,
     ]);
     expect(paint?.['circle-stroke-width']).toBe(2.5);
-    expect(paint?.['circle-stroke-color']).toBe('#fffefa');
+    expect(paint?.['circle-stroke-color']).toBe('#fffcf5');
     for (const name of Object.keys(tokens)) document.documentElement.style.removeProperty(name);
   });
 });

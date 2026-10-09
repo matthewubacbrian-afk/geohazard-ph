@@ -1,49 +1,54 @@
 /* GeoHazard PH design tokens: primitives, semantic aliases, and layout scales. */
 :root {
   /* Primitive palette */
-  --cream-0: #f3f0e9;
-  --cream-50: #faf8f3;
-  --cream-100: #fffefa;
-  --cream-150: #e8e4da;
-  --cream-200: #fffefa;
-  --ink: #292824;
-  --ink-soft: #57554f;
-  --ink-faint: #68665f;
-  --outline: #645f55;
-  --outline-variant: #c9c4b8;
-  --clay: #9b3f2e;
-  --focus-ring: #74402e;
+  --field-cream: #FFEED6;
+  --field-sage: #A5AF79;
+  --field-ochre: #827148;
+  --field-terracotta: #E8A07C;
+  --cream-0: #f5eddd;
+  --cream-50: #fff8ec;
+  --cream-100: #fffcf5;
+  --cream-150: #eadcc4;
+  --cream-200: #fffaf1;
+  --ink: #302a20;
+  --ink-soft: #5c5142;
+  --ink-faint: #685c4b;
+  --outline: #72634e;
+  --outline-variant: #c8b99e;
+  --clay: #a84e35;
+  --focus-ring: #713e2d;
   --white: #ffffff;
 
   /* Semantic dashboard surfaces and text */
-  --surface: #f3f0e9;
-  --surface-raised: #faf8f3;
-  --surface-card: #fffefa;
-  --surface-container: #e8e4da;
-  --surface-overlay: rgba(250, 248, 243, 0.97);
+  --surface: #f5eddd;
+  --surface-raised: #fff8ec;
+  --surface-card: #fffcf5;
+  --surface-container: #eadcc4;
+  --surface-overlay: rgba(255, 248, 236, 0.97);
   --surface-overlay-solid: var(--surface-raised);
   --surface-container-lowest: var(--surface-card);
-  --text: #292824;
-  --text-muted: #57554f;
-  --text-faint: #68665f;
-  --border: #645f55;
-  --border-subtle: #c9c4b8;
+  --text: #302a20;
+  --text-muted: #5c5142;
+  --text-faint: #685c4b;
+  --border: #72634e;
+  --border-subtle: #c8b99e;
   --border-strong: var(--border-subtle);
-  --accent: #9b3f2e;
-  --shadow-color: rgba(41, 40, 36, 0.08);
-  --shadow-card: 0 4px 16px rgba(41, 40, 36, 0.07);
-  --shadow-overlay: 0 6px 20px rgba(41, 40, 36, 0.09);
-  --shadow-control: 0 3px 10px rgba(41, 40, 36, 0.08);
+  --accent: #a84e35;
+  --shadow-color: rgba(48, 42, 32, 0.1);
+  --shadow-card: 0 4px 16px rgba(48, 42, 32, 0.08);
+  --shadow-overlay: 0 6px 20px rgba(48, 42, 32, 0.11);
+  --shadow-control: 0 3px 10px rgba(48, 42, 32, 0.09);
 
-  /* Four-step risk colors and a separate neutral magnitude scale */
-  --risk-low: #315b4c;
-  --risk-moderate: #75500e;
-  --risk-high: #99422f;
-  --risk-very-high: #702820;
-  --magnitude-low: #69645a;
-  --magnitude-moderate: #58544d;
-  --magnitude-high: #413d37;
-  --magnitude-very-high: #292824;
+  /* Four-step risk scale; dark enough for readable labels on cream surfaces. */
+  --risk-low: #52643b;
+  --risk-moderate: #675328;
+  --risk-high: #93422e;
+  --risk-very-high: #733026;
+  /* Magnitude markers use a brighter progression, reinforced by marker size. */
+  --magnitude-low: #4d6038;
+  --magnitude-moderate: #645024;
+  --magnitude-high: #873d2d;
+  --magnitude-very-high: #6d2c24;
   /* Compatibility aliases for the existing styles while components migrate. */
   --risk-medium: var(--risk-moderate);
   --mineral: var(--risk-low);
