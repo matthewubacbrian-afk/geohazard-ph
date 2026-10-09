@@ -16,7 +16,7 @@ function emit(name: string) { handlers.get(name)?.forEach((callback) => callback
 const mapInstance = {
   addControl: vi.fn(),
   addLayer: vi.fn((layer: { id: string; paint?: Record<string, unknown> }) => layers.add(layer.id)),
-  addSource: vi.fn((id: string) => {
+  addSource: vi.fn((id: string, _options?: { type?: string; data?: unknown }) => {
     const created = { setData: vi.fn() }; sources.set(id, created);
     if (id === 'events') source = created;
   }),
