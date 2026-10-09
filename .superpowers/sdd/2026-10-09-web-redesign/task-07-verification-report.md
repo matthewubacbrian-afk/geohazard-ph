@@ -19,25 +19,45 @@ client-side callback navigation.
 | `python scripts/verify_structure.py` (repository root) | Passed | “All 140 expected scaffold paths exist.” |
 | `git diff --check` (repository root) | Passed | No whitespace errors. |
 
+## Browser and live-data review
+
+- Desktop (1440px): reviewed dashboard, risk reports, seismic filters, Home,
+  About, Data Sources, and Historical views. Map markers, selected-region summary,
+  live event feed, risk profile cards, source selection, navigation, and map
+  attribution rendered with the local API.
+- Tablet (900px): controls remain in a scrollable rail while the map and activity
+  panel stack. The date and magnitude controls remain reachable.
+- Mobile (390px): layout stacks into a single column; controls flow in document
+  order and the map/feed remain reachable without horizontal page overflow.
+- Volcano-zone toggle: API reports no imported local vector features. The map
+  retains the PHIVOLCS reference overlay status and attribution; it does not show
+  this as an imported local layer or current alert.
+- API checks: `/health`, `/events`, `/events/summary`, `/faults`, and
+  `/volcano-zones` responded successfully. Current event feed and map loaded 553
+  events; the national summary displayed 547 events and 2.63 Mw average magnitude.
+- Browser screenshots were inspected during this review. Live local data varies
+  with the database and upstream feed.
+
 ## Tree review
 
 - Branch: `docs/web-interface-refresh`.
-- Base commit at verification: `30dcb5f` (`feat: expose region lookup in risk panel`).
-- This focused fix changes only `web/src/pages/Hero.tsx` and
-  `web/tests/App.test.tsx`, plus this report. The parent agent is separately
-  recording browser parity evidence in `web/REDESIGN_UI.md`.
+- Footer fix committed as `c474bbf` (`fix: correct hero footer route links`).
+- `web/REDESIGN_UI.md` contains the before/after parity checklist.
 - No staged paths, credentials, or local datasets were present. Production output
   under `web/dist/` is ignored.
 - No protected backend, API client, hooks, domain types, ML, or mobile files changed.
 
-## Not yet verified
+## Environment caveats
 
-The parent agent is completing the broader browser review and live-data checks.
-Screenshots and findings at 1440px, 900px, and 390px, route-by-route visual parity,
-keyboard/zoom/reduced-motion review, and API/WebSocket/data-layer outcomes should be
-recorded there. This agent did not start services or claim those checks passed.
+- PHIVOLCS live ingestion failed due to local SSL certificate verification; cached
+  PHIVOLCS records remain visible alongside USGS data.
+- Existing local database revision differs from the migration files in this
+  checkout (stored revision 0004; repository has 0001–0003). Existing schema and
+  application queries worked; database history was left untouched.
+- The production build reports the existing advisory for minified chunks above
+  500 kB.
 
 ## Commit
 
-The footer-link fix will be committed separately as a focused Conventional Commit.
-The full Task 7 parity report remains subject to the parent agent's browser evidence.
+The footer route fix was committed separately as `c474bbf`. This report and the
+parity checklist are included in the final verification commit.

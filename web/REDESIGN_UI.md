@@ -44,6 +44,31 @@ components and intentionally unavailable capabilities.
 | Hero / How It Works | `/` → `Hero` | Static content and navigation only. Remove prediction claims and decorative sample risk meters; explain the method in text without invented metrics. |
 | Settings | `SettingsPanel` | Preserve the existing open/close and settings behavior; no new settings or persistence is implied. |
 
+## Before/after parity checklist
+
+| Existing feature | New location after redesign | Verification status |
+| --- | --- | --- |
+| Live events feed, category filters, event selection and detail panel | Dashboard activity panel; event markers and summary on the map | Verified with live API data; feed and markers show the same filtered events. |
+| Event source filter | Dashboard activity panel | Verified in browser; All sources, USGS, and PHIVOLCS remain available. |
+| Date range and minimum magnitude | Dashboard controls rail | Verified reachable by scrolling the rail; shared filters continue to drive map and feed. |
+| Live WebSocket status and 30-second REST reconcile | Dashboard status strip and existing data hooks | Hook/API behavior preserved; live REST data loaded during browser review. |
+| Risk overlay | Dashboard map layer controls and map legend/status | UI toggle and legend preserved; inspect against local layer availability. |
+| Fault line layer | Dashboard map layer controls and `StaticLayerStatus` | API query returned features during review; layer control remains in the dashboard. |
+| Volcano-zone layer | Dashboard map layer controls and `StaticLayerStatus` | API returned no imported features; honest empty-layer status is retained. |
+| PHIVOLCS volcano raster overlays | Dashboard map layer controls and volcano overlay status | Existing provider overlay behavior and attribution retained. |
+| Volcano bulletins, alert level, stale cache and official links | Dashboard → Volcano bulletins view | View and existing status states preserved; data remains API dependent. |
+| Regional risk profiles and region lookup | Dashboard → Risk reports; profile list and filter in activity panel | Verified in browser with region cards, levels, confidence, drivers, and search. |
+| Summary counts and average magnitude | Map summary panel | Verified with live response; unimplemented classification/fault metrics still say “Coming soon.” |
+| Historical earthquake browser | `/historical` | Deliberately unavailable; page explains the current state and links back to the live dashboard. |
+| About and methodology | `/about` and `/` How It Works content | Verified as informational pages with required disclaimers. |
+| Data source provenance | `/data-sources` and map attribution | Verified page and active map attribution. |
+| Settings panel | Global Settings control | Existing open/close behavior retained. |
+
+The redesigned UI preserves the old feature boundaries and API data paths. Runtime
+availability depends on the local database and upstream providers; the empty
+volcano-zone layer and “Coming soon” summary fields above reflect actual current
+coverage rather than redesigned placeholders.
+
 ### Active API and hook map
 
 | View/data | Hook | API client | Contract |
