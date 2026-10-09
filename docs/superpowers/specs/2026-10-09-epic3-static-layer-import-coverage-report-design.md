@@ -93,6 +93,8 @@ the existing CLI guard still rejects it before replacement.
   `source_feature_count`, `accepted_feature_count`,
   `excluded_outside_bounds_count`, and `accepted_bounds`; retain the existing
   `count` log field as an alias for accepted count for current operator scripts.
+- Extend `StructuredFormatter`'s explicit field allowlist so these report fields
+  survive serialization to CLI JSON logs.
 - For a zero accepted result, emit the report with a rejected-validation message,
   then exit non-zero with the existing no-features error. Never call
   `replace_layer` for that result.
@@ -132,10 +134,13 @@ gated follow-up.
   parser while preserving `parse_features` compatibility.
 - `scripts/import_fault_lines.py` — emit structured coverage metrics and preserve
   the no-empty-import guard.
+- `backend/app/core/logging.py` — serialize the new allowlisted report metrics.
 - `backend/tests/unit/test_static_layers.py` — count, bounds, and zero-accepted
   report cases for line and polygon layers.
 - `backend/tests/unit/test_import_fault_lines.py` — CLI report fields and no-write
   behavior for empty accepted results, using local fixtures and a fake session.
+- `backend/tests/unit/test_error_handlers.py` — verify the structured formatter
+  retains report metrics.
 - `docs/glossary.md` — define `StaticLayerParseReport` and its coverage limits.
 - `docs/runbook.md` — explain the dry-run metrics and un-clipped bounds.
 - `docs/project-status.md` — record the source-neutral verification capability
@@ -148,6 +153,7 @@ gated follow-up.
 - An empty accepted set reports zero and null bounds, then the CLI exits non-zero
   without opening a database session or calling `replace_layer`.
 - A successful dry run logs the exact report metrics without database access.
+- `StructuredFormatter` retains every report metric in serialized JSON.
 - Existing parser, adapter, integration, and static-layer tests continue to pass.
 - Run the backend test suite and `python scripts\\verify_structure.py` if the
   tracked file tree changes; run `git diff --check` before commit.

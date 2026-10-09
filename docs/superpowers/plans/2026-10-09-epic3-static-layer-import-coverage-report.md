@@ -65,7 +65,9 @@ git commit -m "feat: report static layer parse coverage"
 
 **Files:**
 - Modify: `scripts/import_fault_lines.py`
+- Modify: `backend/app/core/logging.py`
 - Create: `backend/tests/unit/test_import_fault_lines.py`
+- Modify: `backend/tests/unit/test_error_handlers.py`
 
 **Interfaces:**
 - Successful validation/import log extras include all four report fields plus the existing `count` alias for accepted count, `source`, and `kind`.
@@ -74,6 +76,8 @@ git commit -m "feat: report static layer parse coverage"
 - [ ] **Step 1: Write failing CLI tests**
 
 Load `scripts/import_fault_lines.py` using a path derived from the test file, set `sys.argv` to use a temporary GeoJSON FeatureCollection, and run `main()` with `--dry-run`. Assert the `Static layer validated` record contains exact source/accepted/excluded/bounds values, preserves `count`, and never calls `SessionLocal`. For an all-outside FeatureCollection, assert `main()` exits non-zero, logs `Static layer validation rejected` with zero accepted and null bounds, and never constructs a session.
+
+Also extend `test_structured_logging_retains_ingest_counts` to include a report field in its `LogRecord` and assert the current formatter drops it. This verifies the formatter change is necessary before implementation.
 
 - [ ] **Step 2: Run the new CLI tests and confirm they fail**
 
@@ -87,7 +91,7 @@ Expected: the tests fail because the CLI does not yet emit parse-report metrics.
 
 - [ ] **Step 3: Integrate the report into the CLI**
 
-Call `parse_features_with_report` once. Log report fields and the compatibility `count` field. If accepted rows are empty, emit the rejected-validation log entry then call the existing `parser.exit(1, ...)`; otherwise preserve the current dry-run and transactional apply behavior.
+Call `parse_features_with_report` once. Add the four report field names to `StructuredFormatter`'s explicit allowlist, then log report fields and the compatibility `count` field. If accepted rows are empty, emit the rejected-validation log entry then call the existing `parser.exit(1, ...)`; otherwise preserve the current dry-run and transactional apply behavior.
 
 - [ ] **Step 4: Run parser and CLI tests**
 
