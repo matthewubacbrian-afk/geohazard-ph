@@ -161,12 +161,12 @@ The tokens task refines the existing primitive/semantic structure. Maintain a 4p
 - Create: `web/src/components/risk/RegionLookup.module.css` and connect the existing `region-lookup`, `region-name`, and `risk-label` presentation classes through CSS Modules if needed. Modify JSX in those components only if an existing role/label needs preservation or improvement; no hooks or types.
 - Test: `web/tests/RiskProfile.test.tsx`, `web/tests/VolcanoPanel.test.tsx`
 
-- [ ] **Step 1: Inspect risk tests and current fields**: region name, label, confidence, feature importances, model version, generated time and dataset snapshot; lookup behavior; loading/error/retry/empty. Verify exact phrase "descriptive, not a prediction" remains visible (add a failing assertion if absent).
-- [ ] **Step 2: Restyle lookup and risk cards** as compact, readable profiles. Show label text and non-color marker/shape, keep tabular numerical values, do not present raw cluster index as severity, forecast or official warning.
-- [ ] **Step 3: Inspect volcano tests** for alert level `0`, missing alert level, source URL, bulletin URL, bulletin time, retrieval time, stale cache, error/Retry, empty and loading.
-- [ ] **Step 4: Restyle volcano bulletins** with alert level and timestamp grouping; maintain `Alert level not supplied`, valid `Alert Level 0`, stale-cache wording, source link, and all empty/error states.
-- [ ] **Step 5: Run `cd web; npm test -- tests/RiskProfile.test.tsx tests/VolcanoPanel.test.tsx` and `npm run build`.** Expected: unchanged profile/bulletin values and source states.
-- [ ] **Step 6: Commit** `style: refine risk and volcano panels`.
+- [x] **Step 1: Inspect risk tests and current fields**: region name, label, confidence, feature importances, model version, generated time and dataset snapshot; lookup behavior; loading/error/retry/empty. Verify exact phrase "descriptive, not a prediction" remains visible (add a failing assertion if absent).
+- [x] **Step 2: Restyle lookup and risk cards** as compact, readable profiles. Show label text and non-color marker/shape, keep tabular numerical values, do not present raw cluster index as severity, forecast or official warning.
+- [x] **Step 3: Inspect volcano tests** for alert level `0`, missing alert level, source URL, bulletin URL, bulletin time, retrieval time, stale cache, error/Retry, empty and loading.
+- [x] **Step 4: Restyle volcano bulletins** with alert level and timestamp grouping; maintain `Alert level not supplied`, valid `Alert Level 0`, stale-cache wording, source link, and all empty/error states.
+- [x] **Step 5: Run `cd web; npm test -- tests/RiskProfile.test.tsx tests/VolcanoPanel.test.tsx` and `npm run build`.** Expected: unchanged profile/bulletin values and source states.
+- [x] **Step 6: Commit** `style: refine risk and volcano panels`.
 
 ### Task 6: Restyle Hero and informational routes
 

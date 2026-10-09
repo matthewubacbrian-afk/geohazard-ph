@@ -1,4 +1,5 @@
 import type { RiskProfile } from '../../types/hazard';
+import styles from './RegionLookup.module.css';
 
 interface RegionLookupProps {
   profiles: RiskProfile[];
@@ -11,12 +12,12 @@ export default function RegionLookup({ profiles, query }: RegionLookupProps) {
   );
 
   return (
-    <div className="region-lookup">
+    <div className={styles.lookup}>
       <ul>
         {filtered.map((profile) => (
-          <li key={profile.region_name}>
-            <span className="region-name">{profile.region_name}</span>
-            <span className="risk-label">{profile.label}</span>
+          <li className={styles.row} key={profile.region_name}>
+            <span className={styles.regionName}>{profile.region_name}</span>
+            <span className={styles.riskLabel}>{profile.label}</span>
           </li>
         ))}
       </ul>
