@@ -122,12 +122,30 @@ before provisioning.
    docker compose version
    ```
 
-   Configure the Ubuntu host firewall while keeping SSH reachable. These rules
-   allow SSH and the public web ports; OCI security-list or network-security-group
-   rules are a separate network firewall and must also allow the intended traffic:
+   Configure the Ubuntu host firewall while keeping SSH reachable. Replace
+   `<operator-cidr>` with your current public IP as a single-host CIDR (for
+   example `203.0.113.10/32`); do not create a public SSH rule. OCI security-list
+   or network-security-group rules are a separate firewall and must also allow
+   the intended traffic. Inspect current rules and remove every broad SSH rule
+   before adding the restricted one:
 
    ```bash
-   sudo ufw allow OpenSSH
+   sudo ufw status numbered
+   ```
+
+   If the status lists a broad TCP 22 rule, substitute its displayed number and
+   run this command; repeat the status check because rule numbers change after
+   each deletion. Skip this command if no broad SSH rule exists:
+
+   ```bash
+   sudo ufw delete "replace-with-rule-number"
+   ```
+
+   Then add SSH access only for the operator's current public IP as a single-host
+   CIDR, replacing the placeholder with the actual address:
+
+   ```bash
+   sudo ufw allow from "replace-with-operator-cidr" to any port 22 proto tcp
    sudo ufw allow 80/tcp
    sudo ufw allow 443/tcp
    sudo ufw enable
@@ -135,7 +153,9 @@ before provisioning.
    ```
 
    Confirm the SSH rule is present before enabling UFW, and keep an active SSH
-   session open while checking that a new SSH connection still works.
+   session open while checking that a new SSH connection still works. If your
+   public IP changes, update both the UFW rule and the OCI ingress rule before
+   reconnecting.
 
 For other Linux hosts, retain the existing requirements: Docker Compose v2, a DNS
 name pointing to the host, inbound ports 80 and 443, and outbound access to GHCR
@@ -160,8 +180,16 @@ and the event sources.
    unset ghcr_token
    ```
 
-   Protect Docker's credential configuration on the VM and log out of GHCR after
-   deployment if desired with `docker logout ghcr.io`.
+   Restrict access to Docker's credential configuration. Docker may store
+   credentials in `~/.docker/config.json` when no credential helper is configured;
+   prefer a credential helper where available, and otherwise protect the directory
+   and file. Log out of GHCR after deployment if desired with
+   `docker logout ghcr.io`.
+
+   ```bash
+   chmod 700 ~/.docker
+   if [ -f ~/.docker/config.json ]; then chmod 600 ~/.docker/config.json; fi
+   ```
 3. Confirm the published API and web image manifests include both ARM64 and
    AMD64. Use the actual image prefix and SHA from the workflow:
 
@@ -174,9 +202,11 @@ and the event sources.
    each manifest must list `linux/arm64` and `linux/amd64`.
 4. Generate the production ML output from the repository root on your Windows
    development machine. Normal training requires `KAGGLE_USERNAME` and
-   `KAGGLE_KEY` credentials in the environment or `.env` file. The `-Offline`
-   option skips Kaggle downloads and is appropriate only when the needed local
-   CSV inputs already exist under `ml/data/raw/`:
+   `KAGGLE_KEY` environment variables or credentials in
+   `%USERPROFILE%\.kaggle\kaggle.json`. The trainer does not load credentials from
+   the repository `.env`; do not rely on that file for Kaggle authentication.
+   The `-Offline` option skips Kaggle downloads and is appropriate only when the
+   needed local CSV inputs already exist under `ml/data/raw/`:
 
    ```powershell
    .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1
@@ -184,13 +214,14 @@ and the event sources.
    .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline
    ```
 
-   The output is `ml/model_artifacts/v1/risk_profiles.json`. Transfer it from
-   PowerShell to the extracted release directory on the VM (adjust the key path,
-   public IP, and remote release path to match your setup):
+   The output is `ml/model_artifacts/v1/risk_profiles.json`. Keep each trained
+   export immutable and versioned with its release SHA on the VM. Transfer it from
+   PowerShell to a release-specific filename; replace `RELEASESHA` below with the
+   same 40-character SHA used for the images:
 
    ```powershell
-   ssh -i "$env:USERPROFILE\.ssh\oci_geohazard" ubuntu@<public-ip> "mkdir -p /home/ubuntu/geohazard-release/deploy-data"
-   scp -i "$env:USERPROFILE\.ssh\oci_geohazard" .\ml\model_artifacts\v1\risk_profiles.json ubuntu@<public-ip>:/home/ubuntu/geohazard-release/deploy-data/risk_profiles.json
+   ssh -i "$env:USERPROFILE\.ssh\oci_geohazard" ubuntu@<public-ip> "mkdir -p -m 700 /home/ubuntu/geohazard-release/deploy-data"
+   scp -i "$env:USERPROFILE\.ssh\oci_geohazard" .\ml\model_artifacts\v1\risk_profiles.json "ubuntu@<public-ip>:/home/ubuntu/geohazard-release/deploy-data/risk_profiles_RELEASESHA.json"
    ```
 
    The extracted bundle directory must be `/home/ubuntu/geohazard-release` in
@@ -213,7 +244,7 @@ and the event sources.
    import math
    from pathlib import Path
 
-   path = Path("./deploy-data/risk_profiles.json")
+   path = Path("./deploy-data/risk_profiles_RELEASESHA.json")
    assert path.is_file() and path.stat().st_size > 0, "risk profile export is missing or empty"
    data = json.loads(path.read_text(encoding="utf-8"))
    assert isinstance(data, list) and data, "expected a non-empty JSON list"
@@ -245,7 +276,8 @@ and the event sources.
    assert all(valid_profile(item) for item in data), "one or more profiles do not match RiskProfile fields"
    print(f"Validated {len(data)} risk profiles")
    PY
-   test -s ./deploy-data/risk_profiles.json && test -r ./deploy-data/risk_profiles.json
+   chmod 600 ./deploy-data/risk_profiles_RELEASESHA.json
+   test -s ./deploy-data/risk_profiles_RELEASESHA.json && test -r ./deploy-data/risk_profiles_RELEASESHA.json
    ```
 
    These are historical descriptive statistical profiles, not predictions. The
@@ -257,11 +289,24 @@ and the event sources.
    `POSTGRES_PASSWORD`, a matching URL-encoded password in `DATABASE_URL`, and
    `CORS_ORIGINS` to a JSON array containing `https://<site-domain>`. Set
    `RISK_PROFILE_EXPORT_FILE` to the host export path (for example
-   `./deploy-data/risk_profiles.json`) and set `INGEST_POLL_INTERVAL_SECONDS` as
-   desired. Compose resolves a relative host path from the directory containing
-   `compose.staging.yml`. Keep `.env.staging`, database backups, and the model
-   export private and out of version control. The web bundle uses same-origin
-   `/api/v1` and derives `wss://` from its public HTTPS origin.
+   `./deploy-data/risk_profiles_RELEASESHA.json`) and set
+   `INGEST_POLL_INTERVAL_SECONDS` as desired. Compose resolves a relative host
+   path from the directory containing `compose.staging.yml`. Restrict permissions
+   on deployment secrets and exports:
+
+   ```bash
+   chmod 600 .env.staging
+   chmod 700 ./deploy-data
+   chmod 600 ./deploy-data/risk_profiles_RELEASESHA.json
+   ```
+
+   Keep `.env.staging`, database backups, and model exports private and out of
+   version control. The web bundle uses same-origin `/api/v1` and derives `wss://`
+   from its public HTTPS origin. For rollback, update `.env.staging` so
+   `IMAGE_TAG` and `RISK_PROFILE_EXPORT_FILE` point to the matching prior release
+   SHA together, and pass that same SHA to the deploy script. The script argument
+   sets the effective `IMAGE_TAG`. Keep each versioned export until no release or
+   rollback needs it.
 6. Ensure the deployment URL, `SITE_DOMAIN`, Caddy's site hostname, and DNS name
    all match. From the extracted bundle directory, deploy with the exact interface:
 
@@ -287,35 +332,51 @@ and the event sources.
    TLS, or connection failures, confirm the A record, public IP, OCI ingress rules,
    and host firewall allow ports 80/443. For a missing model export, inspect
    `docker compose --env-file .env.staging -f compose.staging.yml config` and run
-   `test -s ./deploy-data/risk_profiles.json`. For disk pressure, inspect `df -h`
+   `test -s ./deploy-data/risk_profiles_RELEASESHA.json` after replacing
+   `RELEASESHA` with the active release SHA. For disk pressure, inspect `df -h`
    and `docker system df`. For unhealthy services, use the `ps` and `logs`
    commands above and resolve the first failing dependency before retrying.
 
 ### Backup, restore, rollback, and cleanup
 
 Before each update, create database and Caddy data backups from the extracted
-bundle directory. The date-based names below use UTC. The Caddy archive includes
-both `/data` (durable ACME certificates and related state) and `/config`; treat it
-as secret material because it contains TLS private keys, and protect its access
-and storage accordingly:
+bundle directory. The date-based names below use UTC. Each temporary file is
+validated before being renamed to its final name, so a failed dump or archive does
+not appear as a complete backup. The Caddy archive includes both `/data` (durable
+ACME certificates and related state) and `/config`; treat it as secret material
+because it contains TLS private keys, and protect its storage accordingly:
 
 ```bash
-mkdir -p backups
-backup_date="$(date -u +%Y%m%dT%H%M%SZ)"
-docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_dump -U geohazard -d geohazard -Fc > "backups/geohazard-${backup_date}.dump"
-docker compose --env-file .env.staging -f compose.staging.yml exec -T proxy tar -C / -czf - data config > "backups/caddy-state-${backup_date}.tar.gz"
-test -s "backups/geohazard-${backup_date}.dump" && test -s "backups/caddy-state-${backup_date}.tar.gz"
+(
+  set -euo pipefail
+  umask 077
+  mkdir -p -m 700 backups
+  chmod 700 backups
+  backup_date="$(date -u +%Y%m%dT%H%M%SZ)"
+  if [[ -e "backups/geohazard-${backup_date}.dump" || -e "backups/caddy-state-${backup_date}.tar.gz" ]]; then
+    echo "Backup names already exist; wait and retry." >&2
+    exit 1
+  fi
+  pg_dump_tmp="$(mktemp "backups/.geohazard-${backup_date}.dump.XXXXXX")"
+  caddy_tmp="$(mktemp "backups/.caddy-state-${backup_date}.tar.gz.XXXXXX")"
+  trap 'rm -f -- "$pg_dump_tmp" "$caddy_tmp"' EXIT
+  docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_dump -U geohazard -d geohazard -Fc > "$pg_dump_tmp"
+  docker compose --env-file .env.staging -f compose.staging.yml exec -T proxy tar -C / -czf - data config > "$caddy_tmp"
+  docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_restore --list < "$pg_dump_tmp" > /dev/null
+  tar -tzf "$caddy_tmp" > /dev/null
+  chmod 600 "$pg_dump_tmp" "$caddy_tmp"
+  mv -- "$pg_dump_tmp" "backups/geohazard-${backup_date}.dump"
+  mv -- "$caddy_tmp" "backups/caddy-state-${backup_date}.tar.gz"
+)
 ```
 
 Restore a database dump only when intentionally replacing the current database.
 This overwrites current database contents. First capture a fresh backup using the
 commands above, stop API and worker services, then drop and recreate the database
-and restore the custom-format dump:
+and restore the chosen custom-format dump:
 
 ```bash
 docker compose --env-file .env.staging -f compose.staging.yml stop api worker
-restore_date="$(date -u +%Y%m%dT%H%M%SZ)"
-docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_dump -U geohazard -d geohazard -Fc > "backups/geohazard-before-restore-${restore_date}.dump"
 docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres dropdb -U geohazard --if-exists geohazard
 docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres createdb -U geohazard -O geohazard geohazard
 docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_restore --no-owner -U geohazard -d geohazard < backups/geohazard-YYYYMMDDTHHMMSSZ.dump
