@@ -39,6 +39,7 @@ describe('live event display', () => {
   it('distinguishes live transport from reconnecting and labels the last received time', () => {
     const view = render(<RealtimeStatus connected={false} lastUpdated={null} />);
     expect(screen.getByText(/Reconnecting/)).toBeTruthy();
+    expect(screen.getByText('GeoHazard PH is not an official PHIVOLCS/NDRRMC advisory')).toBeTruthy();
     view.rerender(<RealtimeStatus connected lastUpdated="2026-08-29T09:30:00Z" />);
     expect(screen.getByText('LIVE')).toBeTruthy();
     expect(screen.getByText(/Last update/)).toBeTruthy();

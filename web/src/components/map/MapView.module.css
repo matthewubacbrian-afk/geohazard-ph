@@ -1,26 +1,22 @@
-.canvas {
-  position: absolute;
-  inset: 0;
-}
+.canvas { position:absolute; inset:0; min-width:0; min-height:0; background:var(--surface-container); }
+.container { width:100%; height:100%; }
+.empty { position:absolute; z-index:var(--z-map-overlay); top:16px; left:50%; max-width:calc(100% - 32px); padding:7px 12px; transform:translateX(-50%); border:1px solid var(--border); border-radius:var(--radius-control); background:var(--surface-overlay-solid); box-shadow:var(--shadow-card); color:var(--text); font-size:12px; text-align:center; pointer-events:none; }
+.canvas :global(.maplibregl-ctrl-group) { overflow:hidden; border:1px solid var(--border) !important; border-radius:var(--radius-square) !important; background:var(--surface-overlay-solid) !important; box-shadow:var(--shadow-control) !important; }
+.canvas :global(.maplibregl-ctrl-group button) { width:36px; height:36px; background-color:transparent; }
+.canvas :global(.maplibregl-ctrl-group button+button) { border-top:1px solid var(--border-subtle); }
+.canvas :global(.maplibregl-ctrl-group button:hover) { background-color:var(--surface-container); }
+.canvas :global(.maplibregl-ctrl-group button:focus-visible) { position:relative; z-index:1; outline:3px solid var(--focus-ring); outline-offset:-3px; }
+.canvas :global(.maplibregl-ctrl-icon) { filter:sepia(.45) saturate(.55); }
+@media (max-width:640px) { .empty { top:60px; } .canvas :global(.maplibregl-ctrl-group button) { width:34px; height:34px; } }
 
-.container {
-  height: 100%;
-  width: 100%;
-}
-
-.empty {
-  position: absolute;
-  left: 50%;
-  top: 16px;
-  transform: translateX(-50%);
-  z-index: var(--z-map-overlay);
-  padding: 6px 12px;
-  font-size: 12px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  pointer-events: none;
-  background: var(--surface-overlay);
-  border: 1px solid rgba(195, 199, 200, 0.5);
-  border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-card);
-}
+.canvas :global(.maplibregl-ctrl-attrib), .canvas :global(.maplibregl-ctrl-logo) { border:1px solid var(--border-subtle); border-radius:var(--radius-control); background:var(--surface-overlay-solid); color:var(--text); box-shadow:var(--shadow-control); }
+.canvas :global(.maplibregl-ctrl-attrib a) { color:var(--text); }
+.magnitudeLegend { position:absolute; z-index:var(--z-map-overlay); top:128px; right:12px; width:min(190px, calc(100% - 24px)); padding:9px 10px; border:1px solid var(--border); border-radius:var(--radius-control); background:var(--surface-overlay-solid); color:var(--text); box-shadow:var(--shadow-control); }
+.legendTitle { margin:0 0 6px; color:var(--text); font:600 10px/1.3 var(--font-mono); letter-spacing:.04em; text-transform:uppercase; }
+.legendList { display:grid; gap:5px; margin:0; padding:0; list-style:none; }
+.legendRow { display:grid; grid-template-columns:24px 1fr; align-items:center; min-height:18px; gap:6px; color:var(--text-muted); font-size:10px; line-height:1.25; }
+.magnitudeKey { display:block; justify-self:center; border:2px solid var(--surface-card); border-radius:50%; box-shadow:0 0 0 1px var(--border); }
+.magnitudeKeyLow { width:10px; height:10px; background:var(--magnitude-low); }
+.magnitudeKeyModerate { width:14px; height:14px; background:var(--magnitude-moderate); }
+.magnitudeKeyHigh { width:18px; height:18px; background:var(--magnitude-high); }
+.magnitudeKeyVeryHigh { width:22px; height:22px; background:var(--magnitude-very-high); }

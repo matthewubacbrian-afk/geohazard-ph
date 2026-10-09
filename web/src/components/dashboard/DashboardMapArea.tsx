@@ -1,6 +1,7 @@
 import type { StaticLayer } from '../../types/staticLayer';
 import type { VolcanoOverlayState } from '../map/volcanoOverlays';
 import { useState } from 'react';
+import Icon from '../common/Icon';
 import styles from "./DashboardMapArea.module.css";
 import Skeleton from "../common/Skeleton";
 import MapView from "../map/MapView";
@@ -137,14 +138,12 @@ export default function DashboardMapArea({
             aria-label="Close panel"
             onClick={() => setShowRegionCard(false)}
           >
-            <span className="material-symbols-outlined" aria-hidden="true">
-              close
-            </span>
+            <Icon name="close" />
           </button>
         </div>
 
         {summaryLoading ? (
-          <div className={styles.statGrid}>
+          <div className={styles.statGrid} role="status" aria-label="Loading event summary">
             <div className={`${styles.stat} ${styles.statWide}`}>
               <Skeleton width={16} height={46} />
               <div>
@@ -201,7 +200,7 @@ export default function DashboardMapArea({
             <div className={styles.stat}>
               <span className={styles.statLabel}>Avg Magnitude</span>
               <strong className={styles.statValue}>
-                {avgMagnitude != null ? `${avgMagnitude}` : "—"}
+                {avgMagnitude != null ? avgMagnitude.toFixed(2) : "—"}
                 {avgMagnitude != null ? <span> Mw</span> : null}
               </strong>
             </div>
@@ -209,7 +208,7 @@ export default function DashboardMapArea({
             <div className={styles.stat}>
               <span className={styles.statLabel}>Events in area</span>
               <strong className={styles.statValue}>
-                {eventCount != null ? `${eventCount}` : "—"}
+                {eventCount != null ? eventCount.toLocaleString() : "—"}
                 {eventCount != null ? <span> events</span> : null}
               </strong>
             </div>

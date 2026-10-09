@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 
 import EventFeed from '../src/components/events/EventFeed';
 import type { HazardEvent } from '../src/types/hazard';
@@ -65,5 +65,30 @@ describe('EventFeed', () => {
     );
 
     expect(screen.getAllByText(/No events match the current filters/i).length).toBeGreaterThan(0);
+  });
+
+  it('exposes selected event state accessibly and opens its details', () => {
+    const onSelectEvent = vi.fn();
+    render(
+      <EventFeed events={events} isLoading={false} error={null} onRetry={() => {}}
+        onSelectEvent={onSelectEvent} />,
+    );
+
+    const eventButton = screen.getByRole('button', { name: /Quezon/i });
+    expect(eventButton).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(eventButton);
+
+    expect(eventButton).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Coordinates')).toBeInTheDocument();
+    expect(onSelectEvent).toHaveBeenCalledWith(events[0]);
+  });
+
+  it('retries a failed event request when activated', () => {
+    const onRetry = vi.fn();
+    render(<EventFeed events={[]} isLoading={false} error={new Error('offline')} onRetry={onRetry} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 });

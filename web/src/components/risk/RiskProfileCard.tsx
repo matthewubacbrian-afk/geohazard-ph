@@ -14,7 +14,7 @@ export default function RiskProfileCard({ profile }: RiskProfileCardProps) {
     <article className={styles.card}>
       <div className={styles.header}>
         <h3 className={styles.name}>{profile.region_name}</h3>
-        <span className={styles.label}>{profile.label}</span>
+        <span className={styles.label} data-risk={profile.label.toLowerCase()}>{profile.label}</span>
       </div>
 
       <div className={styles.confidence}>
@@ -46,7 +46,7 @@ export default function RiskProfileCard({ profile }: RiskProfileCardProps) {
         Model: {profile.model_version} | {profile.dataset_snapshot}
       </p>
       <p className={styles.disclaimer}>
-        Statistical profiling based on historical records, not prediction.
+        Risk profiles are descriptive statistics, not earthquake predictions.
       </p>
     </article>
   );

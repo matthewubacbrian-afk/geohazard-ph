@@ -25,4 +25,23 @@ describe('BASEMAPS registry', () => {
   it('ships streets as its first (default) entry', () => {
     expect(BASEMAP_IDS[0]).toBe('streets');
   });
+  it('uses the Positron vector style and retains provider credits', () => {
+    expect(BASEMAPS.streets.style).toBe('https://tiles.openfreemap.org/styles/positron');
+    expect(BASEMAPS.streets.style).toContain('openfreemap.org');
+    expect(BASEMAPS.satellite.style).toMatchObject({
+      sources: { basemap: expect.objectContaining({ type: 'raster', attribution: expect.stringContaining('Esri') }) },
+    });
+    expect(BASEMAPS.satellite.style).toMatchObject({
+      sources: { basemap: { attribution: 'Esri, Maxar, Earthstar Geographics' } },
+    });
+    expect(BASEMAPS.hybrid.style).toMatchObject({
+      sources: {
+        imagery: { type: 'raster', attribution: 'Esri, Maxar, Earthstar Geographics' },
+        reference: { type: 'raster', attribution: 'Esri, Garmin, FAO, NOAA' },
+      },
+    });
+    expect(BASEMAPS.terrain.style).toMatchObject({
+      sources: { basemap: { type: 'raster', attribution: 'Esri, Maxar, Earthstar Geographics' } },
+    });
+  });
 });

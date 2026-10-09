@@ -51,6 +51,9 @@ describe('Dashboard summary states', () => {
     }
     expect(screen.queryByText(/PGA|Critical|Elevated|Baseline/)).not.toBeInTheDocument();
     expect(screen.getByText('Events in area')).toBeInTheDocument();
+    expect(screen.getByText('4.50')).toBeInTheDocument();
+    expect(screen.getByText('12', { exact: true })).toBeInTheDocument();
+    expect(screen.getAllByText('Coming soon')).toHaveLength(2);
     expect(screen.queryByText('Frequency (YTD)')).not.toBeInTheDocument();
   });
   it('shows a retry action when the summary request fails', () => {

@@ -2,7 +2,7 @@ import TopNav from "../components/layout/TopNav";
 import type { View } from "../types/views";
 import styles from "./InformationalPage.module.css";
 
-const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Historical", "Contact"];
+const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Historical"];
 
 type DataSourcesProps = {
   onNavigate?: (view: View) => void;

@@ -1,6 +1,5 @@
 import styles from "./Hero.module.css";
 import Reveal from "../components/common/Reveal/Reveal";
-import RiskMeter from "../components/common/RiskMeter";
 import SectionHeader from "../components/common/SectionHeader";
 import TopNav from "../components/layout/TopNav";
 import type { View } from "../types/views";
@@ -10,28 +9,28 @@ type HeroProps = {
   onSettings?: () => void;
 };
 
-const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Historical", "Contact"];
+const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Historical"];
 
 const steps = [
   {
     title: "1. Historical Data",
     description:
-      "Integration of PHIVOLCS & USGS seismic records for comprehensive baseline data.",
+      "Earthquake and volcano observations retain their source, time, and geographic context.",
   },
   {
     title: "2. K-Means Clustering",
     description:
-      "Spatial pattern identification to group regions with similar seismic characteristics.",
+      "Clustering groups regions with similar historical seismic characteristics.",
   },
   {
     title: "3. Random Forest",
     description:
-      "Advanced machine learning classification for highly accurate risk probability scoring.",
+      "Model outputs summarize historical features; they do not predict future earthquakes.",
   },
   {
     title: "4. LGU Dashboard",
     description:
-      "Translation of complex models into actionable, localized insights for decision-makers.",
+      "Maps and source context support local review and planning alongside official guidance.",
   },
 ];
 
@@ -47,20 +46,17 @@ export default function Hero({ onNavigate, onSettings }: HeroProps) {
       />
 
       <section className={styles.heroSection}>
-        <div className={styles.heroOverlay} />
-        <div className={styles.heroAbstract} aria-hidden="true" />
-
         <div className={styles.heroContent}>
           <Reveal delayMs={0}>
             <h1 className={styles.heroTitle}>
-              <span>Patterns.Predictions.Protection.</span>
-              <span>Before the Ground Shakes</span>
+              <span>Public hazard data for informed local planning</span>
             </h1>
           </Reveal>
 
           <Reveal delayMs={100}>
             <p className={styles.heroSubtitle}>
-              From fault lines to insights. From patterns to preparedness
+              Explore earthquake observations, volcano information, reference layers,
+              and regional profiles with their source context.
             </p>
           </Reveal>
 
@@ -89,7 +85,7 @@ export default function Hero({ onNavigate, onSettings }: HeroProps) {
         <div className={styles.sectionInner}>
           <SectionHeader
             title="Methodology &amp; Pipeline"
-            subtitle="A robust, scientific approach to risk classification."
+            subtitle="How public observations and historical features are organized for review."
           />
 
           <div className={styles.processGrid}>
@@ -98,8 +94,8 @@ export default function Hero({ onNavigate, onSettings }: HeroProps) {
             {steps.map((step, index) => (
               <Reveal key={step.title} delayMs={index * 100} className={styles.processCardWrap}>
                 <article className={styles.processCard}>
-                  <div className={styles.processIcon}>
-                    <span aria-hidden="true">•</span>
+                  <div className={styles.processIcon} aria-hidden="true">
+                    {String(index + 1).padStart(2, "0")}
                   </div>
                   <h3 className={styles.processTitle}>{step.title}</h3>
                   <p className={styles.processDesc}>{step.description}</p>
@@ -115,25 +111,19 @@ export default function Hero({ onNavigate, onSettings }: HeroProps) {
           <div className={`${styles.aboutPanel} ${styles.aboutWide}`}>
             <h2 className={styles.aboutWideTitle}>Empowering Disaster Coordinators</h2>
             <p>
-              The primary objective of GeoHazard is to bridge the gap between
-              complex geophysical data and pragmatic local governance. We equip
-              LGU disaster risk reduction management offices with precise,
-              localized intelligence.
+              GeoHazard brings public geohazard observations and reference information
+              together to support review by local disaster risk reduction offices.
             </p>
             <p>
-              By moving away from generalized national maps to high-resolution,
-              LGU-specific risk profiles, we enable targeted infrastructure
-              reinforcement and optimized evacuation planning, ultimately
-              mitigating potential casualties during seismic events.
+              Regional risk profiles describe historical patterns in available data
+              and should be considered alongside current guidance from official authorities.
             </p>
+            <p>Risk profiles are descriptive statistics, not earthquake predictions.</p>
           </div>
-
-          <div className={`${styles.aboutPanel} ${styles.aboutStats}`}>
-            <RiskMeter label="High Risk" level="high" value={85} />
-            <RiskMeter label="Moderate" level="medium" value={45} />
-            <RiskMeter label="Low Risk" level="low" value={20} />
-            <p className={styles.riskCaption}>Sample Risk Profiling Output</p>
-          </div>
+          <aside className={`${styles.aboutPanel} ${styles.aboutNotice}`}>
+            <p>GeoHazard PH is not an official PHIVOLCS/NDRRMC advisory.</p>
+            <p>Check official sources for current warnings and response instructions.</p>
+          </aside>
         </div>
       </section>
 
@@ -142,8 +132,7 @@ export default function Hero({ onNavigate, onSettings }: HeroProps) {
           <div className={styles.footerBrand}>
             <div className={styles.footerLogo}>GeoHazard</div>
             <p className={styles.footerTagline}>
-              © 2026 GeoHazard Philippines. Seismic Risk Intelligence for Local
-              Governance.
+              Public geohazard information for local review.
             </p>
           </div>
 
@@ -151,13 +140,11 @@ export default function Hero({ onNavigate, onSettings }: HeroProps) {
             {[
               ["About Project", "about"],
               ["Data Credits", "data-sources"],
-              ["Privacy Policy", "about"],
-              ["Contact Support", "mailto:support@geohazard.ph"],
             ].map(([item, target]) => (
               <a
                 key={item}
-                href={target.startsWith("mailto:") ? target : "#"}
-                onClick={target.startsWith("mailto:") ? undefined : (event) => {
+                href={`/${target}`}
+                onClick={(event) => {
                   event.preventDefault();
                   onNavigate?.(target as View);
                 }}
