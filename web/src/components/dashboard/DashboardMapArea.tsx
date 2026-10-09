@@ -27,6 +27,13 @@ type DashboardMapAreaProps = {
   onViewDetailedReport?: () => void;
 };
 
+const RISK_LABELS = [
+  { label: 'Very High', swatch: 'swatch--very-high' },
+  { label: 'High', swatch: 'swatch--high' },
+  { label: 'Moderate', swatch: 'swatch--medium' },
+  { label: 'Low', swatch: 'swatch--low' },
+] as const;
+
 export default function DashboardMapArea({
   events,
   faults, volcanoZones, showFaults, showVolcanoZones,
@@ -107,28 +114,15 @@ export default function DashboardMapArea({
       )}
 
       {showRiskLayer && <div className={styles.legend}>
-        <h4 className={styles.legendTitle}>Seismic Risk Level</h4>
-        <div className={styles.legendRow}>
-          <div className={styles.legendLabel}>
-            <span className={`${styles.swatch} ${styles["swatch--high"]}`} />
-            <span>Critical</span>
+        <h4 className={styles.legendTitle}>Regional risk profile</h4>
+        {RISK_LABELS.map(({ label, swatch }) => (
+          <div className={styles.legendRow} key={label}>
+            <div className={styles.legendLabel}>
+              <span className={`${styles.swatch} ${styles[swatch]}`} />
+              <span>{label}</span>
+            </div>
           </div>
-          <span className={styles.legendValue}>PGA &gt; 0.4g</span>
-        </div>
-        <div className={styles.legendRow}>
-          <div className={styles.legendLabel}>
-            <span className={`${styles.swatch} ${styles["swatch--medium"]}`} />
-            <span>Elevated</span>
-          </div>
-          <span className={styles.legendValue}>PGA 0.2-0.4g</span>
-        </div>
-        <div className={styles.legendRow}>
-          <div className={styles.legendLabel}>
-            <span className={`${styles.swatch} ${styles["swatch--low"]}`} />
-            <span>Baseline</span>
-          </div>
-          <span className={styles.legendValue}>PGA &lt; 0.2g</span>
-        </div>
+        ))}
       </div>}
 
       {showRegionCard && <div className={styles.card}>
@@ -213,7 +207,7 @@ export default function DashboardMapArea({
             </div>
 
             <div className={styles.stat}>
-              <span className={styles.statLabel}>Frequency (YTD)</span>
+              <span className={styles.statLabel}>Events in area</span>
               <strong className={styles.statValue}>
                 {eventCount != null ? `${eventCount}` : "—"}
                 {eventCount != null ? <span> events</span> : null}

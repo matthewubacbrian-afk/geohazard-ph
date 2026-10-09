@@ -9,6 +9,12 @@
   - Attribution: USGS data requires attribution to the "USGS Earthquake Hazards Program". Display the source and last-updated time alongside any USGS-derived view.
 - PHIVOLCS earthquake bulletins: scraped source, no official public API assumed.
 
+Canonical matching retains source rows separately and groups only pairwise-compatible,
+cross-source reports. Corrections to a row with a stable `external_id` update that
+row and trigger regrouping. When a source supplies no `external_id`, the content
+key changes with time, coordinates, or magnitude; inspect such apparent revisions
+before treating them as the same event. See ADR 0003 and the reconciliation runbook.
+
 ## Kaggle Historical Earthquake Datasets
 
 The ML risk profiling pipeline uses two Kaggle datasets:

@@ -1,11 +1,104 @@
-name: Deploy Staging
+name: Prepare Staging Release
 
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  deploy:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: geohazard
+          POSTGRES_PASSWORD: geohazard
+          POSTGRES_DB: geohazard
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U geohazard"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: pip install -e "backend[dev]"
+      - name: Create test database
+        run: |
+          python -c "import psycopg; c=psycopg.connect('postgresql://geohazard:geohazard@localhost:5432/geohazard', autocommit=True); c.execute('CREATE DATABASE geohazard_test')"
+      - run: pytest -v
+        working-directory: backend
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://geohazard:geohazard@localhost:5432/geohazard_test
+          REDIS_URL: redis://localhost:6379/0
+      - run: npm ci
+        working-directory: web
+      - run: npm test
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - run: python scripts/verify_structure.py
+      - run: docker compose --env-file .env.staging.example -f compose.staging.yml config --quiet
+
+  publish:
+    if: github.ref == 'refs/heads/main'
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Add staging deployment steps when hosting is selected."
+      - name: Set image prefix
+        id: image
+        run: echo "prefix=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile.prod
+          push: true
+          tags: ${{ steps.image.outputs.prefix }}-api:${{ github.sha }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: ./web
+          file: ./web/Dockerfile.prod
+          push: true
+          build-args: VITE_API_BASE_URL=/api/v1
+          tags: ${{ steps.image.outputs.prefix }}-web:${{ github.sha }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: staging-release-${{ github.sha }}
+          include-hidden-files: true
+          path: |
+            compose.staging.yml
+            infra/caddy/Caddyfile
+            scripts/deploy_staging.sh
+            .env.staging.example
+      - name: Record release
+        run: |
+          echo "Images: ${{ steps.image.outputs.prefix }}-{api,web}:${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download the staging release artifact and follow docs/runbook.md to deploy it." >> "$GITHUB_STEP_SUMMARY"

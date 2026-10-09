@@ -620,7 +620,7 @@ Current workflow responsibilities:
 - `ml-ci.yml`: install `ml[dev]` and run ML pytest (blocking); Ruff runs as a non-blocking report until the baseline is clean.
 - `web-ci.yml`: install web dependencies and run web build.
 - `mobile-ci.yml`: install mobile dependencies and run mobile tests.
-- `deploy-staging.yml`: manual staging deployment placeholder.
+- `deploy-staging.yml`: manually verifies and publishes versioned staging images and a portable deployment bundle.
 
 Before opening or merging a PR:
 

@@ -50,12 +50,23 @@ export function useRealtimeAlerts() {
           pending = pending.then(async () => {
             await client.cancelQueries({ queryKey: ['events'] });
             if (stopped) return;
-            const previous = client.getQueryData<HazardEvent[]>(['events']);
-            if (previous) {
-              client.setQueryData(['events'], applyEventChange(previous, change));
-            } else {
-              // A single push is not a complete initial snapshot.
-              void client.invalidateQueries({ queryKey: ['events'] });
+            const cached = client.getQueriesData<HazardEvent[]>({ queryKey: ['events'] });
+            for (const [queryKey, previous] of cached) {
+              if (!previous) continue;
+              const options = queryKey[1];
+              const since = options && typeof options === 'object' && 'since' in options &&
+                typeof options.since === 'string' ? Date.parse(options.since) : null;
+              const updated = applyEventChange(previous, change);
+              client.setQueryData(queryKey, since === null
+                ? updated
+                : updated.filter((event) => Date.parse(event.occurred_at) >= since));
+            }
+            // A push cannot fill a query that has not loaded its initial snapshot.
+            if (cached.some(([, previous]) => previous === undefined) || cached.length === 0) {
+              void client.invalidateQueries({
+                queryKey: ['events'],
+                predicate: (query) => query.state.data === undefined,
+              });
             }
             setLastUpdated(new Date().toISOString());
             void client.invalidateQueries({ queryKey: ['event-summary'] });

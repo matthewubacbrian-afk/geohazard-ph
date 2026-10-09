@@ -13,7 +13,7 @@ const layers = new Set<string>();
 function emit(name: string) { handlers.get(name)?.forEach((callback) => callback()); }
 const mapInstance = {
   addControl: vi.fn(),
-  addLayer: vi.fn((layer: { id: string }) => layers.add(layer.id)),
+  addLayer: vi.fn((layer: { id: string; paint?: Record<string, unknown> }) => layers.add(layer.id)),
   addSource: vi.fn((id: string) => {
     const created = { setData: vi.fn() }; sources.set(id, created);
     if (id === 'events') source = created;
@@ -88,6 +88,30 @@ describe('MapView style lifecycle', () => {
       'visibility',
       'none',
     );
+  });
+  it('assigns distinct overlay colors to each canonical risk label', () => {
+    const colors = {
+      '--risk-very-high': '#8f201a',
+      '--risk-high': '#c0392b',
+      '--risk-medium': '#e3a655',
+      '--risk-low': '#6bb4b1',
+    };
+    for (const [name, value] of Object.entries(colors)) {
+      document.documentElement.style.setProperty(name, value);
+    }
+    render(<MapView events={[]} riskProfiles={[riskProfile]} showRiskLayer />);
+    act(() => emit('style.load'));
+
+    const riskLayer = mapInstance.addLayer.mock.calls.find(([layer]) => layer.id === 'risk-regions-fill');
+    expect(riskLayer?.[0].paint?.['fill-color']).toEqual([
+      'match', ['get', 'label'],
+      'Very High', colors['--risk-very-high'],
+      'High', colors['--risk-high'],
+      'Moderate', colors['--risk-medium'],
+      'Low', colors['--risk-low'],
+      expect.any(String),
+    ]);
+    for (const name of Object.keys(colors)) document.documentElement.style.removeProperty(name);
   });
   it.each(BASEMAP_IDS)('renders markers after the initial %s style loads', (basemap) => {
     render(<MapView events={[event]} basemap={basemap} />);

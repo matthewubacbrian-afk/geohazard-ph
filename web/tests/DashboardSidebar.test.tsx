@@ -21,8 +21,8 @@ function renderSidebar(
       onViewChange={vi.fn()}
       activeLayers={{ events: true, risk: false }}
       onToggleLayer={overrides.onToggleLayer ?? vi.fn()}
-      activeRiskLevels={['high', 'medium', 'low']}
-      onToggleRiskLevel={vi.fn()}
+      activeEventCategories={['critical', 'elevated', 'baseline']}
+      onToggleEventCategory={vi.fn()}
       startDate=""
       endDate=""
       onStartDateChange={vi.fn()}
@@ -63,6 +63,14 @@ describe('DashboardSidebar map layers dropdown', () => {
 });
 
 describe('DashboardSidebar layers', () => {
+  it('labels event buckets separately from regional risk profiles', () => {
+    renderSidebar();
+
+    expect(screen.getByRole('heading', { name: 'Event feed categories' })).toBeInTheDocument();
+    for (const label of ['Critical events', 'Elevated events', 'Baseline events']) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument();
+    }
+  });
   it('calls onToggleLayer when a layer checkbox is toggled', () => {
     const onToggleLayer = vi.fn();
     renderSidebar({ onToggleLayer });

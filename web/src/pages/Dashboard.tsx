@@ -20,7 +20,7 @@ import EventFilterBar from '../components/events/EventFilterBar';
 import RealtimeStatus from '../components/dashboard/RealtimeStatus';
 import { useRealtimeAlerts } from '../hooks/useRealtimeAlerts';
 import { useEvents } from '../hooks/useEvents';
-import { eventRiskBucket } from '../lib/risk';
+import { eventRiskBucket, type RiskBucket } from '../lib/risk';
 import {
   parseDashboardQuery,
   serializeDashboardQuery,
@@ -35,8 +35,6 @@ const navItems = [
   'Historical',
   'Contact',
 ];
-
-type RiskLevelKey = 'high' | 'medium' | 'low';
 
 type DashboardProps = {
   onNavigate?: (view: View) => void;
@@ -69,10 +67,10 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
     faults: false,
     volcanoes: false,
   });
-  const [activeRiskLevels, setActiveRiskLevels] = useState<RiskLevelKey[]>([
-    'high',
-    'medium',
-    'low',
+  const [activeEventCategories, setActiveEventCategories] = useState<RiskBucket[]>([
+    'critical',
+    'elevated',
+    'baseline',
   ]);
 
   useEffect(() => {
@@ -92,8 +90,8 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
     setActiveLayers((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  function toggleRiskLevel(level: RiskLevelKey) {
-    setActiveRiskLevels((prev) =>
+  function toggleEventCategory(level: RiskBucket) {
+    setActiveEventCategories((prev) =>
       prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level],
     );
   }
@@ -101,9 +99,7 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
   const showRisk = activeView === 'risk';
   const visibleEvents = events.filter((event) => {
     if (!activeLayers.events) return false;
-    const bucket = eventRiskBucket(event.alert_level);
-    const riskLevel = bucket === 'critical' ? 'high' : bucket === 'elevated' ? 'medium' : 'low';
-    return activeRiskLevels.includes(riskLevel);
+    return activeEventCategories.includes(eventRiskBucket(event.alert_level));
   });
 
   function updateQuery(patch: Partial<DashboardQueryState>) {
@@ -168,8 +164,8 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
           onViewChange={changeView}
           activeLayers={activeLayers}
           onToggleLayer={toggleLayer}
-          activeRiskLevels={activeRiskLevels}
-          onToggleRiskLevel={toggleRiskLevel}
+          activeEventCategories={activeEventCategories}
+          onToggleEventCategory={toggleEventCategory}
           startDate={startDate}
           endDate={endDate}
           onStartDateChange={changeStartDate}

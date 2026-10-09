@@ -56,6 +56,32 @@ describe('realtime events', () => {
     act(() => vi.advanceTimersByTime(60000));
     expect(Socket.instances).toHaveLength(2);
   });
+  it('updates every cached since query and removes events revised before its boundary', async () => {
+    vi.stubGlobal('WebSocket', Socket);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const since = '2026-08-29T00:00:00Z';
+    const later = '2026-08-30T00:00:00Z';
+    client.setQueryData(['events'], [event]);
+    client.setQueryData(['events', { since }], [event]);
+    client.setQueryData(['events', { since: later }], []);
+    render(<QueryClientProvider client={client}><Status /></QueryClientProvider>);
+    const socket = Socket.instances[0];
+
+    await act(async () => socket.onmessage?.({ data: JSON.stringify({ ...event, magnitude: 6 }) }));
+    expect(client.getQueryData<EventChange[]>(['events', { since }])?.[0].magnitude).toBe(6);
+    expect(client.getQueryData(['events', { since: later }])).toEqual([]);
+
+    await act(async () => socket.onmessage?.({
+      data: JSON.stringify({ ...event, occurred_at: '2026-08-30T09:30:00Z' }),
+    }));
+    expect(client.getQueryData<EventChange[]>(['events', { since: later }])).toHaveLength(1);
+
+    await act(async () => socket.onmessage?.({
+      data: JSON.stringify({ ...event, occurred_at: '2026-08-28T09:30:00Z' }),
+    }));
+    expect(client.getQueryData(['events', { since }])).toEqual([]);
+    expect(client.getQueryData(['events', { since: later }])).toEqual([]);
+  });
   it('rejects malformed data and refetches after reconnection', () => {
     vi.useFakeTimers();
     vi.stubGlobal('WebSocket', Socket);

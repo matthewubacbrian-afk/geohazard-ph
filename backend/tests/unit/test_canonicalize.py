@@ -91,3 +91,63 @@ def test_matching_rejects_magnitude_outside_tolerance():
     match_and_link(FakeSession([usgs, phivolcs]))
 
     assert usgs.canonical_id != phivolcs.canonical_id
+
+
+def test_nearby_same_source_events_do_not_join_one_canonical_group():
+    first = make_row("usgs", offset_seconds=0)
+    second = make_row("usgs", offset_seconds=90)
+    phivolcs = make_row("phivolcs", offset_seconds=10)
+
+    match_and_link(FakeSession([second, phivolcs, first]))
+
+    assert first.canonical_id == phivolcs.canonical_id
+    assert second.canonical_id != first.canonical_id
+    assert sum(row.is_primary for row in (first, second, phivolcs)) == 2
+
+
+def test_matching_does_not_link_a_chain_without_pairwise_agreement():
+    first = make_row("usgs", offset_seconds=0)
+    middle = make_row("phivolcs", offset_seconds=100)
+    last = make_row("gvp", offset_seconds=200)
+
+    match_and_link(FakeSession([first, middle, last]))
+
+    assert len({first.canonical_id, middle.canonical_id, last.canonical_id}) == 2
+    assert first.canonical_id != last.canonical_id
+
+
+def test_revised_location_splits_group_and_promotes_former_secondary():
+    usgs = make_row("usgs")
+    phivolcs = make_row("phivolcs", offset_seconds=10)
+    session = FakeSession([usgs, phivolcs])
+
+    match_and_link(session)
+    assert usgs.canonical_id == phivolcs.canonical_id
+    assert usgs.is_primary is False
+
+    phivolcs.latitude = 15.0
+    match_and_link(session)
+
+    assert usgs.canonical_id != phivolcs.canonical_id
+    assert usgs.is_primary is True
+    assert phivolcs.is_primary is True
+    assert usgs.match_confidence is None
+    assert phivolcs.match_confidence is None
+
+
+def test_revised_magnitude_splits_then_rejoins_with_primary_demotion():
+    usgs = make_row("usgs", magnitude=5.0)
+    phivolcs = make_row("phivolcs", magnitude=5.1)
+    session = FakeSession([usgs, phivolcs])
+
+    match_and_link(session)
+    phivolcs.magnitude = 5.8
+    match_and_link(session)
+    assert usgs.canonical_id != phivolcs.canonical_id
+    assert usgs.is_primary is True
+
+    phivolcs.magnitude = 5.1
+    match_and_link(session)
+    assert usgs.canonical_id == phivolcs.canonical_id
+    assert usgs.is_primary is False
+    assert phivolcs.is_primary is True

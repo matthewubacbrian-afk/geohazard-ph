@@ -18,6 +18,7 @@
   --outline-variant: #c3c7c8; /* hairline border */
 
   --accent: #c0392b;       /* brand red / high risk (was --secondary) */
+  --risk-very-high: #8f201a; /* darkest regional profile */
   --risk-medium: #e3a655;  /* amber */
   --risk-low: #6bb4b1;     /* teal */
   --white: #ffffff;

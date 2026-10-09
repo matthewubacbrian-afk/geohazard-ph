@@ -52,6 +52,7 @@ Related contracts:
 | match_confidence | `match_confidence` | Numeric confidence assigned when cross-source rows are canonicalized. |
 | EventChange | `EventChange` | Post-commit event-change payload used by realtime consumers. |
 | match_and_link | `match_and_link` | Synchronous ingest operation that matches cross-source rows into canonical groups. |
+| canonical reconciliation | `reconcile_canonical_events` | Preview or apply regrouping of persisted source rows after matching rules or source records change. |
 | event density | `event_density` | Coordinate-spread density proxy; not events per km² until authoritative boundaries exist. |
 
 ## 3. Risk Profiling Concepts

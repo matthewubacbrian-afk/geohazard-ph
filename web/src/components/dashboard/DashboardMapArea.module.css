@@ -95,14 +95,6 @@
   color: var(--text);
 }
 
-.legendValue {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  line-height: 12px;
-  letter-spacing: 1px;
-  color: var(--outline);
-}
-
 /* ---- Floating summary card ---- */
 .card {
   position: absolute;
@@ -253,6 +245,10 @@
 
 .swatch--high {
   background: var(--risk-high);
+}
+
+.swatch--very-high {
+  background: var(--risk-very-high);
 }
 
 .swatch--medium {
