@@ -112,6 +112,21 @@ before provisioning.
    docker compose version
    ```
 
+   Configure the Ubuntu host firewall while keeping SSH reachable. These rules
+   allow SSH and the public web ports; OCI security-list or network-security-group
+   rules are a separate network firewall and must also allow the intended traffic:
+
+   ```bash
+   sudo ufw allow OpenSSH
+   sudo ufw allow 80/tcp
+   sudo ufw allow 443/tcp
+   sudo ufw enable
+   sudo ufw status
+   ```
+
+   Confirm the SSH rule is present before enabling UFW, and keep an active SSH
+   session open while checking that a new SSH connection still works.
+
 For other Linux hosts, retain the existing requirements: Docker Compose v2, a DNS
 name pointing to the host, inbound ports 80 and 443, and outbound access to GHCR
 and the event sources.
@@ -125,7 +140,9 @@ and the event sources.
    and `.env.staging.example`; extract all files together into one directory on
    the VM, preserving the `infra/caddy` and `scripts` paths.
 2. Confirm the published API and web image manifests include both ARM64 and
-   AMD64 before deployment. Use the actual image prefix and SHA from the workflow:
+   AMD64 before deployment. If the GHCR packages are private, perform the GHCR
+   login in step 3 before inspecting them. Use the actual image prefix and SHA
+   from the workflow:
 
    ```bash
    docker buildx imagetools inspect ghcr.io/owner/geohazard-ph-api:<sha>
@@ -147,12 +164,48 @@ and the event sources.
 
    Protect Docker's credential configuration on the VM and log out of GHCR after
    deployment if desired with `docker logout ghcr.io`.
-4. The production ML output to provide is `ml/model_artifacts/v1/risk_profiles.json`.
-   Copy the trained file to the host path used by `RISK_PROFILE_EXPORT_FILE`, for
-   example `./deploy-data/risk_profiles.json` inside the extracted bundle directory.
-   Ensure the file exists, is non-empty, and is readable by Docker before deploying:
+4. Generate the production ML output from the repository root on your Windows
+   development machine. Normal training requires `KAGGLE_USERNAME` and
+   `KAGGLE_KEY` credentials in the environment or `.env` file. The `-Offline`
+   option skips Kaggle downloads and is appropriate only when the needed local
+   CSV inputs already exist under `ml/data/raw/`:
+
+   ```powershell
+   .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1
+   # Only when local training inputs exist:
+   .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline
+   ```
+
+   The output is `ml/model_artifacts/v1/risk_profiles.json`. Transfer it from
+   PowerShell to the extracted release directory on the VM (adjust the key path,
+   public IP, and remote release path to match your setup):
+
+   ```powershell
+   ssh -i "$env:USERPROFILE\.ssh\oci_geohazard" ubuntu@<public-ip> "mkdir -p /home/ubuntu/geohazard-release/deploy-data"
+   scp -i "$env:USERPROFILE\.ssh\oci_geohazard" .\ml\model_artifacts\v1\risk_profiles.json ubuntu@<public-ip>:/home/ubuntu/geohazard-release/deploy-data/risk_profiles.json
+   ```
+
+   The extracted bundle directory must be `/home/ubuntu/geohazard-release` in
+   this example. On the VM, validate that the JSON is non-empty and is a
+   non-empty list of objects with a non-empty string `region_name` (the required
+   `RiskProfile` field), then check file readability:
 
    ```bash
+   python3 - <<'PY'
+   import json
+   from pathlib import Path
+
+   path = Path("./deploy-data/risk_profiles.json")
+   data = json.loads(path.read_text(encoding="utf-8"))
+   assert isinstance(data, list) and data, "expected a non-empty JSON list"
+   assert all(
+       isinstance(item, dict)
+       and isinstance(item.get("region_name"), str)
+       and item["region_name"].strip()
+       for item in data
+   ), "each profile must be an object with a non-empty string region_name"
+   print(f"Validated {len(data)} risk profiles")
+   PY
    test -s ./deploy-data/risk_profiles.json && test -r ./deploy-data/risk_profiles.json
    ```
 
@@ -202,14 +255,17 @@ and the event sources.
 ### Backup, restore, rollback, and cleanup
 
 Before each update, create database and Caddy data backups from the extracted
-bundle directory. The date-based names below use UTC:
+bundle directory. The date-based names below use UTC. The Caddy archive includes
+both `/data` (durable ACME certificates and related state) and `/config`; treat it
+as secret material because it contains TLS private keys, and protect its access
+and storage accordingly:
 
 ```bash
 mkdir -p backups
 backup_date="$(date -u +%Y%m%dT%H%M%SZ)"
 docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_dump -U geohazard -d geohazard -Fc > "backups/geohazard-${backup_date}.dump"
-docker compose --env-file .env.staging -f compose.staging.yml exec -T proxy tar -C /data -czf - . > "backups/caddy-data-${backup_date}.tar.gz"
-test -s "backups/geohazard-${backup_date}.dump" && test -s "backups/caddy-data-${backup_date}.tar.gz"
+docker compose --env-file .env.staging -f compose.staging.yml exec -T proxy tar -C / -czf - data config > "backups/caddy-state-${backup_date}.tar.gz"
+test -s "backups/geohazard-${backup_date}.dump" && test -s "backups/caddy-state-${backup_date}.tar.gz"
 ```
 
 Restore a database dump only when intentionally replacing the current database.
@@ -221,8 +277,8 @@ and restore the custom-format dump:
 docker compose --env-file .env.staging -f compose.staging.yml stop api worker
 restore_date="$(date -u +%Y%m%dT%H%M%SZ)"
 docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_dump -U geohazard -d geohazard -Fc > "backups/geohazard-before-restore-${restore_date}.dump"
-docker compose --env-file .env.staging -f compose.staging.yml exec postgres dropdb -U geohazard --if-exists geohazard
-docker compose --env-file .env.staging -f compose.staging.yml exec postgres createdb -U geohazard -O geohazard geohazard
+docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres dropdb -U geohazard --if-exists geohazard
+docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres createdb -U geohazard -O geohazard geohazard
 docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_restore --no-owner -U geohazard -d geohazard < backups/geohazard-YYYYMMDDTHHMMSSZ.dump
 docker compose --env-file .env.staging -f compose.staging.yml up -d --wait
 curl --fail https://SITE_DOMAIN/health
@@ -231,7 +287,7 @@ curl --fail https://SITE_DOMAIN/health
 Replace the dump placeholder with the chosen backup filename and `SITE_DOMAIN`
 with the actual hostname. Restore Caddy's saved state, if needed, by streaming the
 chosen archive into the proxy container with
-`docker compose --env-file .env.staging -f compose.staging.yml exec -T proxy tar -C /data -xzf - < backups/caddy-data-<date>.tar.gz`.
+`docker compose --env-file .env.staging -f compose.staging.yml exec -T proxy tar -C / -xzf - < backups/caddy-state-<date>.tar.gz`.
 Never run `down -v` during routine updates or recovery; it deletes named volumes.
 
 To roll back application images, verify database migration compatibility and
