@@ -1,71 +1,79 @@
 # GeoHazard PH Web Application Structure
 
-The web application uses React 18, TypeScript, Vite, TanStack Query and MapLibre GL.
-Components use colocated CSS Modules and tokens from `src/styles/tokens.css`; see
-[DESIGN_NOTES.md](DESIGN_NOTES.md) for palette, spacing and motion conventions.
+The web app uses React 18, TypeScript, Vite, TanStack Query, React Router, and
+MapLibre GL. Keep the API boundary and data hooks separate from presentation.
+CSS Modules are colocated with components; shared style values come from
+`src/styles/tokens.css`. The design contract and current feature inventory are in
+[REDESIGN_UI.md](REDESIGN_UI.md); the concise contributor rules are in
+[DESIGN_NOTES.md](DESIGN_NOTES.md).
 
-## Composition
+## Composition and routes
 
-`src/main.tsx` mounts the application. `App.tsx` supplies the QueryClient and switches
-views between Hero, Dashboard, About, DataSources and HistoricalBrowser. The informational
-pages retain explicit placeholders for unfinished capabilities.
+- `src/main.tsx` loads the app-wide fonts, styles, and providers.
+- `src/App.tsx` supplies route composition and settings state.
+- `/` renders `pages/Hero.tsx` (How It Works content).
+- `/dashboard` renders `pages/Dashboard.tsx` and its control rail, map, and activity
+  panel.
+- `/about` and `/data-sources` render static informational pages.
+- `/historical` renders an intentionally unavailable/planned state; it has no live
+  historical query or fake controls.
 
-`pages/Dashboard.tsx` owns selected event, source/date/magnitude filters, active view,
-basemap and overlay toggles. `DashboardSidebar` renders controls; `DashboardMapArea`
-composes the map, live loading/error status and the national summary card.
-`EventFeed` renders activity and event details. The side panel switches between
-activity, `VolcanoPanel` and `RiskProfilesPanel`. `TopNav` provides navigation.
+The dashboard owner keeps filters, selected event, active dashboard view, basemap,
+layer/category toggles, and URL query synchronization. Reusable presentation lives
+under `components/`; asynchronous reads stay under `hooks/` and `api/`.
 
-## Data access
+## Dashboard view and data flow
 
-| Module | Responsibility |
-| --- | --- |
-| `api/client.ts` | Events, event summary, risk profiles; configurable `VITE_API_BASE_URL` |
-| `api/errors.ts` | Named `ApiError` carrying HTTP status and stable code |
-| `api/staticLayers.ts` | Imported fault and volcano-zone reads |
-| `hooks/useEvents.ts` | Event cache and browser filtering |
-| `hooks/useEventSummary.ts` | National bounding-box event aggregate |
-| `hooks/useRiskProfiles.ts` | Historical statistical profiles |
-| `hooks/useRealtimeAlerts.ts` | Active reconnecting WebSocket subscriber and REST reconciliation |
-| `hooks/useStaticLayers.ts` | Optional reference queries, enabled per toggle, one-hour freshness |
-| `hooks/useFaultLines.ts` | Legacy scaffold; use `useStaticLayers` for the active flow |
+| UI | Component | Data source |
+| --- | --- | --- |
+| Event feed and selected event | `EventFeed`, `EventFeedItem`, `EventDetailPanel` | `useEvents` → `fetchEvents` → `GET /api/v1/events`; source/time/magnitude/category filtering applies to the shared map/list event set. |
+| Event markers and map | `DashboardMapArea`, `MapView` | Filtered events, current basemap and toggles; preserve camera, event selection, fault/vector geometry and source attribution. |
+| National summary card | `DashboardMapArea` | `useEventSummary` → `GET /api/v1/events/summary`; server values and loading/error/retry/empty states. “Classification” and “Dominant Fault System” are still Coming soon. |
+| Realtime connection | `RealtimeStatus`, `useRealtimeAlerts` | WebSocket `/ws/events`; reconnects with backoff and reconciles with REST on open. Events and summary refresh every 30 seconds. LIVE describes connection state only. |
+| Fault and volcano-zone vectors | `useStaticLayers`, `StaticLayerStatus`, `MapView` | Toggle-gated `GET /api/v1/faults` and `/api/v1/volcano-zones`; retain imported/empty/error/retry/provenance states. |
+| PHIVOLCS volcano reference overlays | `volcanoOverlays.ts`, `VolcanoOverlayStatus`, `MapView` | Remote rendered raster layers when local volcano-zone vectors are absent; distinct from local polygons and alert bulletins. |
+| Volcano bulletin view | `VolcanoPanel` | `useVolcanoes` → `GET /api/v1/volcanoes`; alert level, source, bulletin/retrieval time, stale-cache, loading/error/retry/empty. |
+| Regional risk overlay and cards | `useRiskProfiles`, `RiskProfilesPanel`, `RiskProfileCard` | `GET /api/v1/risk-profile/clusters`; descriptive profile values and disclaimer. `RegionLookup` is currently dormant and should be surfaced using the already loaded profile list. |
+| Individual risk profile client function | `api/client.ts` | `fetchRiskProfile` targets `/api/v1/risk-profile/{region_name}` but no current hook or route consumes it. Do not add an API call as part of the UI redesign. |
 
-The API base defaults to `http://localhost:8000/api/v1`. Wire fields remain snake_case.
-`types/hazard.ts` defines `HazardEvent`, `EventSummary` and `RiskProfile`;
-`types/staticLayer.ts` defines imported geometry and provenance. Mobile mappings are
-owned by the mobile package, not reused as wire types here.
+`api/client.ts`, `api/staticLayers.ts`, `api/volcanoes.ts`, and `api/realtime.ts`
+remain the request/mapping boundary. `types/hazard.ts`, `types/staticLayer.ts`,
+`types/volcano.ts`, and hooks remain stable. The default base is
+`http://localhost:8000/api/v1`, overridable with `VITE_API_BASE_URL`.
 
-## Map lifecycle
+## Map lifecycle and styling
 
-`components/map/MapView.tsx` retains its camera and map instance while switching among
-Streets, Satellite, Hybrid and Terrain basemaps. It restores live-event circles, fault
-lines and volcano polygons after `style.load` using current data and toggle values.
-Reference data arriving after map load updates existing sources without moving the camera.
-Source geometry preserves polygon holes. All map paint colors resolve from design tokens.
+`components/map/basemaps.ts` defines Streets (OpenFreeMap Positron), Satellite,
+Hybrid, and Terrain. The raster providers and attribution remain visible. `MapView`
+keeps the map instance/camera while styles change, then restores event circles,
+risk regions, local fault/volcano vectors, and remote volcano overlays. Map paint
+colors resolve from semantic tokens. Event magnitude uses a neutral size/color scale;
+risk uses its separate labeled four-step scale. Faults remain lines and local
+volcano zones remain shaded polygons.
 
-`StaticLayerStatus` renders loading, empty, error/retry and attributed loaded states.
-Missing optional overlays do not block earthquake data. Faults use solid lines;
-volcano hazard zones use shaded polygons. These are static references, not live alerts.
+## Responsive/accessibility rules
 
-## Backend endpoints consumed
+At wide widths, the left controls and right activity panel scroll independently
+beside the primary map. At tablet widths, use a controls/map row and place the feed
+below. At mobile widths, use a single column with visible controls, map, then feed.
+The sidebar needs `min-height: 0` through grid/flex ancestors and its own vertical
+overflow; browser zoom and narrow viewports must not clip the bottom controls.
 
-- `GET /api/v1/events` and `/api/v1/events/summary`
-- `GET /api/v1/risk-profile/clusters` and `/api/v1/risk-profile/{region_name}`
-- `GET /api/v1/volcanoes`
-- `GET /api/v1/faults` and `/api/v1/volcano-zones`
-- `WS /ws/events` (unversioned)
+All routes use semantic landmarks, labels, keyboard-visible focus, accessible SVG
+icons, readable contrast, non-color risk/magnitude cues, and reduced-motion support.
+See `REDESIGN_UI.md` for dimensions, tokens, states, and implementation checklist.
 
-See [API contracts](../docs/api-contracts.md) for errors, source filtering and response fields.
+## Tests and verification
 
-## Verification
+Web tests are in `tests/` and use Vitest, jsdom, and Testing Library. Mock MapLibre
+and network boundaries; assert user-visible behavior rather than implementation
+class names. Run from `web/`:
 
-```bash
-cd web
-npm install
+```powershell
 npm test
 npm run build
 ```
 
-Tests live in `tests/`. Vitest uses jsdom with shared jest-dom registration and cleanup
-in `tests/setup.ts`. Component tests use Testing Library; MapLibre is mocked for
-deterministic geometry, visibility, style lifecycle and camera checks.
+Also run `python scripts\verify_structure.py` and `git diff --check` from the repo
+root. The redesign's desktop/tablet/mobile and live-data verification steps are in
+`docs/superpowers/plans/2026-10-09-web-dashboard-redesign.md`.
