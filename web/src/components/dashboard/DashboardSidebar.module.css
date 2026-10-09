@@ -460,3 +460,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .dateGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .input {
+    min-width: 0;
+  }
+}
