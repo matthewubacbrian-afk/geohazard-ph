@@ -70,7 +70,7 @@ export default function EventFeed({ events, isLoading, error, onRetry, onSelectE
 
       <div className={styles.body}>
         {isLoading && (
-          <div className={styles.loading}>
+          <div className={styles.loading} role="status" aria-label="Loading live events">
             {[0, 1, 2].map((i) => (
               <div key={i} className={styles.loadingRow}>
                 <Skeleton width="55%" height={14} />

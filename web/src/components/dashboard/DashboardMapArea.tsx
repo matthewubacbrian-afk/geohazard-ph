@@ -143,7 +143,7 @@ export default function DashboardMapArea({
         </div>
 
         {summaryLoading ? (
-          <div className={styles.statGrid}>
+          <div className={styles.statGrid} role="status" aria-label="Loading event summary">
             <div className={`${styles.stat} ${styles.statWide}`}>
               <Skeleton width={16} height={46} />
               <div>
@@ -200,7 +200,7 @@ export default function DashboardMapArea({
             <div className={styles.stat}>
               <span className={styles.statLabel}>Avg Magnitude</span>
               <strong className={styles.statValue}>
-                {avgMagnitude != null ? `${avgMagnitude}` : "—"}
+                {avgMagnitude != null ? avgMagnitude.toFixed(2) : "—"}
                 {avgMagnitude != null ? <span> Mw</span> : null}
               </strong>
             </div>
@@ -208,7 +208,7 @@ export default function DashboardMapArea({
             <div className={styles.stat}>
               <span className={styles.statLabel}>Events in area</span>
               <strong className={styles.statValue}>
-                {eventCount != null ? `${eventCount}` : "—"}
+                {eventCount != null ? eventCount.toLocaleString() : "—"}
                 {eventCount != null ? <span> events</span> : null}
               </strong>
             </div>

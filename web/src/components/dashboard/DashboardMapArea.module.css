@@ -17,8 +17,8 @@
   gap: var(--space-2);
   max-width: min(360px, calc(100% - 32px));
   padding: 10px 14px;
-  border: 1px solid var(--outline-variant);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
   background: var(--surface-overlay-solid);
   color: var(--text);
   box-shadow: var(--shadow-control);
@@ -45,13 +45,13 @@
   left: 16px;
   width: min(320px, calc(100% - 32px));
   padding: 16px;
-  border: 1px solid var(--outline-variant);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
   background: var(--surface-overlay-solid);
   box-shadow: var(--shadow-overlay);
 }
 .cardHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.cardTitle { margin: 0; font: 600 20px/1.2 var(--font-display); color: var(--text); }
+.cardTitle { margin: 0; font: 600 22px/1.2 var(--font-display); color: var(--text); }
 .cardSub { margin: 4px 0 0; color: var(--text-muted); font-size: var(--text-xs); }
 .cardClose {
   display: grid;
@@ -65,15 +65,16 @@
   color: var(--text-muted);
   cursor: pointer;
 }
-.cardClose:hover { border-color: var(--outline-variant); background: var(--surface-container); }
+.cardClose:hover { border-color: var(--border-subtle); background: var(--surface-container); }
+.cardClose:focus-visible, .retryBtn:focus-visible, .cardFooter button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 
 .statGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
-.stat { min-width: 0; padding: 10px; border: 1px solid var(--outline-variant); border-radius: var(--radius-sm); background: var(--surface-raised); }
+.stat { min-width: 0; padding: 10px; border: 1px solid var(--border-subtle); border-radius: var(--radius-control); background: var(--surface-raised); }
 .statWide { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; }
 .statFull { grid-column: 1 / -1; }
 .statMarker { width: 10px; height: 10px; flex: 0 0 auto; border: 2px solid var(--accent); border-radius: 50%; }
 .statLabel { display: block; color: var(--text-muted); font: 600 10px/1.4 var(--font-mono); letter-spacing: .04em; text-transform: uppercase; }
-.statValue { display: block; margin-top: 4px; color: var(--text); font: 600 20px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
+.statValue { display: block; margin-top: 4px; color: var(--text); font: 500 20px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
 .statValue span { color: var(--text-muted); font: 400 11px/1.3 var(--font-sans); }
 .faultBox { margin: 6px 0 0; color: var(--text); font-size: var(--text-sm); }
 .cardFooter { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--outline-variant); }

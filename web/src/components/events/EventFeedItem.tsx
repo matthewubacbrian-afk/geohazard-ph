@@ -33,8 +33,10 @@ export default function EventFeedItem({ event, selected, onSelect }: EventFeedIt
       </div>
 
       <div className={styles.meta}>
-        {event.depth_km != null && <span>{event.depth_km}km depth</span>}
-        <span>{new Date(event.occurred_at).toLocaleString()}</span>
+        {event.depth_km != null && <span className={styles.metaValue}>Depth {event.depth_km} km</span>}
+        <time className={styles.metaValue} dateTime={event.occurred_at}>
+          {new Date(event.occurred_at).toLocaleString()}
+        </time>
         <span className={styles.source}>{event.source}</span>
       </div>
     </button>
