@@ -13,7 +13,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: npm install
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
         working-directory: mobile
-      - run: npm test
+      - run: npm test -- --runInBand
         working-directory: mobile
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools" "ndk;26.1.10909125"
+      - name: Build Android debug app
+        run: ./gradlew assembleDebug
+        working-directory: mobile/android

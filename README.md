@@ -431,3 +431,32 @@ In **Saved locations**, configure a device-reachable API URL ending in `/api/v1`
 default URL is empty. The in-app alert list checks for new events on startup or when refreshed;
 background push delivery is not configured. Saved coordinates stay on the device and are not
 sent to the backend.
+
+### Native mobile development
+
+The native projects target the existing React Native 0.75.5 app. Install dependencies from
+`mobile/` with `npm ci`. For Android, install JDK 17 and Android Studio with Android SDK
+Platform 34, Build Tools 34.0.0, Platform Tools, and NDK 26.1.10909125. Set `JAVA_HOME` and
+`ANDROID_HOME` to those installations, start an Android emulator (or connect a device with USB
+debugging), and run the Metro server and app in separate terminals:
+
+```powershell
+Set-Location mobile
+npm start
+```
+
+```powershell
+Set-Location mobile
+npm run android
+```
+
+On an Android emulator, the development computer's localhost is available at `10.0.2.2`; on a
+physical phone, use a LAN address reachable from the phone. Android permits cleartext HTTP only
+in the debug manifest; production deployments must use HTTPS. Do not commit a local API URL.
+
+iOS builds require macOS, Xcode, and CocoaPods. On a Mac, run `npm ci` from `mobile/`, then
+run `pod install` from `mobile/ios/` and `npm run ios` from `mobile/`. The project uses
+`com.geohazardph.mobile` as a development application/bundle identifier; choose the final
+identifier and configure signing before any store distribution. Mobile CI runs the Jest suite
+and Android debug build; it does not replace physical-device UX validation, and iOS build
+verification remains a Mac task.
