@@ -41,7 +41,7 @@ Document that metadata identifies the layer as polylines in EPSG:4326 with GeoJS
 
 - [x] **Step 2: State the attribution and clearance gate**
 
-Require `Source: DOST-PHIVOLCS`, a direct link to the exact layer or map used, the layer/product name and source-stated date, and separate retrieval/import timestamps for every future permitted use. Summarize the Maps Portal's acknowledgment and restrictions on unauthorized use, depiction, sale, and derivatives. State that no open redistribution license was identified and that public REST access or attribution alone does not authorize import or redistribution.
+Require `Source: DOST-PHIVOLCS`, a direct link to the exact layer or map used, the layer/product name and source-stated date, and separate retrieval/import timestamps for every future permitted use. Summarize the Maps Portal's acknowledgment request and warning against improper depiction, unauthorized use, or sale of its products or derivatives. State that no open redistribution license was identified and that public REST access or attribution alone does not authorize import or redistribution.
 
 - [x] **Step 3: Record current comparison limits**
 
