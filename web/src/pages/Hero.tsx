@@ -26,7 +26,7 @@ const steps = [
   {
     title: "3. Random Forest",
     description:
-      "Advanced machine learning classification for highly accurate risk probability scoring.",
+      "Classifies regional profiles from historical features; results describe patterns, not forecasts.",
   },
   {
     title: "4. LGU Dashboard",

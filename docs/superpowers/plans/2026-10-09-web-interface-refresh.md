@@ -176,13 +176,13 @@ The tokens task refines the existing primitive/semantic structure. Maintain a 4p
 - Modify: `web/DESIGN_NOTES.md`; modify `web/WEB_STRUCTURE.md` only if documentation is inaccurate after CSS/layout changes.
 - Test: `web/tests/InformationalPages.test.tsx`, `web/tests/App.test.tsx`
 
-- [ ] **Step 1: Capture/inspect assertions** for Hero copy and navigation, About and Data Sources route content, all attribution names and links, and Historical planned/unavailable copy. Keep all current tested text unless a specific prediction/accuracy statement is factually misleading; if copy must change, preserve behavior and update only the corresponding copy assertion with a clear reason.
-- [ ] **Step 2: Restyle Hero** with a calm pumice/ash field, no gradient-heavy effect or decorative blobs, concise typographic hierarchy and existing navigation actions. Remove/replace only unsupported prediction or model-accuracy claims with specific, truthful descriptions; do not add new statistics. If sample meters remain, label them explicitly as illustrative and non-live.
-- [ ] **Step 3: Restyle About and Data Sources** with a constrained editorial measure, clear section headings, source provenance and links, and responsive spacing; retain USGS, PHIVOLCS, GVP, GEM and Kaggle attribution.
-- [ ] **Step 4: Restyle Historical** to present its current planned/unavailable status intentionally. Keep no fake search controls and no claim that historical queries are implemented.
-- [ ] **Step 5: Update `web/DESIGN_NOTES.md`** with final tokens, typography, spacing, responsive rules, contrast checks, icon treatment and motion. Update `WEB_STRUCTURE.md` only where its page/layout descriptions become inaccurate.
-- [ ] **Step 6: Run `cd web; npm test -- tests/InformationalPages.test.tsx tests/App.test.tsx` and `npm run build`.** Expected: route navigation and source attribution assertions pass.
-- [ ] **Step 7: Commit** `style: refresh informational pages`.
+- [x] **Step 1: Capture/inspect assertions** for Hero copy and navigation, About and Data Sources route content, all attribution names and links, and Historical planned/unavailable copy. Keep all current tested text unless a specific prediction/accuracy statement is factually misleading; if copy must change, preserve behavior and update only the corresponding copy assertion with a clear reason.
+- [x] **Step 2: Restyle Hero** with a calm pumice/ash field, no gradient-heavy effect or decorative blobs, concise typographic hierarchy and existing navigation actions. Remove/replace only unsupported prediction or model-accuracy claims with specific, truthful descriptions; do not add new statistics. If sample meters remain, label them explicitly as illustrative and non-live.
+- [x] **Step 3: Restyle About and Data Sources** with a constrained editorial measure, clear section headings, source provenance and links, and responsive spacing; retain USGS, PHIVOLCS, GVP, GEM and Kaggle attribution.
+- [x] **Step 4: Restyle Historical** to present its current planned/unavailable status intentionally. Keep no fake search controls and no claim that historical queries are implemented.
+- [x] **Step 5: Update `web/DESIGN_NOTES.md`** with final tokens, typography, spacing, responsive rules, contrast checks, icon treatment and motion. Update `WEB_STRUCTURE.md` only where its page/layout descriptions become inaccurate.
+- [x] **Step 6: Run `cd web; npm test -- tests/InformationalPages.test.tsx tests/App.test.tsx` and `npm run build`.** Expected: route navigation and source attribution assertions pass.
+- [x] **Step 7: Commit** `style: refresh informational pages`.
 
 ### Task 7: Apply MapLibre palette and legend styling
 
