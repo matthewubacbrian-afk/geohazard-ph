@@ -143,7 +143,7 @@ export default function Hero({ onNavigate, onSettings }: HeroProps) {
             ].map(([item, target]) => (
               <a
                 key={item}
-                href="#"
+                href={`/${target}`}
                 onClick={(event) => {
                   event.preventDefault();
                   onNavigate?.(target as View);

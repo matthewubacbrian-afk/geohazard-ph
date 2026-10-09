@@ -37,6 +37,14 @@ describe('application routes', () => {
     expect(window.location.pathname).toBe('/about');
   });
 
+  it('links the hero footer to the existing About and Data Sources routes', () => {
+    window.history.pushState({}, '', '/');
+    render(<App />);
+
+    expect(screen.getByRole('link', { name: 'About Project' })).toHaveAttribute('href', '/about');
+    expect(screen.getByRole('link', { name: 'Data Credits' })).toHaveAttribute('href', '/data-sources');
+  });
+
   it('keeps shared navigation controls keyboard reachable and identifies the current page', () => {
     window.history.pushState({}, '', '/about');
     render(<App />);
