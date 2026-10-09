@@ -121,11 +121,21 @@ are covered by deterministic tests.
 - Raw reference files stay local under `data/`; do not commit large source datasets.
   Refresh quarterly or after a source revision. `imported_at` is not an observation date.
 
-Verification on 2026-09-10: the downloaded GEM harmonized GeoJSON validated in dry-run
-with 155 features intersecting the Philippines bounds. These were subsequently
-imported into the local development database after migration `0003`. This does not
-establish completeness of national hazard coverage. PHIVOLCS digitization and
-production dataset import still require reviewed source vectors.
+### Verified GEM fault snapshot
+
+On 2026-10-09, the immutable GEM harmonized GeoJSON at commit
+`56816508ad92fd6846dad1163b1c8c01376a2cd1` was validated and imported into the local
+development database. The source file contains 13,696 features; 155 valid fault
+features intersect the configured Philippines bounds and were returned by the faults
+API after import. License: CC-BY-SA-4.0. Raw file SHA-256:
+`37babb516edfac22b5ae91744495d8546b3ae4676b4d4f68cc77da8222df20e1`.
+
+The pinned source URL is
+`https://raw.githubusercontent.com/GEMScienceTools/gem-global-active-faults/56816508ad92fd6846dad1163b1c8c01376a2cd1/geojson/gem_active_faults_harmonized.geojson`.
+The input and local import receipt belong under the ignored
+`data/fault_lines/local/` directory and are not bundled in Git. This snapshot does not
+establish national hazard coverage. PHIVOLCS geometry and production data imports
+still require reviewed source vectors and permissions.
 
 The PHIVOLCS ActiveFault service advertises query support, but its count query
 returned "Requested operation is not supported" during this session. No PHIVOLCS

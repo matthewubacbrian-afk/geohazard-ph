@@ -514,7 +514,7 @@ certificate configuration is corrected.
 
 ## Import static layers (Epic 3)
 
-Start PostGIS, install backend dependencies, and apply migration `0003`:
+Start PostGIS, install backend dependencies, and apply the database migrations:
 
 ```bash
 docker compose up -d postgres redis
@@ -522,20 +522,68 @@ backend/.venv/bin/pip install -e 'backend[dev]'
 (cd backend && .venv/bin/alembic upgrade head)
 ```
 
-Obtain reviewed source files using `docs/data-sources.md`. From the repository root:
+Download the pinned GEM snapshot to the ignored local data directory. Its SHA-256
+must match the value recorded in `docs/data-sources.md`; do not import it if the
+checksum differs.
 
 ```bash
+GEM_COMMIT=56816508ad92fd6846dad1163b1c8c01376a2cd1
+GEM_URL="https://raw.githubusercontent.com/GEMScienceTools/gem-global-active-faults/${GEM_COMMIT}/geojson/gem_active_faults_harmonized.geojson"
+GEM_PATH=data/fault_lines/local/gem_active_faults_harmonized.geojson
+mkdir -p data/fault_lines/local
+curl --fail --location "$GEM_URL" --output "$GEM_PATH"
+echo "37babb516edfac22b5ae91744495d8546b3ae4676b4d4f68cc77da8222df20e1  $GEM_PATH" | sha256sum --check
+
 PYTHONPATH=backend backend/.venv/bin/python scripts/import_fault_lines.py \
-  data/fault_lines/gem_active_faults_harmonized.geojson \
+  "$GEM_PATH" \
   --source gem \
-  --source-url https://github.com/GEMScienceTools/gem-global-active-faults \
-  --license-name CC-BY-SA-4.0 --dataset-version YOUR_SOURCE_COMMIT --dry-run
+  --source-url "$GEM_URL" \
+  --license-name CC-BY-SA-4.0 --dataset-version "$GEM_COMMIT" --dry-run
 ```
 
-Repeat without `--dry-run` to persist the validated snapshot. Use `--source phivolcs`
-for reviewed atlas vectors, supplying their source URL, version and license/permission.
-For volcano polygons add `--kind volcano_zones`. The command accepts `.geojson`, `.json`
-or `.shp` with its sibling files; PDF digitization is a separate GIS task.
+For this pinned source the dry-run reports 155 accepted features from 13,696 source
+features. Review the JSON validation result, then run the same command without
+`--dry-run` to persist the complete GEM snapshot. Import is transactional and replaces
+only the selected `gem` fault source. The API smoke check should return 155 GEM rows
+with the pinned version and license. The local receipt path is
+`data/fault_lines/local/gem-ph.metadata.json`; neither local file is committed.
+
+For PowerShell, download and verify the same snapshot, then run the dry-run:
+
+```powershell
+$gemCommit = "56816508ad92fd6846dad1163b1c8c01376a2cd1"
+$gemUrl = "https://raw.githubusercontent.com/GEMScienceTools/gem-global-active-faults/$gemCommit/geojson/gem_active_faults_harmonized.geojson"
+$gemPath = "data/fault_lines/local/gem_active_faults_harmonized.geojson"
+New-Item -ItemType Directory -Force "data/fault_lines/local" | Out-Null
+Invoke-WebRequest -Uri $gemUrl -OutFile $gemPath
+$actualHash = (Get-FileHash -LiteralPath $gemPath -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($actualHash -ne "37babb516edfac22b5ae91744495d8546b3ae4676b4d4f68cc77da8222df20e1") { throw "GEM source checksum mismatch; do not import" }
+$env:PYTHONPATH = "backend"
+$dryRunLines = & backend/.venv/Scripts/python.exe scripts/import_fault_lines.py $gemPath --source gem --source-url $gemUrl --license-name CC-BY-SA-4.0 --dataset-version $gemCommit --dry-run 2>&1
+if ($LASTEXITCODE -ne 0) { throw "GEM import dry-run failed; do not apply the snapshot" }
+$dryRun = $dryRunLines | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.message -eq "Static layer validated" } | Select-Object -Last 1
+if ($null -eq $dryRun -or [int]$dryRun.count -lt 1) { throw "Dry-run did not accept any Philippine fault features" }
+$sourceCount = @((Get-Content -LiteralPath $gemPath -Raw | ConvertFrom-Json).features).Count
+$receipt = [ordered]@{
+    source = "gem"
+    source_url = $gemUrl
+    license_name = "CC-BY-SA-4.0"
+    dataset_version = $gemCommit
+    sha256 = $actualHash
+    downloaded_at = (Get-Date).ToUniversalTime().ToString("o")
+    source_feature_count = $sourceCount
+    accepted_feature_count = [int]$dryRun.count
+    validation_status = "passed"
+}
+$receipt | ConvertTo-Json | Set-Content -LiteralPath "data/fault_lines/local/gem-ph.metadata.json" -Encoding utf8
+$receipt
+```
+
+Repeat the PowerShell command without `--dry-run` to import. For other reviewed
+sources, use `--source phivolcs` only after checking the source's reuse permission and
+recording its actual URL, version, and terms. For reviewed volcano polygons add
+`--kind volcano_zones`. The importer accepts `.geojson`, `.json`, or `.shp` with its
+sibling files; PDF digitization is a separate GIS task.
 
 A refresh atomically replaces that source in the selected layer, preserving other
 sources. Use complete snapshots, not partial updates. Stable identifiers survive
@@ -556,7 +604,6 @@ For PowerShell, set `$env:PYTHONPATH = "backend"`, use the backend virtual envir
 Rollback code only after exporting imported data if needed: migration downgrade to
 `0002` drops both reference tables.
 
-For this working session a validated 155-feature GEM subset is available locally at
-`data/fault_lines/local/gem-ph.geojson`, with source/subset SHA-256 checksums and provenance
-in `gem-ph.metadata.json`. It is intentionally ignored by Git. Use it as the CLI input
-with `--dataset-version downloaded-2026-09-10` after starting PostGIS.
+The 2026-10-09 local verification imported 155 intersecting features from the pinned
+13,696-feature GEM source into the development database. Each checkout must download
+the ignored local input and receipt again; no raw reference data is bundled.

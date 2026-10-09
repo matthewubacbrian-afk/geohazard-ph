@@ -32,7 +32,7 @@
 - Consumes: public raw GeoJSON at the pinned upstream commit.
 - Produces: local input file and its SHA-256 value; no tracked data artifact.
 
-- [ ] **Step 1: Verify the destination is ignored**
+- [x] **Step 1: Verify the destination is ignored**
 
 From the repository root:
 
@@ -42,7 +42,7 @@ git check-ignore data/fault_lines/local/gem_active_faults_harmonized.geojson
 
 Expected: Git reports the matching `data/fault_lines/local/` ignore rule. Stop if the path is not ignored.
 
-- [ ] **Step 2: Download the pinned input**
+- [x] **Step 2: Download the pinned input**
 
 ```powershell
 $gemCommit = "56816508ad92fd6846dad1163b1c8c01376a2cd1"
@@ -54,7 +54,7 @@ Invoke-WebRequest -Uri $gemUrl -OutFile $gemPath
 
 Expected: the GeoJSON exists at `$gemPath` and its URL includes the full commit SHA.
 
-- [ ] **Step 3: Calculate the raw SHA-256 and inspect the FeatureCollection header**
+- [x] **Step 3: Calculate the raw SHA-256 and inspect the FeatureCollection header**
 
 ```powershell
 $gemSha256 = (Get-FileHash -LiteralPath $gemPath -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -75,18 +75,22 @@ Expected: a non-empty source FeatureCollection and a 64-character lowercase SHA-
 - Consumes: `$gemPath`, `$gemCommit`, `$gemUrl`, `$gemSha256`, and the existing importer CLI.
 - Produces: accepted row count in the CLI's structured log and a local JSON receipt with source metadata and dry-run result.
 
-- [ ] **Step 1: Ensure the backend virtual environment and PostGIS are ready**
+- [x] **Step 1: Ensure the backend virtual environment and PostGIS are ready**
 
 Run from the repository root:
 
 ```powershell
+python -m venv backend/.venv
+backend/.venv/Scripts/python.exe -m pip install -e "backend[dev]"
 docker compose up -d postgres redis
-if (-not (Test-Path "backend/.venv/Scripts/python.exe")) { throw "Create backend/.venv and install backend[dev] before proceeding" }
+Set-Location backend
+.venv/Scripts/python.exe -m alembic upgrade head
+Set-Location ..
 ```
 
-Expected: Postgres and Redis report running; the backend virtual-environment Python executable exists.
+Expected: the backend development dependencies install, Postgres and Redis report running, and Alembic upgrades the local schema through the static-layer migration.
 
-- [ ] **Step 2: Run the importer in dry-run mode**
+- [x] **Step 2: Run the importer in dry-run mode**
 
 ```powershell
 $env:PYTHONPATH = "backend"
@@ -99,7 +103,7 @@ if ($null -eq $dryRun -or [int]$dryRun.count -lt 1) { throw "Dry-run did not rep
 
 Expected: the existing parser reports `Static layer validated` with a positive `count`; no invalid geometry or CRS error occurs.
 
-- [ ] **Step 3: Review the source-to-accepted count and write a receipt**
+- [x] **Step 3: Review the source-to-accepted count and write a receipt**
 
 ```powershell
 $receipt = [ordered]@{
@@ -127,7 +131,7 @@ Expected: the ignored receipt contains the exact input hash, pinned version, act
 - Consumes: the reviewed local receipt and the matching validated GeoJSON.
 - Produces: one local GEM fault snapshot; the API returns the same accepted count and pinned provenance.
 
-- [ ] **Step 1: Apply the same pinned source without dry-run**
+- [x] **Step 1: Apply the same pinned source without dry-run**
 
 ```powershell
 $applyLines = & backend/.venv/Scripts/python.exe scripts/import_fault_lines.py $gemPath --source gem --source-url $gemUrl --license-name CC-BY-SA-4.0 --dataset-version $gemCommit 2>&1
@@ -138,7 +142,7 @@ if ($null -eq $apply -or [int]$apply.count -ne [int]$dryRun.count) { throw "Appl
 
 Expected: the existing transaction replaces only the `gem` source and its applied count matches the dry-run count.
 
-- [ ] **Step 2: Start the local API if it is not already running**
+- [x] **Step 2: Start the local API if it is not already running**
 
 From a separate PowerShell terminal:
 
@@ -149,7 +153,7 @@ Set-Location backend
 
 Expected: FastAPI listens at `http://127.0.0.1:8000`.
 
-- [ ] **Step 3: Compare API count and provenance against the receipt**
+- [x] **Step 3: Compare API count and provenance against the receipt**
 
 From the repository root in another PowerShell terminal:
 
@@ -171,15 +175,15 @@ Expected: the API count equals the receipt's accepted count; every row has GEM s
 - Modify: `docs/runbook.md`.
 - Modify: `docs/project-status.md`.
 
-- [ ] **Step 1: Update the source record**
+- [x] **Step 1: Update the source record**
 
 Add a GEM snapshot note containing the pinned commit, immutable file URL, CC-BY-SA-4.0 license, observed input SHA-256, source feature count, accepted/imported feature count, and the retrieval/import date. Copy the values from `data/fault_lines/local/gem-ph.metadata.json`; do not copy the ignored source file.
 
-- [ ] **Step 2: Make the runbook command reproducible**
+- [x] **Step 2: Make the runbook command reproducible**
 
 Replace the Epic 3 example's `YOUR_SOURCE_COMMIT` placeholder and generic repository URL with the pinned commit and raw file URL used by the import. Keep the dry-run command before the apply command, and retain rollback, attribution, and coverage caveats.
 
-- [ ] **Step 3: Update the authoritative project status**
+- [x] **Step 3: Update the authoritative project status**
 
 Change the Epic 3 row only after API verification. State that the pinned GEM fault snapshot is locally imported and verified, while PHIVOLCS geometry, volcano zones, and national completeness remain unresolved.
 
@@ -188,7 +192,7 @@ Change the Epic 3 row only after API verification. State that the pinned GEM fau
 **Files:**
 - Verify: all three updated documentation files; ensure ignored local data is not staged.
 
-- [ ] **Step 1: Run backend static-layer tests**
+- [x] **Step 1: Run backend static-layer tests**
 
 ```powershell
 Set-Location backend
@@ -198,7 +202,7 @@ Set-Location ..
 
 Expected: the static layer parsing and validation tests pass.
 
-- [ ] **Step 2: Run the full backend suite and final repository checks**
+- [x] **Step 2: Run the full backend suite and final repository checks**
 
 ```powershell
 Set-Location backend
@@ -211,7 +215,7 @@ git diff --check
 
 Expected: backend tests pass, all expected project paths exist, only the three intended docs are tracked as modified, ignored input/receipt remain untracked by Git, and `git diff --check` reports no errors.
 
-- [ ] **Step 3: Commit the verified documentation update**
+- [x] **Step 3: Commit the verified documentation update**
 
 ```powershell
 git add docs/data-sources.md docs/runbook.md docs/project-status.md
