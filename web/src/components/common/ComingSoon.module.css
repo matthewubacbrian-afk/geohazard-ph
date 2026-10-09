@@ -5,7 +5,7 @@
   justify-content: center;
   gap: 16px;
   min-height: calc(100vh - 77px);
-  padding: 96px 32px;
+  padding: clamp(48px, 8vw, 96px) 24px;
   background: var(--surface);
   color: var(--text);
   text-align: center;
@@ -16,6 +16,7 @@
   align-items: center;
   padding: 6px 14px;
   border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   background: var(--surface-raised);
   color: var(--accent);
   font-family: var(--font-mono);
@@ -50,5 +51,5 @@
   font-size: 12px;
   line-height: 16px;
   letter-spacing: 1px;
-  color: var(--text-faint);
+  color: var(--text-muted);
 }

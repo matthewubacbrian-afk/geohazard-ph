@@ -114,12 +114,12 @@ The tokens task refines the existing primitive/semantic structure. Maintain a 4p
 - Modify: scoped styles in `web/src/components/common/SectionHeader.module.css`, `RiskMeter.module.css`, `Skeleton.module.css`, `SettingsPanel.module.css`, `ComingSoon.module.css` (only those found to be used on included routes)
 - Test: `web/tests/App.test.tsx`, `web/tests/SettingsPanel.test.tsx`
 
-- [ ] **Step 1: Inspect existing assertions and route callback behavior** for active navigation, page links, settings open/close, and keyboard access. Keep route labels and accessible names stable.
-- [ ] **Step 2: Define before changing markup any required accessible behavior** for narrow navigation: all existing destinations remain reachable, active route stays discernible, settings remains operable, and focus is visible. Prefer CSS reflow over new menu state.
-- [ ] **Step 3: Restyle `TopNav`** as a compact field-station header with pumice surface, subtle edge, clear active route, legible brand, responsive wrapping/stacking, and no icon-only unlabeled control. Retain `items`, `activeItem`, `theme`, `onNavigate`, and `onSettings` behavior.
-- [ ] **Step 4: Align common section headers, meters, skeletons, settings and unavailable affordances** to the token system. Keep sample meter wording explicit; do not reuse sample values as live data. Avoid adding decorative orbs, gradients, or identical card treatments.
-- [ ] **Step 5: Run `cd web; npm test -- tests/App.test.tsx tests/SettingsPanel.test.tsx` and `npm run build`.** Expected: navigation/settings tests pass; no new horizontal overflow is visible at mobile width.
-- [ ] **Step 6: Commit** `style: refine shared navigation and controls`.
+- [x] **Step 1: Inspect existing assertions and route callback behavior** for active navigation, page links, settings open/close, and keyboard access. Keep route labels and accessible names stable.
+- [x] **Step 2: Define before changing markup any required accessible behavior** for narrow navigation: all existing destinations remain reachable, active route stays discernible, settings remains operable, and focus is visible. Prefer CSS reflow over new menu state.
+- [x] **Step 3: Restyle `TopNav`** as a compact field-station header with pumice surface, subtle edge, clear active route, legible brand, responsive wrapping/stacking, and no icon-only unlabeled control. Retain `items`, `activeItem`, `theme`, `onNavigate`, and `onSettings` behavior.
+- [x] **Step 4: Align common section headers, meters, skeletons, settings and unavailable affordances** to the token system. Keep sample meter wording explicit; do not reuse sample values as live data. Avoid adding decorative orbs, gradients, or identical card treatments.
+- [x] **Step 5: Run `cd web; npm test -- tests/App.test.tsx tests/SettingsPanel.test.tsx` and `npm run build`.** Expected: navigation/settings tests pass; no new horizontal overflow is visible at mobile width.
+- [x] **Step 6: Commit** `style: refine shared navigation and controls`.
 
 ### Task 3: Recompose the dashboard shell and sidebar responsively
 
@@ -129,13 +129,13 @@ The tokens task refines the existing primitive/semantic structure. Maintain a 4p
 - Modify: `web/src/components/dashboard/DashboardSidebar.tsx` only if semantic markup needs adjustment; no prop/data-flow changes.
 - Test: `web/tests/DashboardSidebar.test.tsx`, `web/tests/DashboardStates.test.tsx`, `web/tests/App.test.tsx`
 
-- [ ] **Step 1: Preserve the baseline behavior in tests**: Map, Filters, Historical data, Risk, Volcanoes views; all basemap choices; event, risk, fault and volcano layer controls; event category filters; date range; magnitude slider; URL query restoration. Update only selectors invalidated by semantic markup, keeping visible text and state assertions.
-- [ ] **Step 2: Define responsive layout breakpoints** using existing `--bp-md: 900px` and `--bp-sm: 640px`: desktop sidebar / map / activity columns; tablet a dominant map with sidebar/activity panels below or in a clear stacked sequence; mobile single-column with controls and activity reachable without horizontal scrolling. Do not hide controls or data.
-- [ ] **Step 3: Restyle the desktop dashboard grid** with explicit min-width/overflow handling, aligned outer padding, map-led proportions, and a restrained surface hierarchy. No data state or React state changes.
-- [ ] **Step 4: Restyle sidebar sections** so selected view, selected basemap, active layers, disabled availability tags, event category states, date fields and magnitude range read clearly. Keep all labels including explicit empty-layer labels.
-- [ ] **Step 5: Implement mobile/tablet reflow** and verify controls remain keyboard operable, labels do not clip, date inputs remain usable, and no page-level horizontal scroll occurs.
-- [ ] **Step 6: Run `cd web; npm test -- tests/DashboardSidebar.test.tsx tests/DashboardStates.test.tsx tests/App.test.tsx` and `npm run build`.** Expected: current view/query/filter behavior is unchanged and responsive CSS compiles.
-- [ ] **Step 7: Commit** `style: make dashboard shell responsive`.
+- [x] **Step 1: Preserve the baseline behavior in tests**: Map, Filters, Historical data, Risk, Volcanoes views; all basemap choices; event, risk, fault and volcano layer controls; event category filters; date range; magnitude slider; URL query restoration. Update only selectors invalidated by semantic markup, keeping visible text and state assertions.
+- [x] **Step 2: Define responsive layout breakpoints** using existing `--bp-md: 900px` and `--bp-sm: 640px`: desktop sidebar / map / activity columns; tablet a dominant map with sidebar/activity panels below or in a clear stacked sequence; mobile single-column with controls and activity reachable without horizontal scrolling. Do not hide controls or data.
+- [x] **Step 3: Restyle the desktop dashboard grid** with explicit min-width/overflow handling, aligned outer padding, map-led proportions, and a restrained surface hierarchy. No data state or React state changes.
+- [x] **Step 4: Restyle sidebar sections** so selected view, selected basemap, active layers, disabled availability tags, event category states, date fields and magnitude range read clearly. Keep all labels including explicit empty-layer labels.
+- [x] **Step 5: Implement mobile/tablet reflow** and verify controls remain keyboard operable, labels do not clip, date inputs remain usable, and no page-level horizontal scroll occurs.
+- [x] **Step 6: Run `cd web; npm test -- tests/DashboardSidebar.test.tsx tests/DashboardStates.test.tsx tests/App.test.tsx` and `npm run build`.** Expected: current view/query/filter behavior is unchanged and responsive CSS compiles.
+- [x] **Step 7: Commit** `style: make dashboard shell responsive`.
 
 ### Task 4: Restyle dashboard summary, realtime status, feed and detail
 
@@ -158,7 +158,7 @@ The tokens task refines the existing primitive/semantic structure. Maintain a 4p
 **Files:**
 - Modify: `web/src/components/risk/RiskProfilesPanel.module.css`, `RiskProfileCard.module.css`, `RegionLookup.module.css`
 - Modify: `web/src/components/volcanoes/VolcanoPanel.module.css`
-- Modify JSX in those components only if an existing role/label needs preservation or improvement; no hooks or types.
+- Create: `web/src/components/risk/RegionLookup.module.css` and connect the existing `region-lookup`, `region-name`, and `risk-label` presentation classes through CSS Modules if needed. Modify JSX in those components only if an existing role/label needs preservation or improvement; no hooks or types.
 - Test: `web/tests/RiskProfile.test.tsx`, `web/tests/VolcanoPanel.test.tsx`
 
 - [ ] **Step 1: Inspect risk tests and current fields**: region name, label, confidence, feature importances, model version, generated time and dataset snapshot; lookup behavior; loading/error/retry/empty. Verify exact phrase "descriptive, not a prediction" remains visible (add a failing assertion if absent).
@@ -187,7 +187,7 @@ The tokens task refines the existing primitive/semantic structure. Maintain a 4p
 ### Task 7: Apply MapLibre palette and legend styling
 
 **Files:**
-- Modify: `web/src/components/map/MapView.tsx`, `MapView.module.css`, `EventMarker.tsx`, `StaticLayerStatus.module.css`, `VolcanoOverlayStatus.module.css`, `volcanoOverlays.ts` only for presentation/labels.
+- Modify: `web/src/components/map/MapView.tsx`, `MapView.module.css`, `EventMarker.tsx`, `StaticLayerStatus.module.css`, and `volcanoOverlays.ts` only for presentation/labels. `VolcanoOverlayStatus.tsx` reuses `StaticLayerStatus.module.css`; no `VolcanoOverlayStatus.module.css` exists.
 - Modify: `web/src/components/dashboard/DashboardMapArea.module.css` for map controls/legend.
 - Do not modify: `web/src/components/map/basemaps.ts` provider URLs/attribution or `riskOverlay.ts` risk computation/geometry behavior.
 - Test: `web/tests/MapView.test.tsx`, `web/tests/StaticLayerStatus.test.tsx`, `web/tests/basemaps.test.ts`, `web/tests/riskOverlay.test.ts`
@@ -227,6 +227,3 @@ The tokens task refines the existing primitive/semantic structure. Maintain a 4p
 - Basemaps currently use OpenFreeMap streets and Esri satellite/hybrid/terrain layers. Keep current vendor configuration and attribution; this plan does not settle future tile terms or dark mode.
 - Fonts: the plan adds no font package. Verify the existing Inter/JetBrains Mono loading path and system-serif heading fallback before implementation; change font delivery only if separately approved and license/performance impact is understood.
 - Task order is intentional: token foundation → shared components → dashboard shell → data panels → informational pages → MapLibre styling → final verification. Each task produces a testable visual increment and has a Conventional Commit.
-
-
-

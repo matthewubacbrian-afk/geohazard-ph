@@ -195,4 +195,3 @@ One web-only implementation stream, ordered from low to high risk: design-token 
 - Previous web design reference: `docs/superpowers/specs/2026-08-31-web-ui-elevation-design.md`.
 - Previous web completion work: `docs/superpowers/specs/2026-09-12-web-mvp-completion-design.md` and `docs/superpowers/plans/2026-09-12-web-mvp-completion.md`.
 - Terminology: `docs/glossary.md`.
-
