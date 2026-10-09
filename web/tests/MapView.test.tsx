@@ -7,6 +7,8 @@ import type { HazardEvent } from '../src/types/hazard';
 import type { RiskProfile } from '../src/types/hazard';
 
 const handlers = new Map<string, Set<() => void>>();
+const layerHandlers = new Map<string, (event: { features?: Array<{ properties?: Record<string, unknown> }> }) => void>();
+const paintUpdates: Array<[string, string, unknown]> = [];
 let source: { setData: ReturnType<typeof vi.fn> } | undefined;
 const sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>();
 const layers = new Set<string>();
@@ -24,16 +26,22 @@ const mapInstance = {
   getCenter: vi.fn(() => ({ toArray: () => [121.774, 12.8797] })),
   getBearing: vi.fn(() => 0), getPitch: vi.fn(() => 0),
   flyTo: vi.fn(),
-  on: vi.fn((name: string, callback: () => void) => {
+  on: vi.fn((name: string, layerOrCallback: string | (() => void), maybeCallback?: (event: { features?: Array<{ properties?: Record<string, unknown> }> }) => void) => {
+    if (typeof layerOrCallback === 'string' && maybeCallback) { layerHandlers.set(layerOrCallback, maybeCallback); return; }
+    const callback = layerOrCallback as () => void;
     if (!handlers.has(name)) handlers.set(name, new Set());
     handlers.get(name)!.add(callback);
   }),
-  off: vi.fn((name: string, callback: () => void) => handlers.get(name)?.delete(callback)),
+  off: vi.fn((name: string, layerOrCallback: string | (() => void), maybeCallback?: () => void) => {
+    if (typeof layerOrCallback === 'string') { layerHandlers.delete(layerOrCallback); return; }
+    handlers.get(name)?.delete(layerOrCallback);
+  }),
   once: vi.fn(),
   remove: vi.fn(),
   removeLayer: vi.fn((id: string) => layers.delete(id)),
   removeSource: vi.fn((id: string) => { sources.delete(id); if (id === 'events') source = undefined; }),
   setLayoutProperty: vi.fn(),
+  setPaintProperty: vi.fn((layer: string, property: string, value: unknown) => paintUpdates.push([layer, property, value])),
   setStyle: vi.fn((_style: unknown, _options?: { diff?: boolean }) => {
     source = undefined; layers.clear(); sources.clear();
   }),
@@ -60,10 +68,62 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 beforeEach(() => {
   vi.clearAllMocks();
   handlers.clear(); layers.clear(); sources.clear(); source = undefined;
+  layerHandlers.clear(); paintUpdates.length = 0;
   mapInstance.getZoom.mockReturnValue(5);
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
 });
 describe('MapView style lifecycle', () => {
+  it('selects the event represented by a clicked map circle', () => {
+    const onSelectEvent = vi.fn();
+    render(<MapView events={[event]} onSelectEvent={onSelectEvent} />);
+    act(() => emit('style.load'));
+    act(() => layerHandlers.get('event-circles')?.({ features: [{ properties: { eventId: 'e1' } }] }));
+    expect(onSelectEvent).toHaveBeenCalledWith(event);
+  });
+  it('ignores clicked circles with a missing or unknown event ID', () => {
+    const onSelectEvent = vi.fn();
+    const view = render(<MapView events={[event]} onSelectEvent={onSelectEvent} />);
+    act(() => emit('style.load'));
+    act(() => layerHandlers.get('event-circles')?.({ features: [{ properties: {} }] }));
+    view.rerender(<MapView events={[]} onSelectEvent={onSelectEvent} />);
+    act(() => layerHandlers.get('event-circles')?.({ features: [{ properties: { eventId: 'e1' } }] }));
+    expect(onSelectEvent).not.toHaveBeenCalled();
+  });
+  it('keeps one selected point in the halo source and clears it on deselection', () => {
+    const cancel = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', vi.fn(() => 7));
+    vi.stubGlobal('cancelAnimationFrame', cancel);
+    const selected = { ...event, id: 'e2', longitude: 122, latitude: 15 };
+    const view = render(<MapView events={[event, selected]} selectedEvent={event} />);
+    act(() => emit('style.load'));
+    expect(mapInstance.addSource).toHaveBeenCalledWith('selected-event', expect.objectContaining({ data: expect.objectContaining({ features: [expect.objectContaining({ geometry: { type: 'Point', coordinates: [120.97, 14.6] } })] }) }));
+    view.rerender(<MapView events={[event, selected]} selectedEvent={selected} />);
+    expect(sources.get('selected-event')?.setData).toHaveBeenLastCalledWith(expect.objectContaining({ features: [expect.objectContaining({ geometry: { type: 'Point', coordinates: [122, 15] } })] }));
+    view.rerender(<MapView events={[event, selected]} selectedEvent={null} />);
+    expect(sources.get('selected-event')?.setData).toHaveBeenLastCalledWith(expect.objectContaining({ features: [] }));
+    expect(cancel).toHaveBeenCalledWith(7);
+  });
+  it('uses a static halo without scheduling frames when reduced motion is preferred', () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
+    const request = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', request);
+    render(<MapView events={[event]} selectedEvent={event} />);
+    act(() => emit('style.load'));
+    const halo = mapInstance.addLayer.mock.calls.find(([layer]) => layer.id === 'selected-event-pulse')?.[0];
+    expect(halo?.paint?.['circle-opacity']).toBeGreaterThan(0);
+    expect(request).not.toHaveBeenCalled();
+  });
+  it('animates only the selected halo in normal motion', () => {
+    const request = vi.fn(() => 1);
+    vi.stubGlobal('requestAnimationFrame', request);
+    render(<MapView events={[event]} selectedEvent={event} />);
+    act(() => emit('style.load'));
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(paintUpdates.every(([layer]) => layer === 'selected-event-pulse')).toBe(true);
+    expect(mapInstance.addLayer.mock.calls.find(([layer]) => layer.id === 'event-circles')?.[0].paint?.['circle-radius']).toEqual([
+      'interpolate', ['linear'], ['max', 0, ['min', 9, ['coalesce', ['get', 'magnitude'], 0]]], 0, 4, 9, 13,
+    ]);
+  });
   it('shows an empty state', () => {
     render(<MapView events={[]} />);
     expect(screen.getByText(/no events/i)).toBeTruthy();
@@ -166,7 +226,8 @@ describe('MapView style lifecycle', () => {
     view.rerender(<MapView events={[{ ...event, magnitude: 6 }]} basemap={basemap} />);
     act(() => emit('style.load'));
     expect(layers.has('event-circles')).toBe(true);
-    expect(mapInstance.addSource).toHaveBeenLastCalledWith('events', expect.objectContaining({
+    const restoredEventsSource = [...mapInstance.addSource.mock.calls].reverse().find(([id]) => id === 'events');
+    expect(restoredEventsSource?.[1]).toEqual(expect.objectContaining({
       data: expect.objectContaining({
         features: [expect.objectContaining({ properties: expect.objectContaining({ magnitude: 6 }) })],
       }),
