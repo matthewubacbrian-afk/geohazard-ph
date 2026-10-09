@@ -7,7 +7,7 @@ from pathlib import Path
 from app.core.db import SessionLocal
 from app.core.logging import configure_logging
 from app.services.static_layers import replace_layer
-from ingestion.sources.static_layers import parse_features, read_features
+from ingestion.sources.static_layers import parse_features_with_report, read_features
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def main() -> None:
     args = parser.parse_args()
     configure_logging()
     try:
-        rows = parse_features(
+        rows, report = parse_features_with_report(
             read_features(args.path),
             kind=args.kind,
             source=args.source,
@@ -32,7 +32,22 @@ def main() -> None:
             license_name=args.license_name,
             dataset_version=args.dataset_version,
         )
+        report_fields = {
+            "source_feature_count": report.source_feature_count,
+            "accepted_feature_count": report.accepted_feature_count,
+            "excluded_outside_bounds_count": report.excluded_outside_bounds_count,
+            "accepted_bounds": report.accepted_bounds,
+        }
         if not rows:
+            logger.info(
+                "Static layer validation rejected",
+                extra={
+                    "count": len(rows),
+                    "source": args.source,
+                    "kind": args.kind,
+                    **report_fields,
+                },
+            )
             raise ValueError(
                 "No features intersect the Philippines; existing data retained"
             )
@@ -43,7 +58,12 @@ def main() -> None:
         parser.exit(1, f"Import failed: {exc}\n")
     logger.info(
         "Static layer validated" if args.dry_run else "Static layer imported",
-        extra={"count": len(rows), "source": args.source, "kind": args.kind},
+        extra={
+            "count": len(rows),
+            "source": args.source,
+            "kind": args.kind,
+            **report_fields,
+        },
     )
 
 

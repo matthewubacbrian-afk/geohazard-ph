@@ -4,6 +4,7 @@ import hashlib
 import json
 import math
 from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -12,6 +13,14 @@ from shapely.geometry import box, shape
 from app.schemas.static_layer import StaticFeature
 
 LayerKind = Literal["faults", "volcano_zones"]
+
+
+@dataclass(frozen=True)
+class StaticLayerParseReport:
+    source_feature_count: int
+    accepted_feature_count: int
+    excluded_outside_bounds_count: int
+    accepted_bounds: tuple[float, float, float, float] | None
 
 
 def _validate_coordinates(value: Any, *, require_2d: bool = True) -> None:
@@ -30,7 +39,7 @@ def _validate_coordinates(value: Any, *, require_2d: bool = True) -> None:
             _validate_coordinates(child, require_2d=require_2d)
 
 
-def parse_features(
+def parse_features_with_report(
     features: Iterable[dict[str, Any]],
     *,
     kind: LayerKind,
@@ -39,16 +48,18 @@ def parse_features(
     license_name: str,
     dataset_version: str,
     bbox: tuple[float, float, float, float] = (116, 4, 128, 22),
-) -> list[StaticFeature]:
+) -> tuple[list[StaticFeature], StaticLayerParseReport]:
     allowed = {
         "faults": {"LineString", "MultiLineString"},
         "volcano_zones": {"Polygon", "MultiPolygon"},
     }[kind]
     rows = []
     seen = set()
-    count = 0
+    source_feature_count = 0
+    excluded_outside_bounds_count = 0
+    accepted_bounds = None
     for feature in features:
-        count += 1
+        source_feature_count += 1
         if not isinstance(feature, dict):
             raise ValueError("Each feature must be an object")  # noqa: TRY004
         geometry = feature.get("geometry") or {}
@@ -61,6 +72,7 @@ def parse_features(
         if spatial.is_empty or not spatial.is_valid:
             raise ValueError("Invalid or empty geometry")
         if not spatial.intersects(box(*bbox)):
+            excluded_outside_bounds_count += 1
             continue
         _validate_coordinates(geometry.get("coordinates"))
         properties = feature.get("properties") or {}
@@ -105,8 +117,46 @@ def parse_features(
                 source_properties=properties,
             )
         )
-    if count == 0:
+        west, south, east, north = spatial.bounds
+        if accepted_bounds is None:
+            accepted_bounds = (west, south, east, north)
+        else:
+            accepted_bounds = (
+                min(accepted_bounds[0], west),
+                min(accepted_bounds[1], south),
+                max(accepted_bounds[2], east),
+                max(accepted_bounds[3], north),
+            )
+    if source_feature_count == 0:
         raise ValueError("Source contains no features")
+    report = StaticLayerParseReport(
+        source_feature_count=source_feature_count,
+        accepted_feature_count=len(rows),
+        excluded_outside_bounds_count=excluded_outside_bounds_count,
+        accepted_bounds=accepted_bounds,
+    )
+    return rows, report
+
+
+def parse_features(
+    features: Iterable[dict[str, Any]],
+    *,
+    kind: LayerKind,
+    source: str,
+    source_url: str,
+    license_name: str,
+    dataset_version: str,
+    bbox: tuple[float, float, float, float] = (116, 4, 128, 22),
+) -> list[StaticFeature]:
+    rows, _ = parse_features_with_report(
+        features,
+        kind=kind,
+        source=source,
+        source_url=source_url,
+        license_name=license_name,
+        dataset_version=dataset_version,
+        bbox=bbox,
+    )
     return rows
 
 

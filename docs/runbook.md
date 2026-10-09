@@ -541,6 +541,14 @@ PYTHONPATH=backend backend/.venv/bin/python scripts/import_fault_lines.py \
   --license-name CC-BY-SA-4.0 --dataset-version "$GEM_COMMIT" --dry-run
 ```
 
+  Dry-run JSON includes `source_feature_count`, `accepted_feature_count`,
+  `excluded_outside_bounds_count`, and `accepted_bounds` in west/south/east/north
+  order. `accepted_bounds` describes full retained geometries and is not clipped to
+  the project box; it can extend beyond the configured bounds. The legacy `count`
+  field remains an alias for accepted count. These metrics describe the input and
+  validation run, not national completeness, API display count, source licensing,
+  or permission to reuse a different source.
+
 For this pinned source the dry-run reports 155 accepted features from 13,696 source
 features. Review the JSON validation result, then run the same command without
 `--dry-run` to persist the complete GEM snapshot. Import is transactional and replaces
