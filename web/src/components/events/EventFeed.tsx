@@ -12,6 +12,8 @@ type EventFeedProps = {
   error: Error | null;
   onRetry: () => void;
   onSelectEvent?: (event: HazardEvent) => void;
+  selectedEvent?: HazardEvent | null;
+  onClearSelection?: () => void;
 };
 
 const BUCKETS: { key: RiskBucket; label: string }[] = [
@@ -20,20 +22,26 @@ const BUCKETS: { key: RiskBucket; label: string }[] = [
   { key: 'baseline', label: 'Baseline' },
 ];
 
-export default function EventFeed({ events, isLoading, error, onRetry, onSelectEvent }: EventFeedProps) {
+export default function EventFeed({
+  events,
+  isLoading,
+  error,
+  onRetry,
+  onSelectEvent,
+  selectedEvent = null,
+  onClearSelection,
+}: EventFeedProps) {
   const [activeBuckets, setActiveBuckets] = useState<RiskBucket[]>([
     'critical',
     'elevated',
     'baseline',
   ]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
   const filtered = useMemo(
     () => events.filter((e) => activeBuckets.includes(eventRiskBucket(e.alert_level))),
     [events, activeBuckets],
   );
 
-  const selectedEvent = filtered.find((e) => e.id === selectedId) ?? null;
+  const remainingEvents = filtered.filter((event) => event.id !== selectedEvent?.id);
 
   function toggleBucket(bucket: RiskBucket) {
     setActiveBuckets((prev) =>
@@ -69,6 +77,17 @@ export default function EventFeed({ events, isLoading, error, onRetry, onSelectE
       </div>
 
       <div className={styles.body}>
+        {selectedEvent && (
+          <>
+            <EventFeedItem
+              event={selectedEvent}
+              selected
+              onSelect={() => onSelectEvent?.(selectedEvent)}
+            />
+            <EventDetailPanel event={selectedEvent} onClose={() => onClearSelection?.()} />
+          </>
+        )}
+
         {isLoading && (
           <div className={styles.loading} role="status" aria-label="Loading live events">
             {[0, 1, 2].map((i) => (
@@ -89,28 +108,20 @@ export default function EventFeed({ events, isLoading, error, onRetry, onSelectE
           </div>
         )}
 
-        {!isLoading && !error && filtered.length === 0 && (
+        {!isLoading && !error && !selectedEvent && filtered.length === 0 && (
           <p className={styles.empty}>No events match the current filters.</p>
         )}
 
-        {!isLoading &&
-          !error &&
-          filtered.map((event) => (
+        {!isLoading && !error &&
+          remainingEvents.map((event) => (
             <EventFeedItem
               key={event.id}
               event={event}
-              selected={event.id === selectedId}
-              onSelect={(id) => {
-                setSelectedId(id);
-                onSelectEvent?.(event);
-              }}
+              selected={false}
+              onSelect={() => onSelectEvent?.(event)}
             />
           ))}
       </div>
-
-      {selectedEvent && (
-        <EventDetailPanel event={selectedEvent} onClose={() => setSelectedId(null)} />
-      )}
     </div>
   );
 }

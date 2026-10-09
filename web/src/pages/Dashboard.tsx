@@ -12,7 +12,6 @@ import DashboardSidebar, {
 import TopNav from '../components/layout/TopNav';
 import EventFeed from '../components/events/EventFeed';
 import RiskProfilesPanel from '../components/risk/RiskProfilesPanel';
-import type { HazardEvent } from '../types/hazard';
 import type { View } from '../types/views';
 import type { BasemapId } from '../components/map/basemaps';
 import VolcanoPanel from '../components/volcanoes/VolcanoPanel';
@@ -49,7 +48,7 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
   const [startDate, setStartDate] = useState(initialQuery.startDate);
   const [endDate, setEndDate] = useState(initialQuery.endDate);
   const [minMagnitude, setMinMagnitude] = useState(initialQuery.minMagnitude);
-  const [selectedEvent, setSelectedEvent] = useState<HazardEvent | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const realtime = useRealtimeAlerts();
   const { data: events = [], isLoading, error, refetch } = useEvents({
     source,
@@ -100,6 +99,11 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
     if (!activeLayers.events) return false;
     return activeEventCategories.includes(eventRiskBucket(event.alert_level));
   });
+  const selectedEvent = visibleEvents.find((event) => event.id === selectedEventId) ?? null;
+
+  useEffect(() => {
+    if (selectedEventId && !selectedEvent) setSelectedEventId(null);
+  }, [selectedEventId, selectedEvent]);
 
   function updateQuery(patch: Partial<DashboardQueryState>) {
     const next: DashboardQueryState = {
@@ -180,6 +184,7 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
           onRetry={() => refetch()}
           basemap={basemap}
           selectedEvent={selectedEvent}
+          onSelectEvent={(event) => setSelectedEventId(event.id)}
           showEvents={activeLayers.events}
           showRiskLayer={activeLayers.risk}
           faults={faults.data}
@@ -207,7 +212,9 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
               isLoading={isLoading}
               error={error as Error | null}
               onRetry={() => refetch()}
-              onSelectEvent={(event) => setSelectedEvent({ ...event })}
+              selectedEvent={selectedEvent}
+              onSelectEvent={(event) => setSelectedEventId(event.id)}
+              onClearSelection={() => setSelectedEventId(null)}
             />
           )}
         </section>

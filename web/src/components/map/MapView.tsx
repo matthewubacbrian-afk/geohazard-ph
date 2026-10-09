@@ -26,6 +26,7 @@ type MapViewProps = {
   onVolcanoOverlayState?: (state: VolcanoOverlayState) => void;
   basemap?: BasemapId;
   selectedEvent?: HazardEvent | null;
+  onSelectEvent?: (event: HazardEvent) => void;
   showEvents?: boolean;
   riskProfiles?: RiskProfile[];
   showRiskLayer?: boolean;
@@ -56,6 +57,7 @@ function toFeatureCollection(events: HazardEvent[]) {
         coordinates: [event.longitude, event.latitude],
       },
       properties: {
+        eventId: event.id,
         place: event.place_name,
         magnitude: event.magnitude ?? null,
       },
@@ -73,6 +75,7 @@ export default function MapView({
   onVolcanoOverlayState,
   basemap = "streets",
   selectedEvent,
+  onSelectEvent,
   showEvents = true,
   riskProfiles = [],
   showRiskLayer = false,
@@ -172,6 +175,58 @@ export default function MapView({
   // `events` was on the render that registered them, not later updates).
   const eventsRef = useRef(events);
   eventsRef.current = events;
+  const selectEventRef = useRef(onSelectEvent);
+  selectEventRef.current = onSelectEvent;
+  const selectedEventRef = useRef(selectedEvent);
+  selectedEventRef.current = selectedEvent;
+  const clickHandlerRef = useRef<
+    ((event: maplibregl.MapLayerMouseEvent) => void) | null
+  >(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const animationRunningRef = useRef(false);
+
+  const stopHaloAnimation = () => {
+    animationRunningRef.current = false;
+    if (animationFrameRef.current !== null)
+      cancelAnimationFrame(animationFrameRef.current);
+    animationFrameRef.current = null;
+  };
+
+  const animateHalo = (map: maplibregl.Map) => {
+    if (animationRunningRef.current) return;
+    animationRunningRef.current = true;
+    const frame = (timestamp: number) => {
+      if (!animationRunningRef.current) return;
+      if (map.getLayer("selected-event-pulse")) {
+        const phase = (timestamp % 1800) / 1800;
+        const wave = 0.5 - 0.5 * Math.cos(phase * 2 * Math.PI);
+        map.setPaintProperty("selected-event-pulse", "circle-radius", 13 + 7 * wave);
+        map.setPaintProperty(
+          "selected-event-pulse",
+          "circle-opacity",
+          0.22 + 0.3 * (1 - wave),
+        );
+      }
+      animationFrameRef.current = requestAnimationFrame(frame);
+    };
+    animationFrameRef.current = requestAnimationFrame(frame);
+  };
+
+  const selectedFeatureCollection = (event: HazardEvent | null | undefined) => ({
+    type: "FeatureCollection" as const,
+    features: event
+      ? [
+          {
+            type: "Feature" as const,
+            geometry: {
+              type: "Point" as const,
+              coordinates: [event.longitude, event.latitude],
+            },
+            properties: { magnitude: event.magnitude ?? null },
+          },
+        ]
+      : [],
+  });
   const riskProfilesRef = useRef(riskProfiles);
   riskProfilesRef.current = riskProfiles;
 
@@ -187,6 +242,9 @@ export default function MapView({
       }
       map.removeSource("events");
     }
+    if (map.getLayer("selected-event-pulse"))
+      map.removeLayer("selected-event-pulse");
+    if (map.getSource("selected-event")) map.removeSource("selected-event");
 
     map.addSource("events", {
       type: "geojson",
@@ -225,6 +283,44 @@ export default function MapView({
         "circle-opacity": 0.9,
       },
     });
+
+    const selectedData = selectedFeatureCollection(selectedEventRef.current);
+    map.addSource("selected-event", { type: "geojson", data: selectedData });
+    const reducedMotion =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    map.addLayer({
+      id: "selected-event-pulse",
+      type: "circle",
+      source: "selected-event",
+      paint: {
+        "circle-radius": reducedMotion ? 17 : 13,
+        "circle-color": [
+          "step",
+          ["coalesce", ["get", "magnitude"], 0],
+          cssVar("--magnitude-low"),
+          3,
+          cssVar("--magnitude-moderate"),
+          5,
+          cssVar("--magnitude-high"),
+          7,
+          cssVar("--magnitude-very-high"),
+        ],
+        "circle-opacity": reducedMotion ? 0.4 : 0.52,
+        "circle-stroke-width": 2,
+        "circle-stroke-color": cssVar("--surface-card", "#fffefa"),
+      },
+    });
+    if (selectedEventRef.current && !reducedMotion) animateHalo(map);
+
+    if (clickHandlerRef.current) map.off("click", "event-circles", clickHandlerRef.current);
+    const handleEventClick = (event: maplibregl.MapLayerMouseEvent) => {
+      const eventId = event.features?.[0]?.properties?.eventId;
+      if (typeof eventId !== "string") return;
+      const selected = eventsRef.current.find((row) => row.id === eventId);
+      if (selected) selectEventRef.current?.(selected);
+    };
+    clickHandlerRef.current = handleEventClick;
+    map.on("click", "event-circles", handleEventClick);
 
     map.setLayoutProperty(
       "event-circles",
@@ -391,6 +487,10 @@ export default function MapView({
       map.off("error", overlayError);
       map.off("idle", overlayIdle);
       map.off("sourcedataloading", overlayLoading);
+      if (clickHandlerRef.current)
+        map.off("click", "event-circles", clickHandlerRef.current);
+      clickHandlerRef.current = null;
+      stopHaloAnimation();
       map.remove();
       mapRef.current = null;
     };
@@ -435,6 +535,19 @@ export default function MapView({
     if (!source) return;
     source.setData(toFeatureCollection(events));
   }, [events]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const selectedSource = map.getSource("selected-event") as maplibregl.GeoJSONSource | undefined;
+    if (selectedSource)
+      selectedSource.setData(selectedFeatureCollection(selectedEvent));
+    if (!selectedEvent) stopHaloAnimation();
+    else if (
+      !(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false)
+    )
+      animateHalo(map);
+  }, [selectedEvent]);
 
   useEffect(() => {
     const map = mapRef.current;

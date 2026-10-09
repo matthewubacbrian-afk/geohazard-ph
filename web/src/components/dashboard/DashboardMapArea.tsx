@@ -23,6 +23,7 @@ type DashboardMapAreaProps = {
   onRetry: () => void;
   basemap?: BasemapId;
   selectedEvent?: HazardEvent | null;
+  onSelectEvent?: (event: HazardEvent) => void;
   showEvents?: boolean;
   showRiskLayer?: boolean;
   onViewDetailedReport?: () => void;
@@ -44,6 +45,7 @@ export default function DashboardMapArea({
   onRetry,
   basemap = "streets",
   selectedEvent,
+  onSelectEvent,
   showEvents = true,
   showRiskLayer = true,
   onViewDetailedReport,
@@ -80,6 +82,7 @@ export default function DashboardMapArea({
         onVolcanoOverlayState={onVolcanoOverlayState}
         basemap={basemap}
         selectedEvent={selectedEvent}
+        onSelectEvent={onSelectEvent}
         showEvents={showEvents}
         riskProfiles={riskProfiles}
         showRiskLayer={showRiskLayer}

@@ -59,6 +59,25 @@ describe('EventFeed', () => {
     expect(screen.queryByText('Quezon', { exact: false })).not.toBeInTheDocument();
   });
 
+  it('keeps selected details visible while loading', () => {
+    render(<EventFeed events={events} selectedEvent={events[0]} isLoading error={null}
+      onRetry={() => {}} />);
+
+    expect(screen.getByRole('button', { name: /Quezon/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Coordinates')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Loading live events' })).toBeInTheDocument();
+  });
+
+  it('keeps selected details visible alongside an error and retry action', () => {
+    render(<EventFeed events={events} selectedEvent={events[0]} isLoading={false}
+      error={new Error('offline')} onRetry={() => {}} />);
+
+    expect(screen.getByRole('button', { name: /Quezon/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Coordinates')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Failed to load events.');
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+  });
+
   it('shows an empty state when no events match', () => {
     render(
       <EventFeed events={[]} isLoading={false} error={null} onRetry={() => {}} />,
@@ -67,20 +86,68 @@ describe('EventFeed', () => {
     expect(screen.getAllByText(/No events match the current filters/i).length).toBeGreaterThan(0);
   });
 
-  it('exposes selected event state accessibly and opens its details', () => {
-    const onSelectEvent = vi.fn();
+  it('pins the controlled selection and keeps the rest of the feed visible', () => {
     render(
-      <EventFeed events={events} isLoading={false} error={null} onRetry={() => {}}
-        onSelectEvent={onSelectEvent} />,
+      <EventFeed
+        events={events}
+        selectedEvent={events[0]}
+        isLoading={false}
+        error={null}
+        onRetry={() => {}}
+        onSelectEvent={() => {}}
+        onClearSelection={() => {}}
+      />,
     );
 
+    expect(screen.getByRole('button', { name: /Quezon/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Coordinates')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Batangas/i })).toBeInTheDocument();
+    expect(screen.getAllByText('Quezon', { exact: false })).toHaveLength(2);
+  });
+
+  it('keeps the selected event pinned when its category filter is disabled', () => {
+    render(
+      <EventFeed events={events} selectedEvent={events[0]} isLoading={false} error={null}
+        onRetry={() => {}} onClearSelection={() => {}} />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Baseline' }));
+
+    expect(screen.getByRole('button', { name: /Quezon/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Coordinates')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Batangas/i })).not.toBeInTheDocument();
+  });
+
+  it('clears controlled selection only through the clear callback', () => {
+    const onClearSelection = vi.fn();
+    render(<EventFeed events={events} selectedEvent={events[0]} isLoading={false} error={null}
+      onRetry={() => {}} onClearSelection={onClearSelection} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close detail' }));
+
+    expect(onClearSelection).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Coordinates')).toBeInTheDocument();
+  });
+
+  it('reports another row selection without changing controlled selection until rerender', () => {
+    const onSelectEvent = vi.fn();
+    const { rerender } = render(<EventFeed events={events} selectedEvent={events[0]} isLoading={false}
+      error={null} onRetry={() => {}} onSelectEvent={onSelectEvent} />);
+
     const eventButton = screen.getByRole('button', { name: /Quezon/i });
-    expect(eventButton).toHaveAttribute('aria-pressed', 'false');
-    fireEvent.click(eventButton);
+    expect(eventButton).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: /Batangas/i }));
 
     expect(eventButton).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /Batangas/i })).toHaveAttribute('aria-pressed', 'false');
+    expect(onSelectEvent).toHaveBeenCalledWith(events[1]);
+
+    rerender(<EventFeed events={events} selectedEvent={events[1]} isLoading={false} error={null}
+      onRetry={() => {}} onSelectEvent={onSelectEvent} />);
+
+    expect(screen.getByRole('button', { name: /Quezon/i })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: /Batangas/i })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('Coordinates')).toBeInTheDocument();
-    expect(onSelectEvent).toHaveBeenCalledWith(events[0]);
   });
 
   it('retries a failed event request when activated', () => {
