@@ -135,7 +135,8 @@ export default function MapView({
               source: id,
               paint: {
                 "line-color": cssVar("--hazard-fault"),
-                "line-width": 2,
+                "line-width": 2.5,
+                "line-opacity": 0.9,
               },
             },
             before,
@@ -148,7 +149,7 @@ export default function MapView({
               source: id,
               paint: {
                 "fill-color": cssVar("--hazard-volcano"),
-                "fill-opacity": 0.25,
+                "fill-opacity": 0.18,
                 "fill-outline-color": cssVar("--hazard-volcano"),
               },
             },
@@ -201,11 +202,11 @@ export default function MapView({
         "circle-radius": [
           "interpolate",
           ["linear"],
-          ["coalesce", ["get", "magnitude"], 0],
+          ["max", 0, ["min", 9, ["coalesce", ["get", "magnitude"], 0]]],
           0,
-          8,
+          5,
           9,
-          22,
+          15,
         ],
         "circle-color": markerColor,
         "circle-stroke-width": 1.5,

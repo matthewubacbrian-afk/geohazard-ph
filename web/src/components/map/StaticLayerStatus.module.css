@@ -1,8 +1,5 @@
-.panel {
-  padding: 0.75rem;
-  border-top: 1px solid var(--border);
-  color: var(--text);
-  font-size: 0.8rem;
-}
-.panel p { margin: 0.4rem 0; }
-.panel a { color: var(--accent); }
+.panel { padding:12px; border-top:1px solid var(--outline-variant); background:var(--surface-raised); color:var(--text); font-size:12px; line-height:1.55; }
+.panel p { margin:6px 0; color:var(--text-muted); }
+.panel a { color:var(--accent); font-weight:600; text-underline-offset:2px; }
+.panel button { min-height:34px; padding:5px 10px; border:1px solid var(--outline); border-radius:var(--radius-sm); background:var(--surface); color:var(--text); font:600 10px/1.4 var(--font-mono); text-transform:uppercase; cursor:pointer; }
+.panel a:focus-visible,.panel button:focus-visible { outline:3px solid var(--focus-ring); outline-offset:2px; }

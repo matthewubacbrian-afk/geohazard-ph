@@ -68,6 +68,18 @@ describe('MapView style lifecycle', () => {
     render(<MapView events={[]} />);
     expect(screen.getByText(/no events/i)).toBeTruthy();
   });
+  it('bounds event marker size by the existing magnitude range', () => {
+    render(<MapView events={[event]} />);
+    act(() => emit('style.load'));
+
+    const eventLayer = mapInstance.addLayer.mock.calls.find(([layer]) => layer.id === 'event-circles');
+    expect(eventLayer?.[0].paint?.['circle-radius']).toEqual([
+      'interpolate', ['linear'],
+      ['max', 0, ['min', 9, ['coalesce', ['get', 'magnitude'], 0]]],
+      0, 5,
+      9, 15,
+    ]);
+  });
   it('renders risk regions and toggles their visibility', () => {
     const view = render(
       <MapView events={[event]} riskProfiles={[riskProfile]} showRiskLayer />,
