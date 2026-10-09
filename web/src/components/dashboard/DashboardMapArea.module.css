@@ -10,7 +10,7 @@
 .status {
   position: absolute;
   z-index: var(--z-status);
-  top: 76px;
+  bottom: 16px;
   left: 16px;
   display: flex;
   align-items: center;
@@ -104,7 +104,7 @@
 @media (max-width: 640px) {
   .mapArea { min-height: 420px; }
   .card { top: 12px; left: 12px; width: min(290px, calc(100% - 24px)); padding: 12px; }
-  .status { top: auto; bottom: 16px; left: 12px; max-width: calc(100% - 24px); }
+  .status { bottom: 96px; left: 12px; max-width: calc(100% - 24px); }
   .legend { right: 12px; bottom: 12px; min-width: 136px; padding: 9px; }
   .legendTitle { font-size: 10px; }
 }
