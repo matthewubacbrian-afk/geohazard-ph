@@ -131,7 +131,7 @@ python -m unittest discover -s scripts/tests -p test_mobile_ci_workflow.py
 
 Expected: all three workflow tests pass, including the wrapper mode test.
 
-- [ ] **Step 4: Commit the test and CI fixes together**
+- [x] **Step 4: Commit the test and CI fixes together**
 
 ```powershell
 git add scripts/tests/test_mobile_ci_workflow.py .github/workflows/mobile-ci.yml docs/superpowers/specs/2026-10-09-mobile-android-ci-setup-design.md docs/superpowers/plans/2026-10-09-mobile-android-ci-setup.md
@@ -169,7 +169,7 @@ Expected: both workflow tests pass, all expected scaffold paths exist, and `git 
 **Files:**
 - Publish: commits on `fix/mobile-android-ci` to remote `feat/mobile-native-runtime` only after confirming the remote PR head is still the pinned parent SHA.
 
-- [ ] **Step 1: Confirm branch ancestry and current remote PR head**
+- [x] **Step 1: Confirm branch ancestry and current remote PR head**
 
 Run:
 
@@ -180,7 +180,7 @@ git merge-base --is-ancestor c3fe846b26cfd67c2355b82879a8c815e0e4ebc7 HEAD
 
 Expected: the PR head branch is `feat/mobile-native-runtime`, its OID is `c3fe846b26cfd67c2355b82879a8c815e0e4ebc7`, and the ancestor check exits 0. If the remote head moved, do not force-push or overwrite it; rebase the fix branch onto the updated head and repeat local verification.
 
-- [ ] **Step 2: Fast-forward the existing PR branch**
+- [x] **Step 2: Fast-forward the existing PR branch**
 
 ```powershell
 git push origin HEAD:refs/heads/feat/mobile-native-runtime
@@ -188,9 +188,9 @@ git push origin HEAD:refs/heads/feat/mobile-native-runtime
 
 Expected: the push is accepted as a fast-forward; no force option is used.
 
-- [ ] **Step 3: Wait for PR CI and inspect the Android job**
+- [x] **Step 3: Wait for PR CI and inspect the Android job**
 
-Open `https://github.com/matthewubacbrian-afk/geohazard-ph/pull/17/checks` and wait for the new run to complete. Confirm Mobile CI passes its SDK setup, explicit SDK install, and `./gradlew assembleDebug` steps, and confirm all other required PR checks pass.
+Hosted run `37899717043` passed Mobile CI, including SDK setup, explicit SDK install, and `./gradlew assembleDebug`. Backend (`37899717102`), ML (`37899717044`), and Web (`37899717096`) checks also passed.
 
 Expected: the PR is merge-ready with all checks green. Do not merge it in this task.
 
