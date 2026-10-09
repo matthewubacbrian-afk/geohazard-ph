@@ -371,6 +371,14 @@ because it contains TLS private keys, and protect its storage accordingly:
 )
 ```
 
+These backups reside on the same VM and do not protect against VM or attached
+volume loss. Before production releases, copy the verified database and Caddy
+backups to separate encrypted off-instance storage, restrict access to that copy,
+and retain it according to your operational policy. Include the matching
+versioned risk-profile export if it is needed for release rollback. Check storage
+costs and quotas before selecting an off-instance destination; do not assume it is
+covered by Oracle Always Free allowances.
+
 Restore a database dump only when intentionally replacing the current database.
 This overwrites current database contents. First capture a fresh backup using the
 commands above, stop API and worker services, then drop and recreate the database
