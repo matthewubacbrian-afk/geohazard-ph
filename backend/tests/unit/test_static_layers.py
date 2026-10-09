@@ -1,6 +1,6 @@
 import pytest
 
-from ingestion.sources.static_layers import parse_features
+from ingestion.sources.static_layers import parse_features, parse_features_with_report
 
 
 def feature(geometry=None):
@@ -112,3 +112,74 @@ def test_reads_projected_shapefile_and_requires_crs(tmp_path):
     path.with_suffix(".prj").unlink()
     with pytest.raises(ValueError, match="CRS"):
         read_features(path)
+
+
+def test_parse_features_with_report_counts_single_pass_and_unclipped_bounds():
+    inside = feature({"type": "LineString", "coordinates": [[121, 14], [123, 17]]})
+    crossing = feature({"type": "LineString", "coordinates": [[115, 10], [117, 10]]})
+    outside = feature({"type": "LineString", "coordinates": [[2, 2], [3, 3]]})
+    crossing["id"] = "fault-2"
+    outside["id"] = "fault-3"
+
+    rows, report = parse_features_with_report(
+        (item for item in [inside, crossing, outside]),
+        kind="faults",
+        source="gem",
+        source_url="https://example.org/data",
+        license_name="CC-BY-SA-4.0",
+        dataset_version="test",
+    )
+
+    assert len(rows) == 2
+    assert report.source_feature_count == 3
+    assert report.accepted_feature_count == 2
+    assert report.excluded_outside_bounds_count == 1
+    assert report.accepted_bounds == (115.0, 10.0, 123.0, 17.0)
+
+
+def test_parse_features_with_report_supports_polygons():
+    polygon = feature(
+        {
+            "type": "Polygon",
+            "coordinates": [[[120, 13], [122, 13], [122, 15], [120, 15], [120, 13]]],
+        }
+    )
+
+    rows, report = parse_features_with_report(
+        [polygon],
+        kind="volcano_zones",
+        source="gem",
+        source_url="https://example.org/data",
+        license_name="CC-BY-SA-4.0",
+        dataset_version="test",
+    )
+
+    assert len(rows) == 1
+    assert report.source_feature_count == 1
+    assert report.accepted_feature_count == 1
+    assert report.excluded_outside_bounds_count == 0
+    assert report.accepted_bounds == (120.0, 13.0, 122.0, 15.0)
+
+
+def test_parse_features_with_report_returns_null_bounds_when_nothing_is_accepted():
+    rows, report = parse_features_with_report(
+        [feature({"type": "LineString", "coordinates": [[2, 2], [3, 3]]})],
+        kind="faults",
+        source="gem",
+        source_url="https://example.org/data",
+        license_name="CC-BY-SA-4.0",
+        dataset_version="test",
+    )
+
+    assert rows == []
+    assert report.source_feature_count == 1
+    assert report.accepted_feature_count == 0
+    assert report.excluded_outside_bounds_count == 1
+    assert report.accepted_bounds is None
+
+
+def test_parse_features_compatibility_api_still_returns_rows():
+    rows = parse([feature()])
+
+    assert isinstance(rows, list)
+    assert rows[0].external_id == "fault-1"
