@@ -55,22 +55,22 @@ No endpoint or API client changes are proposed. Existing sources are `GET /event
 
 ### Proposed design tokens
 
-Retain the existing primitive/semantic layering in `web/src/styles/tokens.css`; replace or revise values only through tokens. These values are a starting design decision to validate for contrast and map legibility during implementation.
+Retain the existing primitive/semantic layering in `web/src/styles/tokens.css`; replace or revise values only through tokens. These values were validated against the light surface tokens; text tokens meet WCAG AA on the listed surfaces.
 
 | Role | Proposed token/value |
 | --- | --- |
 | Basalt text | `--ink: #292824` |
 | Secondary ash text | `--ink-soft: #57554F` |
-| Faint text | `--ink-faint: #706E68` |
+| Faint text | `--ink-faint: #68665F` |
 | Pumice app background | `--cream-0: #F3F0E9` |
 | Raised surface | `--cream-50: #FAF8F3` |
 | Warm white card | `--cream-100: #FFFEFA` |
 | Ash container | `--cream-150: #E8E4DA` |
-| Border | `--outline: #77736A` |
+| Border | `--outline: #645F55` |
 | Hairline | `--outline-variant: #C9C4B8` |
 | Terracotta primary action | `--accent: #9B3F2E` |
 | Deep risk accent | `--risk-very-high: #792D25` |
-| Ochre secondary | `--risk-medium: #86600E` |
+| Ochre secondary | `--risk-medium: #805A0B` |
 | Mineral slate/cool balance | `--mineral: #49655F` |
 | Low risk | `--risk-low: #49655F` |
 | Elevation | Keep ink-tinted low-opacity shadow tokens; use borders and flat surfaces as the default.
@@ -195,3 +195,4 @@ One web-only implementation stream, ordered from low to high risk: design-token 
 - Previous web design reference: `docs/superpowers/specs/2026-08-31-web-ui-elevation-design.md`.
 - Previous web completion work: `docs/superpowers/specs/2026-09-12-web-mvp-completion-design.md` and `docs/superpowers/plans/2026-09-12-web-mvp-completion.md`.
 - Terminology: `docs/glossary.md`.
+

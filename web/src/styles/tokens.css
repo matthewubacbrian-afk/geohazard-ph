@@ -4,29 +4,31 @@
    semantic tokens are what components consume. See web/DESIGN_NOTES.md. */
 
 :root {
-  /* ---- Primitives: brand palette (unchanged identity) ---- */
-  --cream-0: #f9f6f3;      /* app background (was --bg)     */
-  --cream-50: #fcf9f6;     /* raised surface (was --surface) */
-  --cream-100: #f6f3f0;    /* strong surface (was --surface-strong) */
-  --cream-150: #f0edea;    /* container surface (was --surface-container) */
-  --cream-200: #ffffff;    /* container-lowest / card on map */
+  /* ---- Primitives: basalt, pumice, terracotta, ochre, and mineral ---- */
+  --cream-0: #f3f0e9;
+  --cream-50: #faf8f3;
+  --cream-100: #fffefa;
+  --cream-150: #e8e4da;
+  --cream-200: #fffefa;
 
-  --ink: #181f21;          /* primary text / near-black (was --primary) */
-  --ink-soft: #434749;     /* muted text (was --text-muted) */
-  --ink-faint: #959c9f;    /* faint text / footer (was --text-light) */
-  --outline: #747879;      /* strong outline (was secondary gray) */
-  --outline-variant: #c3c7c8; /* hairline border */
+  --ink: #292824;
+  --ink-soft: #57554f;
+  --ink-faint: #68665f;
+  --outline: #645f55;
+  --outline-variant: #c9c4b8;
 
-  --accent: #c0392b;       /* brand red / high risk (was --secondary) */
-  --risk-very-high: #8f201a; /* darkest regional profile */
-  --risk-medium: #e3a655;  /* amber */
-  --risk-low: #6bb4b1;     /* teal */
+  --accent: #9b3f2e;
+  --risk-very-high: #792d25;
+  --risk-medium: #805a0b;
+  --risk-low: #49655f;
+  --mineral: #49655f;
+  --focus-ring: #74402e;
   --white: #ffffff;
 
   /* ---- Semantic surfaces ---- */
   --surface: var(--cream-0);
   --surface-raised: var(--cream-50);
-  --surface-overlay: rgba(252, 249, 246, 0.92);
+  --surface-overlay: rgba(250, 248, 243, 0.97);
   --surface-overlay-solid: var(--cream-50);
   --surface-container: var(--cream-150);
   --surface-container-lowest: var(--cream-200);
@@ -39,17 +41,18 @@
   /* ---- Semantic border / shadows (tinted, not pure black) ---- */
   --border: var(--outline);
   --border-strong: var(--outline-variant);
-  --shadow-color: rgba(24, 31, 33, 0.08);
-  --shadow-card: 0 10px 30px rgba(24, 31, 33, 0.07);
-  --shadow-overlay: 0 12px 32px rgba(24, 31, 33, 0.09);
-  --shadow-control: 0 8px 20px rgba(24, 31, 33, 0.08);
+  --shadow-color: rgba(41, 40, 36, 0.08);
+  --shadow-card: 0 4px 16px rgba(41, 40, 36, 0.07);
+  --shadow-overlay: 0 6px 20px rgba(41, 40, 36, 0.09);
+  --shadow-control: 0 3px 10px rgba(41, 40, 36, 0.08);
 
   /* ---- Semantic accent / risk ---- */
-  /* (brand red primitive doubles as the semantic accent and high risk) */
+  /* High risk remains text-labeled and distinguishable without color. */
   --risk-high: var(--accent);
 
   /* ---- Typography ---- */
   --font-sans: "Inter", sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
   --font-mono: "JetBrains Mono", monospace;
   --font-icon: "Material Symbols Outlined", sans-serif;
 

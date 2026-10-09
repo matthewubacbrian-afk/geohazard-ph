@@ -34,7 +34,7 @@
   min-height: 46px;
   padding: 12px 24px;
   border: 1px solid transparent;
-  background: var(--ink);
+  background: var(--accent);
   color: var(--white);
   font-family: var(--font-mono);
   font-size: 12px;
@@ -42,7 +42,12 @@
   letter-spacing: 1.2px;
   font-weight: 700;
   text-transform: uppercase;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 2px var(--shadow-color);
+}
+
+.primary-button:hover {
+  background: var(--risk-very-high);
 }
 
 .primary-button:active {
@@ -65,6 +70,7 @@
   letter-spacing: 1.2px;
   font-weight: 700;
   text-transform: uppercase;
+  border-radius: var(--radius-sm);
 }
 
 .secondary-button:active {
