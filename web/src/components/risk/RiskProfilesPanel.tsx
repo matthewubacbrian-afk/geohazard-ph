@@ -1,16 +1,27 @@
+import { useMemo, useState } from 'react';
 import { useRiskProfiles } from '../../hooks/useRiskProfiles';
 import Skeleton from '../common/Skeleton';
+import RegionLookup from './RegionLookup';
 import RiskProfileCard from './RiskProfileCard';
 import styles from './RiskProfilesPanel.module.css';
 
 export default function RiskProfilesPanel() {
   const { data: profiles, isLoading, error, refetch } = useRiskProfiles();
+  const [query, setQuery] = useState('');
+  const loadedProfiles = profiles ?? [];
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = useMemo(
+    () => loadedProfiles.filter((profile) =>
+      profile.region_name.toLowerCase().includes(normalizedQuery),
+    ),
+    [loadedProfiles, normalizedQuery],
+  );
 
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
         <div>
-          <p className={styles.title}>Regional risk profiles</p>
+          <h2 className={styles.title}>Regional risk profiles</h2>
           <p className={styles.subtitle}>Clustered by ML model</p>
         </div>
       </div>
@@ -37,15 +48,28 @@ export default function RiskProfilesPanel() {
           </div>
         )}
 
-        {!isLoading && !error && profiles && profiles.length > 0 && (
+        {!isLoading && !error && loadedProfiles.length > 0 && (
           <>
-            {profiles.map((profile) => (
+            <div className={styles.lookupSection}>
+              <label className={styles.searchLabel} htmlFor="risk-region-filter">Filter regions</label>
+              <input
+                id="risk-region-filter"
+                className={styles.searchInput}
+                type="search"
+                aria-label="Filter regions"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search loaded regions"
+              />
+              <RegionLookup profiles={loadedProfiles} query={query} />
+            </div>
+            {filtered.length > 0 ? filtered.map((profile) => (
               <RiskProfileCard key={profile.region_name} profile={profile} />
-            ))}
+            )) : <p className={styles.noResults}>No regions match your search.</p>}
           </>
         )}
 
-        {!isLoading && !error && (!profiles || profiles.length === 0) && (
+        {!isLoading && !error && loadedProfiles.length === 0 && (
           <p className={styles.empty}>No risk profiles available.</p>
         )}
       </div>

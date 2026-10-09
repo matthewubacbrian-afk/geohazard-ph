@@ -36,6 +36,8 @@ describe('Risk profile components', () => {
     expect(screen.getAllByText('High', { exact: false }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('82%', { exact: false }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('event_count', { exact: false }).length).toBeGreaterThan(0);
+    expect(screen.getByText('Risk profiles are descriptive statistics, not earthquake predictions.')).toBeInTheDocument();
+    expect(screen.getByText(/Model: v-test \| Kaggle fixture/)).toBeInTheDocument();
   });
 
   it('filters region lookup by query', () => {

@@ -28,6 +28,18 @@ describe('VolcanoPanel', () => {
     expect(screen.getByText(/Cached source/)).toBeTruthy();
     expect(screen.getByRole('link', { name: /PHIVOLCS/ }).getAttribute('href')).toContain('phivolcs');
     expect(screen.getByText(/Bulletin date not supplied/)).toBeTruthy();
+    expect(screen.getByText(/Retrieved/)).toBeTruthy();
+  });
+  it('keeps a missing alert level distinct from official level zero', () => {
+    vi.mocked(useVolcanoes).mockReturnValue({ isLoading: false, error: null, data: [{
+      id: 'phivolcs:mayon', name: 'Mayon', current_alert_level: null,
+      source: 'phivolcs', source_url: 'https://wovodat.phivolcs.dost.gov.ph/bulletin/list-of-bulletin',
+      stale: false, retrieved_at: null, bulletin_at: null, bulletin_url: null,
+      latitude: null, longitude: null,
+    }] } as unknown as ReturnType<typeof useVolcanoes>);
+    render(<VolcanoPanel />);
+    expect(screen.getByText('Alert level not supplied')).toBeTruthy();
+    expect(screen.queryByText('Alert Level 0')).toBeNull();
   });
   it('shows a clear empty state', () => {
     vi.mocked(useVolcanoes).mockReturnValue({ isLoading: false, data: [], error: null } as unknown as ReturnType<typeof useVolcanoes>);
