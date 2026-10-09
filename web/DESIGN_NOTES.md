@@ -17,8 +17,11 @@ dark themes, decorative cards, and controls that are hidden at smaller widths.
 - IBM Plex Serif for display headings, IBM Plex Sans for interface and body copy,
   and IBM Plex Mono with tabular numerals for magnitudes, depth, coordinates, and time.
 - Self-host only the used weights from Fontsource packages for IBM Plex Sans, Serif,
-  and Mono. Record the IBM Plex SIL Open Font License/source and retain required
-  notices. Do not load fonts from a third-party runtime CDN.
+  and Mono. The @fontsource/ibm-plex-sans, @fontsource/ibm-plex-serif, and
+  @fontsource/ibm-plex-mono packages use the SIL Open Font License 1.1. Their
+  package license files remain included with the installed dependencies. IBM Plex
+  source: [IBM/plex](https://github.com/IBM/plex). Do not load fonts from a
+  third-party runtime CDN.
 - Use consistent SVG icon components (or inline SVG) with `currentColor`; do not use
   emoji or a remote icon font for interface controls.
 

@@ -1,6 +1,7 @@
 import type { StaticLayer } from '../../types/staticLayer';
 import type { VolcanoOverlayState } from '../map/volcanoOverlays';
 import { useState } from 'react';
+import Icon from '../common/Icon';
 import styles from "./DashboardMapArea.module.css";
 import Skeleton from "../common/Skeleton";
 import MapView from "../map/MapView";
@@ -137,9 +138,7 @@ export default function DashboardMapArea({
             aria-label="Close panel"
             onClick={() => setShowRegionCard(false)}
           >
-            <span className="material-symbols-outlined" aria-hidden="true">
-              close
-            </span>
+            <Icon name="close" />
           </button>
         </div>
 

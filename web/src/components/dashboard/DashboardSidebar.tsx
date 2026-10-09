@@ -1,13 +1,14 @@
 import { useState } from 'react';
+import Icon, { type IconName } from '../common/Icon';
 import styles from './DashboardSidebar.module.css';
 import { BASEMAPS, BASEMAP_IDS, type BasemapId } from '../map/basemaps';
 import type { RiskBucket } from '../../lib/risk';
 
 export type DashboardView = 'map' | 'filters' | 'history' | 'risk' | 'volcanoes';
 
-const VIEWS: { key: DashboardView; label: string; icon: string }[] = [
+const VIEWS: { key: DashboardView; label: string; icon: IconName }[] = [
   { key: 'map', label: 'Map', icon: 'map' },
-  { key: 'filters', label: 'Seismic filters', icon: 'filter_alt' },
+  { key: 'filters', label: 'Seismic filters', icon: 'filter' },
   { key: 'history', label: 'Historical data', icon: 'history' },
   { key: 'volcanoes', label: 'Volcano bulletins', icon: 'volcano' },
   { key: 'risk', label: 'Risk reports', icon: 'assessment' },
@@ -86,9 +87,7 @@ export default function DashboardSidebar({
                 aria-current={activeView === view.key ? 'true' : undefined}
                 onClick={() => onViewChange(view.key)}
               >
-                <span className={styles.icon} aria-hidden="true">
-                  {view.icon}
-                </span>
+                <Icon name={view.icon} className={styles.icon} />
                 <span>{view.label}</span>
               </button>
             ))}
@@ -105,9 +104,7 @@ export default function DashboardSidebar({
               aria-label={`Map Layers: ${BASEMAPS[basemap].label}`}
               onClick={() => setLayersOpen((open) => !open)}
             >
-              <span className={styles.icon} aria-hidden="true">
-                layers
-              </span>
+              <Icon name="layers" className={styles.icon} />
               <span>{BASEMAPS[basemap].label}</span>
               <span className={styles.caret} aria-hidden="true">
                 ▾

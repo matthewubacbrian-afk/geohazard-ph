@@ -1,62 +1,61 @@
-/* GeoHazard PH — Design tokens
-   Single source of truth for the web UI (and the hand-off foundation for the
-   React Native app). Primitive values mirror the established brand palette;
-   semantic tokens are what components consume. See web/DESIGN_NOTES.md. */
-
+/* GeoHazard PH design tokens: primitives, semantic aliases, and layout scales. */
 :root {
-  /* ---- Primitives: basalt, pumice, terracotta, ochre, and mineral ---- */
+  /* Primitive palette */
   --cream-0: #f3f0e9;
   --cream-50: #faf8f3;
   --cream-100: #fffefa;
   --cream-150: #e8e4da;
   --cream-200: #fffefa;
-
   --ink: #292824;
   --ink-soft: #57554f;
   --ink-faint: #68665f;
   --outline: #645f55;
   --outline-variant: #c9c4b8;
-
-  --accent: #9b3f2e;
-  --risk-very-high: #792d25;
-  --risk-medium: #805a0b;
-  --risk-low: #49655f;
-  --mineral: #49655f;
+  --clay: #9b3f2e;
   --focus-ring: #74402e;
   --white: #ffffff;
 
-  /* ---- Semantic surfaces ---- */
-  --surface: var(--cream-0);
-  --surface-raised: var(--cream-50);
+  /* Semantic dashboard surfaces and text */
+  --surface: #f3f0e9;
+  --surface-raised: #faf8f3;
+  --surface-card: #fffefa;
+  --surface-container: #e8e4da;
   --surface-overlay: rgba(250, 248, 243, 0.97);
-  --surface-overlay-solid: var(--cream-50);
-  --surface-container: var(--cream-150);
-  --surface-container-lowest: var(--cream-200);
-
-  /* ---- Semantic text ---- */
-  --text: var(--ink);
-  --text-muted: var(--ink-soft);
-  --text-faint: var(--ink-faint);
-
-  /* ---- Semantic border / shadows (tinted, not pure black) ---- */
-  --border: var(--outline);
-  --border-strong: var(--outline-variant);
+  --surface-overlay-solid: var(--surface-raised);
+  --surface-container-lowest: var(--surface-card);
+  --text: #292824;
+  --text-muted: #57554f;
+  --text-faint: #68665f;
+  --border: #645f55;
+  --border-subtle: #c9c4b8;
+  --border-strong: var(--border-subtle);
+  --accent: #9b3f2e;
   --shadow-color: rgba(41, 40, 36, 0.08);
   --shadow-card: 0 4px 16px rgba(41, 40, 36, 0.07);
   --shadow-overlay: 0 6px 20px rgba(41, 40, 36, 0.09);
   --shadow-control: 0 3px 10px rgba(41, 40, 36, 0.08);
 
-  /* ---- Semantic accent / risk ---- */
-  /* High risk remains text-labeled and distinguishable without color. */
-  --risk-high: var(--accent);
+  /* Four-step risk colors and a separate neutral magnitude scale */
+  --risk-low: #315b4c;
+  --risk-moderate: #75500e;
+  --risk-high: #99422f;
+  --risk-very-high: #702820;
+  --magnitude-low: #69645a;
+  --magnitude-moderate: #58544d;
+  --magnitude-high: #413d37;
+  --magnitude-very-high: #292824;
+  /* Compatibility aliases for the existing styles while components migrate. */
+  --risk-medium: var(--risk-moderate);
+  --mineral: var(--risk-low);
+  --hazard-fault: var(--accent);
+  --hazard-volcano: var(--risk-moderate);
 
-  /* ---- Typography ---- */
-  --font-sans: "Inter", sans-serif;
-  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-  --font-mono: "JetBrains Mono", monospace;
-  --font-icon: "Material Symbols Outlined", sans-serif;
+  /* Fontsource IBM Plex packages are loaded in main.tsx. */
+  --font-sans: "IBM Plex Sans", Arial, system-ui, sans-serif;
+  --font-display: "IBM Plex Serif", Georgia, serif;
+  --font-mono: "IBM Plex Mono", "Courier New", monospace;
 
-  /* Type ramp (Inter sizes; labels use mono separately) */
+  /* Type ramp */
   --text-2xs: 10px;
   --text-xs: 12px;
   --text-sm: 14px;
@@ -65,11 +64,10 @@
   --text-xl: 24px;
   --text-2xl: 32px;
   --text-3xl: clamp(2.5rem, 4vw, 3rem);
-
   --leading-tight: 1.1;
   --leading-normal: 1.5;
 
-  /* ---- Spacing (4px scale) ---- */
+  /* 4px spacing scale */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -79,32 +77,28 @@
   --space-8: 32px;
   --space-12: 48px;
   --space-16: 64px;
-  --space-24: 96px;
 
-  /* ---- Radius (intent: small controls, medium cards, panel surfaces) ---- */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-panel: 16px;
+  /* Square controls, inputs, rounded-square panels, and chips */
+  --radius-square: 0px;
+  --radius-control: 4px;
+  --radius-sm: var(--radius-control);
+  --radius-md: 10px;
+  --radius-panel: 10px;
   --radius-pill: 999px;
 
-  /* ---- Motion ---- */
+  /* Motion */
   --dur-fast: 0.15s;
   --dur-base: 0.25s;
   --dur-slow: 0.4s;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-default: cubic-bezier(0.25, 1, 0.5, 1);
 
-  /* ---- Z-index scale ---- */
-  --z-status: 3;        /* in-map status / floating banners */
-  --z-map-overlay: 2;   /* in-map legend / controls / floating cards */
-  --z-topbar: 50;       /* sticky top navigation */
+  /* Layer order */
+  --z-status: 3;
+  --z-map-overlay: 2;
+  --z-topbar: 50;
 
-  /* ---- Breakpoints ---- */
+  /* Responsive layout */
   --bp-md: 900px;
   --bp-sm: 640px;
-}
-
-:root {
-  --hazard-fault: var(--accent);
-  --hazard-volcano: var(--risk-medium);
 }

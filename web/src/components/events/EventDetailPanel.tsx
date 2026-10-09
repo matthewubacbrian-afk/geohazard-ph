@@ -1,4 +1,5 @@
 import type { HazardEvent } from '../../types/hazard';
+import Icon from '../common/Icon';
 import { eventRiskBucket } from '../../lib/risk';
 import styles from './EventDetailPanel.module.css';
 
@@ -20,9 +21,7 @@ export default function EventDetailPanel({ event, onClose }: EventDetailPanelPro
           </span>
         </div>
         <button type="button" className={styles.close} onClick={onClose} aria-label="Close detail">
-          <span className="material-symbols-outlined" aria-hidden="true">
-            close
-          </span>
+          <Icon name="close" />
         </button>
       </div>
 
