@@ -2,6 +2,10 @@
 
 *Companion to `geohazard-system-architecture.md` — this document covers how the project gets built, not what gets built.*
 
+> **Historical planning framework:** the sprint cadence, backlog, and epic
+> schedule below record the original planning approach. For current completion,
+> operational prerequisites, and deferred scope, see the [project status register](docs/project-status.md).
+
 ---
 
 ## 1. Methodology: Agile (Scrum-lite)
