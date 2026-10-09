@@ -83,13 +83,170 @@ publishes API and web images to GHCR under the commit SHA, and uploads a deploym
 bundle. It does not connect to a host. The bundle contains `compose.staging.yml`,
 the Caddyfile, the deploy script, and `.env.staging.example`.
 
-Prepare a Linux host with Docker Compose v2, a DNS name pointing to the host,
-inbound ports 80 and 443, and outbound access to GHCR and the event sources.
-Log in to GHCR if the images are private. Extract the bundle to one directory,
-copy `.env.staging.example` to `.env.staging`, and set its image prefix, domain,
-database credentials, CORS origin, and risk-profile export file. Keep
-`.env.staging` and the export out of version control. The browser bundle uses
-same-origin `/api/v1` and derives `wss://` from the public HTTPS origin.
+### Oracle Cloud Infrastructure Always Free A1
+
+Oracle Always Free compute is provisioned only in the tenancy's home region. The
+published Always Free A1 allowance is a total of 2 OCPUs and 12 GB memory across
+A1 instances, plus 200 GB total block volume allowance. Capacity is not guaranteed:
+A1 shapes may be unavailable in a home region. Choosing paid capacity or exceeding
+free quotas can incur charges. Review [Always Free resources and limits](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm)
+and Oracle's [launch an instance tutorial](https://docs.oracle.com/en-us/iaas/Content/GSG/Tasks/launchinginstance.htm)
+before provisioning.
+
+1. In the OCI Console, select the tenancy's **home region** and open **Compute → Instances → Create instance**.
+2. Name the instance, select **Ubuntu 24.04** as the image, and choose the **VM.Standard.A1.Flex** shape. Configure no more than the available A1 free allowance (2 OCPUs and 12 GB memory total); confirm the console identifies the selected image and shape as Always Free eligible before creating it.
+3. Select or create a VCN and a **public subnet** with a route to an internet gateway. Assign a public IPv4 address. Add your SSH public key during instance creation. Keep the private key private; never upload it to the repository or deployment bundle.
+4. In the subnet's security list or the instance's network security group, allow inbound TCP 22 only from your current operator IP in CIDR form, and TCP 80 and 443 from clients (`0.0.0.0/0`, and `::/0` only if IPv6 is configured). Do not open TCP 5432 or 6379. Permit outbound DNS and HTTPS/network access so the host can reach GHCR, DNS resolvers, and configured event-source feeds. See [OCI security list rules](https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/securitylists.htm).
+5. Create a DNS A record for the deployment hostname pointing to the instance's public IPv4 address. Wait until the name resolves to that address before deployment; Caddy needs working DNS and publicly reachable ports 80/443 to obtain TLS certificates.
+6. Connect from Windows PowerShell using the private key you created or selected:
+
+   ```powershell
+   ssh -i "$env:USERPROFILE\.ssh\oci_geohazard" ubuntu@<public-ip>
+   ```
+
+   Replace the key path and address with your own values. On the VM, verify the architecture with `uname -m`; it must print `aarch64`.
+7. Install Docker Engine and the Compose plugin by following Docker's [official Ubuntu installation instructions](https://docs.docker.com/engine/install/ubuntu/). Verify both commands:
+
+   ```bash
+   docker --version
+   docker compose version
+   ```
+
+For other Linux hosts, retain the existing requirements: Docker Compose v2, a DNS
+name pointing to the host, inbound ports 80 and 443, and outbound access to GHCR
+and the event sources.
+
+### Prepare and deploy a release
+
+1. On the repository's `main` branch, run the manual **Prepare Staging Release**
+   workflow. Record the 40-character commit SHA and download the artifact named
+   `staging-release-<sha>` from that same workflow run. The artifact contains
+   `compose.staging.yml`, `infra/caddy/Caddyfile`, `scripts/deploy_staging.sh`,
+   and `.env.staging.example`; extract all files together into one directory on
+   the VM, preserving the `infra/caddy` and `scripts` paths.
+2. Confirm the published API and web image manifests include both ARM64 and
+   AMD64 before deployment. Use the actual image prefix and SHA from the workflow:
+
+   ```bash
+   docker buildx imagetools inspect ghcr.io/owner/geohazard-ph-api:<sha>
+   docker buildx imagetools inspect ghcr.io/owner/geohazard-ph-web:<sha>
+   ```
+
+   Replace `owner` and `<sha>` with the workflow's image prefix and release SHA;
+   each manifest must list `linux/arm64` and `linux/amd64`.
+3. If the GHCR package is private, authenticate with a GitHub token that has only
+   `read:packages` access. Do not put the token in a command argument, shell
+   history, or committed file. Enter it at the prompt:
+
+   ```bash
+   read -r -p 'GitHub username: ' ghcr_user
+   read -r -s -p 'GHCR token: ' ghcr_token; printf '\n'
+   printf '%s' "$ghcr_token" | docker login ghcr.io -u "$ghcr_user" --password-stdin
+   unset ghcr_token
+   ```
+
+   Protect Docker's credential configuration on the VM and log out of GHCR after
+   deployment if desired with `docker logout ghcr.io`.
+4. The production ML output to provide is `ml/model_artifacts/v1/risk_profiles.json`.
+   Copy the trained file to the host path used by `RISK_PROFILE_EXPORT_FILE`, for
+   example `./deploy-data/risk_profiles.json` inside the extracted bundle directory.
+   Ensure the file exists, is non-empty, and is readable by Docker before deploying:
+
+   ```bash
+   test -s ./deploy-data/risk_profiles.json && test -r ./deploy-data/risk_profiles.json
+   ```
+
+   These are historical descriptive statistical profiles, not predictions. The
+   fixture at `backend/tests/fixtures/risk_profiles.json` is for local tests and is
+   not the production export.
+5. Copy `.env.staging.example` to `.env.staging` in that same directory. Replace
+   all placeholders: set `IMAGE_PREFIX` to the workflow's GHCR prefix, `IMAGE_TAG`
+   to the exact commit SHA, `SITE_DOMAIN` to the DNS hostname, a strong
+   `POSTGRES_PASSWORD`, a matching URL-encoded password in `DATABASE_URL`, and
+   `CORS_ORIGINS` to a JSON array containing `https://<site-domain>`. Set
+   `RISK_PROFILE_EXPORT_FILE` to the host export path (for example
+   `./deploy-data/risk_profiles.json`) and set `INGEST_POLL_INTERVAL_SECONDS` as
+   desired. Compose resolves a relative host path from the directory containing
+   `compose.staging.yml`. Keep `.env.staging`, database backups, and the model
+   export private and out of version control. The web bundle uses same-origin
+   `/api/v1` and derives `wss://` from its public HTTPS origin.
+6. Ensure the deployment URL, `SITE_DOMAIN`, Caddy's site hostname, and DNS name
+   all match. From the extracted bundle directory, deploy with the exact interface:
+
+   ```bash
+   bash scripts/deploy_staging.sh <40-character-release-sha> https://<site-domain>
+   ```
+
+   The script validates Compose, pulls immutable images, starts services, waits
+   for health, and checks the health, events, and risk-profile endpoints. Confirm
+   the release afterward:
+
+   ```bash
+   curl --fail https://SITE_DOMAIN/health
+   curl --fail https://SITE_DOMAIN/api/v1/events
+   curl --fail https://SITE_DOMAIN/api/v1/risk-profile/clusters
+   docker compose --env-file .env.staging -f compose.staging.yml ps
+   docker compose --env-file .env.staging -f compose.staging.yml logs --tail=100 api worker web proxy postgres redis migrate
+   ```
+
+   Replace `SITE_DOMAIN` in the curl URLs with the actual hostname. For GHCR
+   authentication errors, log in as above and retry
+   `docker compose --env-file .env.staging -f compose.staging.yml pull`. For DNS,
+   TLS, or connection failures, confirm the A record, public IP, OCI ingress rules,
+   and host firewall allow ports 80/443. For a missing model export, inspect
+   `docker compose --env-file .env.staging -f compose.staging.yml config` and run
+   `test -s ./deploy-data/risk_profiles.json`. For disk pressure, inspect `df -h`
+   and `docker system df`. For unhealthy services, use the `ps` and `logs`
+   commands above and resolve the first failing dependency before retrying.
+
+### Backup, restore, rollback, and cleanup
+
+Before each update, create database and Caddy data backups from the extracted
+bundle directory. The date-based names below use UTC:
+
+```bash
+mkdir -p backups
+backup_date="$(date -u +%Y%m%dT%H%M%SZ)"
+docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_dump -U geohazard -d geohazard -Fc > "backups/geohazard-${backup_date}.dump"
+docker compose --env-file .env.staging -f compose.staging.yml exec -T proxy tar -C /data -czf - . > "backups/caddy-data-${backup_date}.tar.gz"
+test -s "backups/geohazard-${backup_date}.dump" && test -s "backups/caddy-data-${backup_date}.tar.gz"
+```
+
+Restore a database dump only when intentionally replacing the current database.
+This overwrites current database contents. First capture a fresh backup using the
+commands above, stop API and worker services, then drop and recreate the database
+and restore the custom-format dump:
+
+```bash
+docker compose --env-file .env.staging -f compose.staging.yml stop api worker
+restore_date="$(date -u +%Y%m%dT%H%M%SZ)"
+docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_dump -U geohazard -d geohazard -Fc > "backups/geohazard-before-restore-${restore_date}.dump"
+docker compose --env-file .env.staging -f compose.staging.yml exec postgres dropdb -U geohazard --if-exists geohazard
+docker compose --env-file .env.staging -f compose.staging.yml exec postgres createdb -U geohazard -O geohazard geohazard
+docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_restore --no-owner -U geohazard -d geohazard < backups/geohazard-YYYYMMDDTHHMMSSZ.dump
+docker compose --env-file .env.staging -f compose.staging.yml up -d --wait
+curl --fail https://SITE_DOMAIN/health
+```
+
+Replace the dump placeholder with the chosen backup filename and `SITE_DOMAIN`
+with the actual hostname. Restore Caddy's saved state, if needed, by streaming the
+chosen archive into the proxy container with
+`docker compose --env-file .env.staging -f compose.staging.yml exec -T proxy tar -C /data -xzf - < backups/caddy-data-<date>.tar.gz`.
+Never run `down -v` during routine updates or recovery; it deletes named volumes.
+
+To roll back application images, verify database migration compatibility and
+rerun `bash scripts/deploy_staging.sh <prior-40-character-release-sha> https://<site-domain>`.
+Image rollback alone does not reverse database migrations. Restore the database
+only using the explicit procedure above if schema or data changes must also be
+reverted.
+
+Keep exports and backups until they are no longer needed, then remove them
+securely. To stop the Compose stack while preserving volumes, run
+`docker compose --env-file .env.staging -f compose.staging.yml down` (without
+`-v`). If permanently retiring the deployment, delete the OCI VM and any attached
+boot or block volumes and public IP that are no longer needed, and remove the DNS
+record. Review block volumes in the tenancy's home region so unused resources do
+not remain unnoticed.
 
 Before the first deployment to a populated database, back up Postgres and run
 the canonical reconciliation preview and apply commands using the release API
