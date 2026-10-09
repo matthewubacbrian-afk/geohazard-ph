@@ -77,7 +77,7 @@ xcodebuild \
 
 Keep signing and export/archive steps out of this job. The job must fail if CocoaPods or the simulator compilation fails.
 
-- [ ] **Step 5: Run workflow checks and review both platform jobs**
+- [x] **Step 5: Run workflow checks and review both platform jobs**
 
 Run the focused workflow regression test, Mobile Jest, structure verification, and `git diff --check`. Confirm the existing Android setup and `assembleDebug` steps remain present. Hosted CI is required to verify the macOS build; report it as pending until the job runs successfully.
 
@@ -141,7 +141,7 @@ git diff --check
 
 Expected: Jest passes; the structure verifier and whitespace check pass.
 
-- [ ] **Step 2: Observe hosted Android and iOS build jobs**
+- [x] **Step 2: Observe hosted Android and iOS build jobs**
 
 Confirm both platform build jobs pass on the pull request. A green Jest job alone does not satisfy native compilation acceptance.
 
@@ -149,11 +149,11 @@ Confirm both platform build jobs pass on the pull request. A green Jest job alon
 
 Use at least one Android emulator/device and one iOS simulator. Follow the checklist with a reachable development or staging API. Record exact platform/runtime, date, API environment (without secrets), completed flows, and blockers. Do not claim physical-device coverage from a simulator run.
 
-- [ ] **Step 4: Update project status from observed evidence**
+- [x] **Step 4: Update project status from observed evidence**
 
 Update `docs/project-status.md` and the smoke checklist only with completed evidence. If a platform runtime is unavailable, preserve it as open with the concrete prerequisite (for example, macOS/Xcode or a reachable test API).
 
-- [ ] **Step 5: Run final verification and commit the status record**
+- [x] **Step 5: Run final verification and commit the status record**
 
 Run the Mobile Jest suite, `python scripts\verify_structure.py`, and `git diff --check` after any fixes. Commit the evidence and status update with `docs: record mobile runtime verification`.
 
@@ -170,4 +170,5 @@ Run the Mobile Jest suite, `python scripts\verify_structure.py`, and `git diff -
 - `npm ci` restored the lockfile dependencies missing from this workstation's `node_modules`; Mobile Jest then passed all 31 tests in 8 suites.
 - `python scripts\verify_structure.py` found all 140 expected paths, and `git diff --check` passed.
 - CI job and checklist commits: `c79c765` and `8307112`.
-- Hosted iOS build, current-branch Android build, and Android/iOS runtime smoke checks await a pull-request CI run and suitable runtimes. Do not mark those checks complete from local Jest results.
+- [PR #20 Mobile CI run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/37906366103) passed: Android `assembleDebug` completed in the `mobile` job (3m53s) and the new iOS simulator job completed in 14m5s. Backend, ML, and web PR checks also passed.
+- Manual runtime smoke is still open. This Windows host has Java 25, no configured Android SDK or emulator, and no macOS/Xcode environment. The checklist requires a reachable API with a representative event and an Android runtime plus an iOS simulator; no runtime flow result is claimed.
