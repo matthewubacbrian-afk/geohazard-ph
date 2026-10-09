@@ -15,6 +15,7 @@
 - Follow `AGENTS.md`, `CODING_STANDARDS.md`, `docs/glossary.md`, and `docs/git-workflow.md`.
 - Acknowledge the source as DOST-PHIVOLCS and link to the exact service layer or map product.
 - Do not treat public service access or attribution as reuse permission or an open license.
+- Treat the Geomatics form and DUA/MOU process as an application route only; no request has been submitted and no permission has been granted.
 - Do not download geometry, query feature counts, import/bundle vector data, change API behavior, or alter the existing raster overlays.
 - Keep hazard-zone classes distinct from `current_alert_level`; keep Epic 3 partial and Epic 4 runtime verification unverified.
 - Run `git diff --check` before commit. No package tests apply to documentation-only changes.
@@ -52,7 +53,9 @@ Link each exact service above. State that extents are metadata bounds, several a
 
 - [x] **Step 2: Add classification, source acknowledgment, and reuse status**
 
-Explain that danger-zone `PDZ`/`EDZ` classes and hazard-specific classes describe mapped geography, not current bulletin `current_alert_level`. State that the inventory used metadata only, so no feature geometry, service feature count, accepted-in-bounds count, or vector import is reported. Link the official Maps Portal and hazard-map instructions; record that they ask users to acknowledge DOST-PHIVOLCS and warn against unauthorized use, depiction, sale, or derivatives. State no open redistribution license was identified and reuse clearance is pending.
+Explain that danger-zone `PDZ`/`EDZ` classes and hazard-specific classes describe mapped geography, not current bulletin `current_alert_level`. State that the inventory used metadata only, so no feature geometry, service feature count, accepted-in-bounds count, or vector import is reported. Link the official Maps Portal and hazard-map instructions; record that they ask users to acknowledge DOST-PHIVOLCS and warn against unauthorized use, depiction, sale, or derivatives. State no open redistribution license was identified and reuse clearance is pending. Link the official Geomatics Services Request page and GGRDD Citizen's Charter; summarize the request form followed by applicable DUA/MOU and approval process for reference services, and state explicitly that this process has not been initiated and is not permission for storage/display/redistribution.
+
+Confirm the documented clearance route is an application process, not a permission grant, and that no request or agreement is claimed. Mark the spec criterion for that addition complete.
 
 Require every future permitted use to say `Source: DOST-PHIVOLCS`, link the exact layer/product, identify source-stated product dates separately from retrieval/import timestamps, and include any additional conditions. State existing remote raster overlays remain as rendered-map references and are distinct from local vectors; do not imply their attribution grants permission for new vector redistribution.
 

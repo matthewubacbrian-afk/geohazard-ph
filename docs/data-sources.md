@@ -223,6 +223,18 @@ access and attribution alone do not establish permission to store, display, or
 redistribute vector geometry; reuse clearance is pending and no PHIVOLCS volcano
 vector has been imported.
 
+PHIVOLCS documents a formal request path through its [Geomatics Services Request
+page](https://gisweb.phivolcs.dost.gov.ph/gisweb/geomatics-services-request) and
+the [GGRDD External Services Citizen's Charter](https://www.phivolcs.dost.gov.ph/wp-content/uploads/2024/02/External-Services-GGRDD.pdf).
+For Web Map/Feature Services requested for reference purposes, the charter describes
+submitting the Geomatics Data and Services Form and, after PHIVOLCS responds, the
+applicable Data Use Agreement (DUA) or Memorandum of Understanding (MOU), followed
+by approval and issuance of a service link. The charter distinguishes DUA and MOU
+routes by stakeholder type. This describes an application process; it is not itself
+permission for GeoHazard PH to store, transform, publicly display, or redistribute
+geometry or derivatives. Any terms must expressly cover the planned uses. No request
+has been submitted and no agreement or permission has been received.
+
 For any future permitted use, identify the source as **DOST-PHIVOLCS**, link the exact
 layer or map product, name the volcano and hazard product, record its source-stated
 date/version when available, and keep retrieval and import timestamps separate.

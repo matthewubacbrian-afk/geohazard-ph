@@ -15,6 +15,7 @@ PHIVOLCS publishes multiple ArcGIS polygon services with different hazard meanin
 - Compare each metadata extent with the configured project bounds `(116, 4, 128, 22)` and state that extents are bounding metadata, not proof of complete coverage or feature counts.
 - Preserve the existing source-rendered raster overlays and their DOST-PHIVOLCS attribution. Keep those overlays distinct from imported local vectors and from current `alert_level` reports.
 - Establish terms that cover the planned storage, display, and redistribution before importing or bundling PHIVOLCS vector geometry.
+- Record PHIVOLCS's documented Geomatics request and agreement pathway, while making clear that a request process does not grant reuse permission.
 - If reuse terms remain unclear, record the source and attribution requirements, leave local vector import blocked, and keep Epic 3 partial.
 
 ## Non-goals
@@ -44,6 +45,7 @@ PHIVOLCS publishes multiple ArcGIS polygon services with different hazard meanin
 - Direct PHIVOLCS service references: [`DangerZone`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/DangerZone/MapServer/0), [`DangerZone_permanent`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/DangerZone_permanent/MapServer/0), [`DangerZone_extended`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/DangerZone_extended/MapServer/0), [`Pyroclastic_ohas`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/Pyroclastic_ohas/FeatureServer/0), [`Lava`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/Lava/MapServer/0), [`VolcanoLahar_ohas`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/VolcanoLahar_ohas/FeatureServer), and [`BaseSurge_ohas`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/BaseSurge_ohas/MapServer/0).
 - These metadata extents are not feature counts and do not prove that all hazards or volcanoes in those rectangles are represented. Several are visibly narrower than the project's Philippines bounds. No service feature count or feature geometry was retrieved for this design.
 - The official [PHIVOLCS Maps Portal](https://maps.phivolcs.dost.gov.ph/) asks users to acknowledge DOST-PHIVOLCS and warns against improper depiction, unauthorized use, or sale of its products or derivatives. It says hazard maps may be revised as information improves. The [hazard-map download instructions](https://www.phivolcs.dost.gov.ph/gisweb-download-hazard-maps-instruction/) describe downloadable KMZs and note that map availability can vary by municipality, province, or region. No open redistribution license was identified in the reviewed materials.
+- PHIVOLCS's [Geomatics Services Request page](https://gisweb.phivolcs.dost.gov.ph/gisweb/geomatics-services-request) and [GGRDD External Services Citizen's Charter](https://www.phivolcs.dost.gov.ph/wp-content/uploads/2024/02/External-Services-GGRDD.pdf) document an application path for reference WMS/WFS services: submit the service request form, then follow the applicable DUA or MOU process and approval steps. That process does not itself authorize GeoHazard PH's planned storage, transformation, public display, or redistribution; the issued terms must explicitly cover those uses. No request has been submitted.
 - For every permitted PHIVOLCS-derived use, acknowledge **DOST-PHIVOLCS**, link to the exact service or map product, identify the layer/product and its source-stated date/version, distinguish source date from retrieval/import timestamps, and include all additional attribution/restrictions in the applicable permission terms.
 - Existing static vector imports require source provenance and validated WGS84 geometry. Read `docs/data-sources.md`, `docs/glossary.md`, `CODING_STANDARDS.md`, and `docs/api-contracts.md` before any future implementation that changes API or data behavior.
 
@@ -64,6 +66,7 @@ This is a source inventory and reuse-clearance slice, not a polygon import:
 3. Compare each metadata extent to the configured project bounds. Do not infer that the rectangle contains mapped geometry throughout, that an absent service layer means no hazard, or that one hazard type represents another.
 4. Preserve the existing PHIVOLCS-rendered raster overlays and their source links. Document that these images are remote reference map renders and are not imported local `VolcanoZone` polygons.
 5. Apply the reuse gate before any future vector download/import or bundling:
+   - For PHIVOLCS WMS/WFS reference-service requests, follow the documented Geomatics form and applicable DUA/MOU approval route. Treat the request as pending until PHIVOLCS issues terms that expressly cover the planned GeoHazard PH uses.
    - If official terms or written authorization cover storage, display, and redistribution, create a separate implementation plan for reviewed imports through the existing static-layer path. Preserve source attribution, provenance, original classifications, stated dataset date/version, and separate retrieval/import timestamps.
    - If the terms are absent, denied, ambiguous, or narrower than the planned use, keep the import blocked, retain current overlays, and record the limitation in project status.
 6. Maintain separate concepts for `current_alert_level` (a PHIVOLCS bulletin value) and mapped spatial zones such as `PDZ`, `EDZ`, lava, lahar, pyroclastic, or base-surge classifications. A mapped zone is not a current alert status.
@@ -133,6 +136,7 @@ Use a dedicated Epic 3 branch after the PHIVOLCS fault-geometry source record. L
 - [ ] Danger-zone classes, hazard-specific mapped zones, remote raster renders, and current bulletin alert levels are clearly distinguished.
 - [ ] Every future permitted PHIVOLCS data/display use requires explicit DOST-PHIVOLCS acknowledgment and a direct link to the actual product/layer.
 - [ ] The source record states that attribution and public service access alone do not establish reuse permission.
+- [x] The official Geomatics request and DUA/MOU route is documented as an application pathway, not as permission; request/agreement status is stated accurately.
 - [ ] Terms covering storage, display, and redistribution are recorded, or vector import is explicitly marked blocked; no PHIVOLCS vector geometry is imported in this slice.
 - [ ] Existing raster overlay links and behavior are unchanged.
 - [ ] Epic 3 remains partial; Epic 4 runtime-flow status remains accurate.
@@ -155,7 +159,7 @@ Use a dedicated Epic 3 branch after the PHIVOLCS fault-geometry source record. L
 
 ## Related documents
 
-- Implementation plan: to be created after user review at `docs/superpowers/plans/2026-10-09-epic3-phivolcs-volcano-zone-coverage.md`.
+- Implementation plan: `docs/superpowers/plans/2026-10-09-epic3-phivolcs-volcano-zone-coverage.md`.
 - Prior fault-geometry source clearance: `docs/superpowers/specs/2026-10-09-epic3-phivolcs-fault-geometry-design.md`.
 - Project status: `docs/project-status.md`.
 - Data sources: `docs/data-sources.md`.
