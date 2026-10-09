@@ -185,7 +185,7 @@ git commit -m "docs: reconcile project epic status"
 **Files:**
 - Verify: all files changed by Tasks 1–3 and package suites named below.
 
-- [ ] **Step 1: Run ML and mobile tests**
+- [x] **Step 1: Run ML and mobile tests**
 
 ```powershell
 Set-Location ml
@@ -198,7 +198,7 @@ Set-Location ..
 
 Expected: both suites pass. Report dependency or environment failures separately; do not mark the corresponding acceptance criterion as verified.
 
-- [ ] **Step 2: Run web tests and production build**
+- [x] **Step 2: Run web tests and production build**
 
 ```powershell
 Set-Location web
@@ -209,7 +209,7 @@ Set-Location ..
 
 Expected: web tests and build pass.
 
-- [ ] **Step 3: Run backend tests and integration prerequisites**
+- [x] **Step 3: Run backend tests and integration prerequisites**
 
 With Docker PostGIS and Redis available and the project test database created, run:
 
@@ -221,7 +221,7 @@ Set-Location ..
 
 Expected: backend unit and integration suites pass. If Docker or the migrated test database is unavailable, report the exact blocker and do not claim the backend suite passed.
 
-- [ ] **Step 4: Run final structure, Compose, and diff checks**
+- [x] **Step 4: Run final structure, Compose, and diff checks**
 
 ```powershell
 python scripts\verify_structure.py
@@ -232,7 +232,7 @@ git status --short
 
 Expected: structure/configuration/diff checks pass and status contains only intended committed files.
 
-- [ ] **Step 5: Complete final independent review**
+- [x] **Step 5: Complete final independent review**
 
 Review the full branch diff against `main`. Confirm multi-architecture build steps include a manifest check, all docs match actual env vars/commands, no secrets or generated artifacts are present, and all deferred scope is tracked. Record exact verification outcomes for the handoff.
 
@@ -242,3 +242,14 @@ Review the full branch diff against `main`. Confirm multi-architecture build ste
 - Use one implementation agent for one task at a time, then a spec-compliance review, followed by a code-quality review. Fix and re-review all findings before proceeding.
 - The operator's OCI account, DNS provider, private SSH key, source Kaggle credentials, and any private GHCR package access are not available to agents. Never request or commit those secrets.
 - The only external integration not verifiable in CI is a real Oracle VM deployment. The repository can verify image manifests after publishing and the runbook can provide the commands the operator will use.
+
+## Execution Record (2026-10-09)
+
+- ML: 24 tests passed.
+- Backend: 98 tests passed; one existing Starlette `TestClient` deprecation warning.
+- Web: 77 tests passed and production build succeeded. Vite reports a 2.3 MB raw JavaScript chunk (576 KB gzip), above its 500 KB advisory threshold.
+- Mobile: 28 tests passed.
+- Structure verifier: all 139 expected scaffold paths exist.
+- Staging Compose config and `git diff --check main...HEAD` passed.
+- `npm ci` reported 9 web dependency audit findings (3 moderate, 3 high, 3 critical) and 66 mobile findings (12 moderate, 53 high, 1 critical) in the locked dependency trees. No dependency upgrades were made in this scope.
+- `actionlint` is unavailable in this environment. The GHCR manifest guard has not run because publishing is gated to the `main` release workflow. No live OCI VM was provisioned or deployed by this change.
