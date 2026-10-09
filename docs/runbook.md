@@ -358,6 +358,7 @@ because it contains TLS private keys, and protect its storage accordingly:
     exit 1
   fi
   pg_dump_tmp="$(mktemp "backups/.geohazard-${backup_date}.dump.XXXXXX")"
+  trap 'rm -f -- "$pg_dump_tmp"' EXIT
   caddy_tmp="$(mktemp "backups/.caddy-state-${backup_date}.tar.gz.XXXXXX")"
   trap 'rm -f -- "$pg_dump_tmp" "$caddy_tmp"' EXIT
   docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_dump -U geohazard -d geohazard -Fc > "$pg_dump_tmp"
