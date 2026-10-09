@@ -4,7 +4,7 @@
 
 **Goal:** Repair the Android SDK setup in PR #17 and verify both the mobile tests and Android debug build in CI.
 
-**Architecture:** Keep the workflow's existing Node/Jest and Android build sequence. Add a standard-library regression test that checks the Android setup action skips its obsolete default package, then explicitly install the pinned SDK packages and build the debug app.
+**Architecture:** Keep the workflow's existing Node/Jest and Android build sequence. Add standard-library regression tests for the Android setup action's package input and the Gradle wrapper's tracked executable mode, then explicitly install the pinned SDK packages and build the debug app.
 
 **Tech Stack:** GitHub Actions YAML, Python `unittest`, React Native, Jest, Gradle, Android SDK.
 
@@ -14,7 +14,7 @@
 
 - Follow `AGENTS.md`, `CODING_STANDARDS.md`, and `docs/testing-standards.md`.
 - Keep the repair on the focused `fix/mobile-android-ci` branch until its verification is complete.
-- Do not change app dependencies or generated native project files.
+- Do not change app dependencies or generated native project contents; change only the Gradle wrapper's tracked executable bit required by Linux CI.
 - Keep SDK versions at Android 34, Build Tools 34.0.0, Platform Tools, NDK 26.1.10909125, and JDK 17.
 - Conventional Commits; run the mobile tests, workflow regression test, `python scripts\verify_structure.py`, and `git diff --check`.
 - Before updating PR #17, confirm its remote head remains `ff9ab974ce91b89080d00d322532f25bfd712c6f`; update it only with a fast-forward push.
@@ -28,7 +28,7 @@
 
 **Interfaces:**
 - Consumes: `.github/workflows/mobile-ci.yml`.
-- Produces: a standard-library test that requires an empty `packages` input on the setup action and confirms the explicit SDK install and Android build remain present.
+- Produces: standard-library tests that require an empty `packages` input, confirm the explicit SDK install and Android build remain present, and check that Git tracks the wrapper as executable.
 
 - [x] **Step 1: Write the failing test**
 
@@ -36,6 +36,7 @@ Create `scripts/tests/test_mobile_ci_workflow.py` with:
 
 ```python
 from pathlib import Path
+import subprocess
 import unittest
 
 
@@ -61,6 +62,17 @@ class MobileCiWorkflowTests(unittest.TestCase):
         self.assertIn('"ndk;26.1.10909125"', workflow)
         self.assertIn("./gradlew assembleDebug", workflow)
 
+    def test_android_gradle_wrapper_is_tracked_as_executable(self):
+        result = subprocess.run(
+            ["git", "ls-files", "--stage", "--", "mobile/android/gradlew"],
+            cwd=ROOT,
+            capture_output=True,
+            check=True,
+            text=True,
+        )
+
+        self.assertEqual(result.stdout.split(maxsplit=1)[0], "100755", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
@@ -80,14 +92,15 @@ Expected: `test_android_setup_skips_obsolete_default_tools_package` fails becaus
 
 Do not commit an intermediate failing test. The repository commit checklist requires package tests to pass, so commit the test together with the passing workflow fix in Task 2.
 
-### Task 2: Prevent setup from installing the obsolete SDK package
+### Task 2: Fix SDK setup and make the Gradle wrapper executable
 
 **Files:**
 - Modify: `.github/workflows/mobile-ci.yml`
+- Modify file mode: `mobile/android/gradlew`
 
 **Interfaces:**
 - Consumes: the regression test from Task 1.
-- Produces: the Android setup action receives `packages: ""`; the following `sdkmanager` step remains the sole installer of the required SDK packages.
+- Produces: the Android setup action receives `packages: ""`, and Git tracks the Gradle wrapper with executable mode `100755`.
 
 - [x] **Step 1: Configure the action to skip additional default packages**
 
@@ -101,19 +114,28 @@ Change the setup step to:
 
 Keep the existing `Install Android SDK packages` step and its explicit package list unchanged.
 
-- [x] **Step 2: Run the regression test and confirm it passes**
+- [x] **Step 2: Track the Gradle wrapper as executable**
+
+```powershell
+git update-index --chmod=+x mobile/android/gradlew
+git ls-files --stage -- mobile/android/gradlew
+```
+
+Expected: the index reports mode `100755` for `mobile/android/gradlew`.
+
+- [x] **Step 3: Run the regression test and confirm it passes**
 
 ```powershell
 python -m unittest discover -s scripts/tests -p test_mobile_ci_workflow.py
 ```
 
-Expected: both workflow tests pass.
+Expected: all three workflow tests pass, including the wrapper mode test.
 
-- [ ] **Step 3: Commit the test and workflow fix together**
+- [ ] **Step 4: Commit the test and CI fixes together**
 
 ```powershell
-git add scripts/tests/test_mobile_ci_workflow.py .github/workflows/mobile-ci.yml
-git commit -m "fix: skip obsolete android sdk tools package"
+git add scripts/tests/test_mobile_ci_workflow.py .github/workflows/mobile-ci.yml docs/superpowers/specs/2026-10-09-mobile-android-ci-setup-design.md docs/superpowers/plans/2026-10-09-mobile-android-ci-setup.md
+git commit -m "fix: make android ci build the native app"
 ```
 
 ### Task 3: Verify the mobile package and repository structure
@@ -153,10 +175,10 @@ Run:
 
 ```powershell
 gh pr view 17 --repo matthewubacbrian-afk/geohazard-ph --json headRefName,headRefOid
-git merge-base --is-ancestor ff9ab974ce91b89080d00d322532f25bfd712c6f HEAD
+git merge-base --is-ancestor c3fe846b26cfd67c2355b82879a8c815e0e4ebc7 HEAD
 ```
 
-Expected: the PR head branch is `feat/mobile-native-runtime`, its OID is `ff9ab974ce91b89080d00d322532f25bfd712c6f`, and the ancestor check exits 0. If the remote head moved, do not force-push or overwrite it; rebase the fix branch onto the updated head and repeat local verification.
+Expected: the PR head branch is `feat/mobile-native-runtime`, its OID is `c3fe846b26cfd67c2355b82879a8c815e0e4ebc7`, and the ancestor check exits 0. If the remote head moved, do not force-push or overwrite it; rebase the fix branch onto the updated head and repeat local verification.
 
 - [ ] **Step 2: Fast-forward the existing PR branch**
 

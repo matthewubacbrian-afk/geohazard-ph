@@ -15,6 +15,7 @@ available. This leaves the native Android project unverified in CI.
 - Prevent the setup action from requesting the unavailable `tools` package.
 - Keep SDK package installation explicit and versioned in
   `.github/workflows/mobile-ci.yml`.
+- Track `mobile/android/gradlew` as executable so the Ubuntu runner can invoke it.
 - Pass the mobile Jest suite and Android `assembleDebug` job on the PR branch.
 
 ## Non-goals
@@ -28,6 +29,10 @@ available. This leaves the native Android project unverified in CI.
 - The failing run is `37882128310` for commit `ff9ab974ce91b89080d00d322532f25bfd712c6f`.
 - The failing step is `android-actions/setup-android@v3`; the following SDK install
   and Gradle steps were skipped.
+- After skipping the obsolete package, a hosted rerun passed SDK setup and package
+  installation, then failed at `./gradlew assembleDebug` with `Permission denied`.
+- Git tracks `mobile/android/gradlew` as mode `100644`, so a Linux runner cannot run
+  it directly as a program.
 - The action's documented `packages` input defaults to `tools platform-tools` and
   accepts an empty value to skip additional package installation.
 - Preserve the current Android API 34, Build Tools 34.0.0, Platform Tools, NDK
@@ -37,11 +42,11 @@ available. This leaves the native Android project unverified in CI.
 
 1. **Skip the Android build in CI.** Rejected because the PR introduces native
    Android scaffolding and CI should verify it.
-2. **Keep the action defaults and retry.** Rejected because the failed package is
-   absent from the SDK repository, so retrying does not address the cause.
-3. **Skip the action's extra packages and install the declared SDK set explicitly.**
-   Chosen because it removes the obsolete package request and keeps the build
-   environment reproducible in the workflow.
+2. **Invoke `bash gradlew` in CI while keeping mode `100644`.** Rejected because the
+   generated wrapper should be directly executable on Linux developer machines too.
+3. **Skip the action's extra packages and track the wrapper as executable.** Chosen
+   because it addresses both observed runner failures while preserving the native
+   build command and explicit SDK versions.
 
 ## Design
 
@@ -55,7 +60,12 @@ project, and runs `./gradlew assembleDebug` from `mobile/android`.
 ### Components and interfaces
 
 - `.github/workflows/mobile-ci.yml`: set the setup action input `packages: ""`.
-- Keep the explicit `sdkmanager` package list and `assembleDebug` command unchanged.
+- Track `mobile/android/gradlew` with Git mode `100755`.
+- `scripts/tests/test_mobile_ci_workflow.py`: assert that the setup action skips
+  extra packages, required SDK install/build commands remain, and the wrapper mode
+  is executable in the Git index.
+- Keep the explicit `sdkmanager` package list and `./gradlew assembleDebug` command
+  unchanged.
 - No application API, schema, or package interface changes.
 
 ### Error handling
@@ -79,10 +89,16 @@ the Android build passes.
 
 - `.github/workflows/mobile-ci.yml` — avoid the obsolete SDK package while retaining
   explicit Android SDK setup and build steps.
+- `mobile/android/gradlew` — track the existing Gradle wrapper as executable for
+  Linux runners and developers.
+- `scripts/tests/test_mobile_ci_workflow.py` — guard the workflow package input,
+  explicit SDK/build commands, and Gradle wrapper mode.
 
 ## Testing Strategy
 
 - Run `npm ci` and `npm test -- --runInBand` from `mobile/`.
+- Run the workflow regression test confirming the setup action skips the default
+  `tools` package and Git tracks the Gradle wrapper as mode `100755`.
 - Run the Android debug build in GitHub Actions using the declared JDK and SDK
   packages; this Windows host does not have the Android SDK configured.
 - Inspect the Actions log to confirm setup, SDK installation, and Gradle build all
@@ -91,6 +107,7 @@ the Android build passes.
 ## Acceptance Criteria
 
 - [ ] `android-actions/setup-android@v3` no longer attempts to install `tools`.
+- [ ] Git tracks `mobile/android/gradlew` with executable mode `100755`.
 - [ ] The explicit SDK package installation succeeds.
 - [ ] Mobile Jest tests pass.
 - [ ] `./gradlew assembleDebug` passes in PR CI.

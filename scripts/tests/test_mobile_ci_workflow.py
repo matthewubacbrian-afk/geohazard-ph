@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 import unittest
 
 
@@ -23,6 +24,17 @@ class MobileCiWorkflowTests(unittest.TestCase):
         self.assertIn('"platform-tools"', workflow)
         self.assertIn('"ndk;26.1.10909125"', workflow)
         self.assertIn("./gradlew assembleDebug", workflow)
+
+    def test_android_gradle_wrapper_is_tracked_as_executable(self):
+        result = subprocess.run(
+            ["git", "ls-files", "--stage", "--", "mobile/android/gradlew"],
+            cwd=ROOT,
+            capture_output=True,
+            check=True,
+            text=True,
+        )
+
+        self.assertEqual(result.stdout.split(maxsplit=1)[0], "100755", result.stdout)
 
 
 if __name__ == "__main__":
