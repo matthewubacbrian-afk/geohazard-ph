@@ -59,6 +59,25 @@ describe('EventFeed', () => {
     expect(screen.queryByText('Quezon', { exact: false })).not.toBeInTheDocument();
   });
 
+  it('keeps selected details visible while loading', () => {
+    render(<EventFeed events={events} selectedEvent={events[0]} isLoading error={null}
+      onRetry={() => {}} />);
+
+    expect(screen.getByRole('button', { name: /Quezon/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Coordinates')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Loading live events' })).toBeInTheDocument();
+  });
+
+  it('keeps selected details visible alongside an error and retry action', () => {
+    render(<EventFeed events={events} selectedEvent={events[0]} isLoading={false}
+      error={new Error('offline')} onRetry={() => {}} />);
+
+    expect(screen.getByRole('button', { name: /Quezon/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Coordinates')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Failed to load events.');
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+  });
+
   it('shows an empty state when no events match', () => {
     render(
       <EventFeed events={[]} isLoading={false} error={null} onRetry={() => {}} />,
