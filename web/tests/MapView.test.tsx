@@ -172,6 +172,23 @@ describe('MapView style lifecycle', () => {
     expect(pendingFrames.size).toBe(1);
     expect(request).toHaveBeenCalledTimes(1);
   });
+  it('cancels the pending animation frame on unmount', () => {
+    const pendingFrames = new Map<number, FrameRequestCallback>();
+    const request = vi.fn((callback: FrameRequestCallback) => {
+      pendingFrames.set(23, callback);
+      return 23;
+    });
+    const cancel = vi.fn((id: number) => { pendingFrames.delete(id); });
+    vi.stubGlobal('requestAnimationFrame', request);
+    vi.stubGlobal('cancelAnimationFrame', cancel);
+    const view = render(<MapView events={[event]} selectedEvent={event} />);
+    expect(pendingFrames.has(23)).toBe(true);
+
+    view.unmount();
+
+    expect(cancel).toHaveBeenCalledWith(23);
+    expect(pendingFrames.has(23)).toBe(false);
+  });
   it('updates only halo paint per frame and skips updates when its layer is absent', () => {
     const pendingFrames = new Map<number, FrameRequestCallback>();
     let nextFrameId = 1;
