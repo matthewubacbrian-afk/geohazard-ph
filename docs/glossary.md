@@ -132,8 +132,8 @@ When a spec or plan introduces a new concept:
 ## Epic 3 static reference layers
 
 - `StaticLayerParseReport`: counts source features, accepted features, and valid
-  features excluded outside the configured import bounds; accepted bounds describe
-  the retained, un-clipped input geometries and do not establish national coverage.
+  geometries excluded outside the configured import bounds; accepted bounds describe
+  retained, un-clipped input geometries and do not establish national coverage.
 - `FaultLine`: imported LineString/MultiLineString, served by `/faults`.
 - `VolcanoZone`: imported Polygon/MultiPolygon, served by `/volcano-zones`.
 - `external_id`: source feature identifier; content SHA-256 when no identifier exists.

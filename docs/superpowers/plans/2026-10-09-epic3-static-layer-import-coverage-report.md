@@ -30,11 +30,11 @@
 - Add `parse_features_with_report(features, *, kind, source, source_url, license_name, dataset_version, bbox=(116, 4, 128, 22)) -> tuple[list[StaticFeature], StaticLayerParseReport]`.
 - Keep `parse_features` delegating to the new function and returning only its feature list.
 
-- [ ] **Step 1: Write failing report tests**
+- [x] **Step 1: Write failing report tests**
 
 Add tests using an iterable of three LineStrings: one wholly inside the box, one crossing its west edge, and one wholly outside. Assert source count `3`, accepted count `2`, excluded count `1`, and un-clipped union bounds `(115, 10, 123, 17)`. Pass a generator to ensure the parser consumes the input once. Add a Polygon fixture case and a valid all-outside case asserting empty rows, excluded count `1`, and null accepted bounds. Assert the compatibility function still returns a list.
 
-- [ ] **Step 2: Run the focused tests and confirm the new behavior fails**
+- [x] **Step 2: Run the focused tests and confirm the new behavior fails**
 
 Run from `backend/`:
 
@@ -44,17 +44,17 @@ pytest -v tests/unit/test_static_layers.py
 
 Expected: existing tests pass; new report tests fail because `StaticLayerParseReport` and `parse_features_with_report` are not implemented.
 
-- [ ] **Step 3: Implement the report in the parser**
+- [x] **Step 3: Implement the report in the parser**
 
 Use one parse pass. Count each feature; preserve existing geometry/property validation and identity mapping. Increment the excluded count only after geometry checks when it does not intersect `box(*bbox)`. For accepted rows, accumulate each Shapely geometry's full `.bounds` without clipping. Return null bounds when no feature is accepted. Make `parse_features` return element zero from `parse_features_with_report`.
 
-- [ ] **Step 4: Run the focused parser tests**
+- [x] **Step 4: Run the focused parser tests**
 
 Run `pytest -v tests/unit/test_static_layers.py` from `backend/`.
 
 Expected: all parser tests pass, including the new metrics, single-pass generator, Polygon, empty acceptance, and compatibility assertions.
 
-- [ ] **Step 5: Commit the parser and unit tests**
+- [x] **Step 5: Commit the parser and unit tests**
 
 ```powershell
 git add backend/ingestion/sources/static_layers.py backend/tests/unit/test_static_layers.py
@@ -73,13 +73,13 @@ git commit -m "feat: report static layer parse coverage"
 - Successful validation/import log extras include all four report fields plus the existing `count` alias for accepted count, `source`, and `kind`.
 - Zero accepted rows log a rejected-validation record with those metrics and exit non-zero before constructing a database session.
 
-- [ ] **Step 1: Write failing CLI tests**
+- [x] **Step 1: Write failing CLI tests**
 
 Load `scripts/import_fault_lines.py` using a path derived from the test file, set `sys.argv` to use a temporary GeoJSON FeatureCollection, and run `main()` with `--dry-run`. Assert the `Static layer validated` record contains exact source/accepted/excluded/bounds values, preserves `count`, and never calls `SessionLocal`. For an all-outside FeatureCollection, assert `main()` exits non-zero, logs `Static layer validation rejected` with zero accepted and null bounds, and never constructs a session.
 
 Also extend `test_structured_logging_retains_ingest_counts` to include a report field in its `LogRecord` and assert the current formatter drops it. This verifies the formatter change is necessary before implementation.
 
-- [ ] **Step 2: Run the new CLI tests and confirm they fail**
+- [x] **Step 2: Run the new CLI tests and confirm they fail**
 
 Run from `backend/`:
 
@@ -89,11 +89,11 @@ pytest -v tests/unit/test_import_fault_lines.py
 
 Expected: the tests fail because the CLI does not yet emit parse-report metrics.
 
-- [ ] **Step 3: Integrate the report into the CLI**
+- [x] **Step 3: Integrate the report into the CLI**
 
 Call `parse_features_with_report` once. Add the four report field names to `StructuredFormatter`'s explicit allowlist, then log report fields and the compatibility `count` field. If accepted rows are empty, emit the rejected-validation log entry then call the existing `parser.exit(1, ...)`; otherwise preserve the current dry-run and transactional apply behavior.
 
-- [ ] **Step 4: Run parser and CLI tests**
+- [x] **Step 4: Run parser and CLI tests**
 
 Run from `backend/`:
 
@@ -103,25 +103,27 @@ pytest -v tests/unit/test_static_layers.py tests/unit/test_import_fault_lines.py
 
 Expected: all focused parser and importer tests pass without a live database or network.
 
-- [ ] **Step 5: Commit the CLI and tests**
+- [x] **Step 5: Commit the CLI and tests**
 
 ```powershell
 git add scripts/import_fault_lines.py backend/tests/unit/test_import_fault_lines.py
+git add backend/app/core/logging.py backend/tests/unit/test_error_handlers.py
 git commit -m "feat: log static layer import coverage"
 ```
 
 ### Task 3: Document the dry-run metrics and verify the branch
 
 **Files:**
+- Modify: `docs/glossary.md`
 - Modify: `docs/runbook.md`
 - Modify: `docs/project-status.md`
 - Verify: all changed files
 
-- [ ] **Step 1: Document metric meaning and limits**
+- [x] **Step 1: Document metric meaning and limits**
 
 Update the Epic 3 import runbook to define source count, accepted count, outside-bounds count, and accepted un-clipped bounds. State that they describe the input and validation run, do not establish national completeness, and do not imply PHIVOLCS permission. Update the Epic 3 status row to mention the new dry-run reporting capability while keeping coverage partial and PHIVOLCS reuse clearance pending.
 
-- [ ] **Step 2: Run focused and package verification**
+- [x] **Step 2: Run focused and package verification**
 
 From `backend/` run:
 
@@ -139,10 +141,10 @@ git diff --check
 
 If the ignored pinned GEM GeoJSON already exists, run the existing importer in `--dry-run` mode with its documented immutable URL, license, and dataset version; report only the metrics it prints. Do not download it to satisfy this optional check.
 
-- [ ] **Step 3: Commit the documentation update and confirm clean state**
+- [x] **Step 3: Commit the documentation update and confirm clean state**
 
 ```powershell
-git add docs/runbook.md docs/project-status.md
+git add docs/glossary.md docs/runbook.md docs/project-status.md docs/superpowers/plans/2026-10-09-epic3-static-layer-import-coverage-report.md
 git commit -m "docs: explain static layer coverage reports"
 git status --short --branch
 ```
