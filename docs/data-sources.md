@@ -137,9 +137,111 @@ The input and local import receipt belong under the ignored
 establish national hazard coverage. PHIVOLCS geometry and production data imports
 still require reviewed source vectors and permissions.
 
-The PHIVOLCS ActiveFault service advertises query support, but its count query
-returned "Requested operation is not supported" during this session. No PHIVOLCS
-geometry was downloaded or substituted with illustrative traces.
+The earlier `PHIVOLCS/ActiveFault` service count query returned "Requested operation
+is not supported" during the 2026-10-09 review. This result applies to that endpoint;
+it does not establish whether the newer `PHIVOLCS/ActiveFaultGeneric` layer can be
+queried for features. No PHIVOLCS geometry was downloaded or substituted with
+illustrative traces.
+
+### PHIVOLCS active fault candidate: reuse clearance pending
+
+On 2026-10-09, metadata was reviewed for the official PHIVOLCS ArcGIS layer
+[`AF_2025_asofJanuary`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/ActiveFaultGeneric/MapServer/0).
+The service reports polyline geometry in WGS84 (EPSG:4326), GeoJSON as a supported
+query format, a maximum record count of 1,000, and pagination support. Its listed
+attributes include `afcodepk`, `segname`, `fccode`, `ttcode`, `ltcode`, `datemapped`,
+`scale`, `publishdate`, `creator`, and `editor`. Its metadata extent is
+`(119.5151, 5.3655, 126.7414, 19.8674)`, which does not span the configured project
+bounds `(116, 4, 128, 22)`. The layer name states January 2025; it is not evidence of
+a more recent source snapshot.
+
+This was a metadata-only review. No PHIVOLCS geometry or service feature count was
+retrieved, no accepted-feature count within the project bounds was calculated, and
+no PHIVOLCS feature is imported or displayed by GeoHazard PH. Keep the measures
+separate in any later permitted comparison: source feature count, valid features
+accepted within project bounds, and features returned or displayed by the app. The
+current local comparison reference remains the GEM snapshot above, with 13,696
+source features and 155 valid features intersecting the project bounds.
+
+The [PHIVOLCS Maps Portal](https://maps.phivolcs.dost.gov.ph/) asks users to
+acknowledge DOST-PHIVOLCS and warns against improper depiction, unauthorized use,
+or sale of its products or derivatives. No open redistribution license was identified during
+this review. Public access to the REST service and source acknowledgment alone do
+not establish permission to copy, store, display, or redistribute its geometry.
+Therefore, reuse clearance is pending and no PHIVOLCS geometry may be imported or
+redistributed until the applicable terms or written authorization cover the planned
+use. No inquiry has been sent to PHIVOLCS.
+
+For any future permitted use, acknowledge the source as **DOST-PHIVOLCS**, link to
+the exact service layer or map product, identify the product/layer and its
+source-stated version/date, and show retrieval and import timestamps separately.
+Include any additional attribution or restrictions specified by the applicable
+terms. Do not label the source as openly licensed unless an actual license says so.
+The clearance-first scope is tracked in the
+[Epic 3 PHIVOLCS fault-geometry spec](superpowers/specs/2026-10-09-epic3-phivolcs-fault-geometry-design.md).
+
+### PHIVOLCS volcano-zone candidate services: reuse clearance pending
+
+On 2026-10-09, PHIVOLCS ArcGIS REST metadata was reviewed for the following
+volcano-zone candidates. The extents below are metadata bounding boxes in
+`(west, south, east, north)` order, not proof of feature counts or complete mapped
+coverage. The configured project bounds are `(116, 4, 128, 22)`.
+
+| Official service/layer | Mapped product | Geometry and CRS | Metadata extent | Metadata notes |
+| --- | --- | --- | --- | --- |
+| [`DangerZone/MapServer/0`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/DangerZone/MapServer/0) | Permanent Danger Zone (PDZ) and Extended Danger Zone (EDZ) | Polygon, EPSG:4326 | `(120.8219, 10.2666, 124.2018, 14.1818)` | `dzc` classifies PDZ/EDZ; fields include `volcanoname`, `distance`, `datasource`, `datemapped`, `scale`, and `publishdate`. |
+| [`DangerZone_permanent/MapServer/0`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/DangerZone_permanent/MapServer/0) | Permanent Danger Zone (PDZ) | Polygon, EPSG:4326 | `(120.9660, 10.2675, 124.0992, 14.0431)` | `dzc` is the danger-zone classification; metadata includes `volcanoname`, `datemapped`, `scale`, and `publishdate`. |
+| [`DangerZone_extended/MapServer/0`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/DangerZone_extended/MapServer/0) | Extended Danger Zone | Polygon, EPSG:4326 | `(120.9660, 10.2675, 124.0992, 14.0431)` | `dzc` identifies Extended Danger Zone; metadata includes `volcanoname`, `datemapped`, `scale`, and `publishdate`. |
+| [`Pyroclastic_ohas/FeatureServer/0`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/Pyroclastic_ohas/FeatureServer/0) | Pyroclastic density-current zones | Polygon, EPSG:4326 | `(121.3494, 10.2473, 125.2667, 14.1944)` | `pfclass` includes mapped classes and buffer classes; fields include `volcanoname`, `datasource`, `datemapped`, `scale`, and `publishdate`. |
+| [`Lava/MapServer/0`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/Lava/MapServer/0) | Lava-flow zones | Polygon, EPSG:4326 | `(121.0088, 5.9622, 126.0874, 20.4895)` | `lavaclass` is the source classification; fields include `volcanoname`, `datasource`, `datemapped`, `scale`, and `publishdate`. |
+| [`VolcanoLahar_ohas/FeatureServer`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/VolcanoLahar_ohas/FeatureServer), [layer 0](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/VolcanoLahar_ohas/FeatureServer/0) | Lahar service | EPSG:4326 reported by the service; child-layer geometry type not verified | `(117.6710, 8.8235, 127.5621, 17.0364)` (service full extent) | Child layer, classification fields, and source date values were not inspected. |
+| [`BaseSurge_ohas/MapServer/0`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/BaseSurge_ohas/MapServer/0) | Base-surge zones | Polygon, EPSG:4326 | `(120.8526, 13.8598, 121.1370, 14.1290)` | Metadata identifies source classification field `bsccode`; displayed extent is limited. |
+
+Several layer extents are narrower than the project's Philippine bounds. These
+bounding boxes indicate where the service metadata reports data, but do not show
+whether every volcano or hazard is mapped inside them, nor whether areas outside
+them lack the hazard. A direct request to the lahar service's `FeatureServer/0?f=pjson`
+returned an HTML page instead of JSON, so child-layer geometry type, fields, and source
+date could not be verified. Feature-level date values were not retrieved for the other
+layers, so source mapping/publication dates and dataset versions remain unknown here. No service
+feature count, accepted feature count within project bounds, or PHIVOLCS vector
+geometry was requested or downloaded.
+
+The existing web map renders PHIVOLCS raster reference overlays for lahar, lava,
+pyroclastic density currents, and base surge. They remain remotely rendered map
+images with the existing DOST-PHIVOLCS attribution in
+[`volcanoOverlays.ts`](../web/src/components/map/volcanoOverlays.ts); they are not
+local `VolcanoZone` vector records. Danger-zone `PDZ`/`EDZ` labels and hazard-specific
+classes describe mapped areas, not a live bulletin `current_alert_level`.
+
+The [PHIVOLCS Maps Portal](https://maps.phivolcs.dost.gov.ph/) asks users to
+acknowledge DOST-PHIVOLCS and warns against improper depiction, unauthorized use,
+or sale of its products or derivatives. Its [hazard-map download instructions](https://www.phivolcs.dost.gov.ph/gisweb-download-hazard-maps-instruction/)
+explain that map availability varies by locality and that maps may be revised. No
+open redistribution license was identified in this review. Public ArcGIS metadata
+access and attribution alone do not establish permission to store, display, or
+redistribute vector geometry; reuse clearance is pending and no PHIVOLCS volcano
+vector has been imported.
+
+PHIVOLCS documents a formal request path through its [Geomatics Services Request
+page](https://gisweb.phivolcs.dost.gov.ph/gisweb/geomatics-services-request) and
+the [GGRDD External Services Citizen's Charter](https://www.phivolcs.dost.gov.ph/wp-content/uploads/2024/02/External-Services-GGRDD.pdf).
+For Web Map/Feature Services requested for reference purposes, the charter describes
+submitting the Geomatics Data and Services Form and, after PHIVOLCS responds, the
+applicable Data Use Agreement (DUA) or Memorandum of Understanding (MOU), followed
+by approval and issuance of a service link. The charter distinguishes DUA and MOU
+routes by stakeholder type. This describes an application process; it is not itself
+permission for GeoHazard PH to store, transform, publicly display, or redistribute
+geometry or derivatives. Any terms must expressly cover the planned uses. No request
+has been submitted and no agreement or permission has been received.
+
+For any future permitted use, identify the source as **DOST-PHIVOLCS**, link the exact
+layer or map product, name the volcano and hazard product, record its source-stated
+date/version when available, and keep retrieval and import timestamps separate.
+Include all additional attribution or restrictions in the applicable terms. Do not
+label these services as openly licensed unless an actual license establishes that.
+The clearance-first scope is tracked in the
+[Epic 3 volcano-zone coverage spec](superpowers/specs/2026-10-09-epic3-phivolcs-volcano-zone-coverage-design.md).
 
 <!-- REGION_BOUNDARY_PROVENANCE:START -->
 ### Generated Philippine region boundary asset

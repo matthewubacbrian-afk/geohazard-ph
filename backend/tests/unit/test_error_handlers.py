@@ -44,9 +44,17 @@ def test_structured_logging_retains_ingest_counts():
             "source": "usgs",
             "fetched": 3,
             "processed": 2,
+            "source_feature_count": 4,
+            "accepted_feature_count": 2,
+            "excluded_outside_bounds_count": 2,
+            "accepted_bounds": (120.0, 10.0, 125.0, 15.0),
         }
     )
     payload = json.loads(StructuredFormatter().format(record))
     assert payload["fetched"] == 3
     assert payload["processed"] == 2
     assert payload["source"] == "usgs"
+    assert payload["source_feature_count"] == 4
+    assert payload["accepted_feature_count"] == 2
+    assert payload["excluded_outside_bounds_count"] == 2
+    assert payload["accepted_bounds"] == [120.0, 10.0, 125.0, 15.0]
