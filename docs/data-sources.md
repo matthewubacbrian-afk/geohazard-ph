@@ -137,9 +137,48 @@ The input and local import receipt belong under the ignored
 establish national hazard coverage. PHIVOLCS geometry and production data imports
 still require reviewed source vectors and permissions.
 
-The PHIVOLCS ActiveFault service advertises query support, but its count query
-returned "Requested operation is not supported" during this session. No PHIVOLCS
-geometry was downloaded or substituted with illustrative traces.
+The earlier `PHIVOLCS/ActiveFault` service count query returned "Requested operation
+is not supported" during the 2026-10-09 review. This result applies to that endpoint;
+it does not establish whether the newer `PHIVOLCS/ActiveFaultGeneric` layer can be
+queried for features. No PHIVOLCS geometry was downloaded or substituted with
+illustrative traces.
+
+### PHIVOLCS active fault candidate: reuse clearance pending
+
+On 2026-10-09, metadata was reviewed for the official PHIVOLCS ArcGIS layer
+[`AF_2025_asofJanuary`](https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/ActiveFaultGeneric/MapServer/0).
+The service reports polyline geometry in WGS84 (EPSG:4326), GeoJSON as a supported
+query format, a maximum record count of 1,000, and pagination support. Its listed
+attributes include `afcodepk`, `segname`, `fccode`, `ttcode`, `ltcode`, `datemapped`,
+`scale`, `publishdate`, `creator`, and `editor`. Its metadata extent is
+`(119.5151, 5.3655, 126.7414, 19.8674)`, which does not span the configured project
+bounds `(116, 4, 128, 22)`. The layer name states January 2025; it is not evidence of
+a more recent source snapshot.
+
+This was a metadata-only review. No PHIVOLCS geometry or service feature count was
+retrieved, no accepted-feature count within the project bounds was calculated, and
+no PHIVOLCS feature is imported or displayed by GeoHazard PH. Keep the measures
+separate in any later permitted comparison: source feature count, valid features
+accepted within project bounds, and features returned or displayed by the app. The
+current local comparison reference remains the GEM snapshot above, with 13,696
+source features and 155 valid features intersecting the project bounds.
+
+The [PHIVOLCS Maps Portal](https://maps.phivolcs.dost.gov.ph/) asks users to
+acknowledge DOST-PHIVOLCS and warns against unauthorized use, depiction, sale, or
+derivatives of its products. No open redistribution license was identified during
+this review. Public access to the REST service and source acknowledgment alone do
+not establish permission to copy, store, display, or redistribute its geometry.
+Therefore, reuse clearance is pending and no PHIVOLCS geometry may be imported or
+redistributed until the applicable terms or written authorization cover the planned
+use. No inquiry has been sent to PHIVOLCS.
+
+For any future permitted use, acknowledge the source as **DOST-PHIVOLCS**, link to
+the exact service layer or map product, identify the product/layer and its
+source-stated version/date, and show retrieval and import timestamps separately.
+Include any additional attribution or restrictions specified by the applicable
+terms. Do not label the source as openly licensed unless an actual license says so.
+The clearance-first scope is tracked in the
+[Epic 3 PHIVOLCS fault-geometry spec](superpowers/specs/2026-10-09-epic3-phivolcs-fault-geometry-design.md).
 
 <!-- REGION_BOUNDARY_PROVENANCE:START -->
 ### Generated Philippine region boundary asset
