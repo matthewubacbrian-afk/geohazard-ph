@@ -99,9 +99,11 @@ Risk labels are descriptive statistical profiles of historical records. They are
 | Term | Meaning |
 | --- | --- |
 | events summary | `EventSummary`, endpoint `/events/summary` — region/bounding-box rollup: `event_count`, `avg_magnitude`, `max_magnitude`, `latest_occurred_at`. |
-| offline cache | `mobile/src/services/offlineCache.ts` — in-memory (currently) key-value store for mobile reads without network. |
+| offline cache | `mobile/src/services/offlineCache.ts` — AsyncStorage-backed JSON values for saved locations, API settings, and the latest event list. |
+| saved location | `SavedLocation` in `mobile/src/types/hazard.ts` — user-entered name and coordinates with a `radius_km` threshold for foreground nearby-event matching. |
+| radius_km | `radius_km` on `SavedLocation` — user-selected distance in kilometers from saved coordinates; it is not an official hazard boundary. |
 | risk profile explorer | `web/src/pages/RiskProfileExplorer.tsx` — dashboard panel for region lookup and profile cards. |
-| realtime alerts | Planned push channel; sources are not wired yet (`mobile/src/services/pushNotifications.ts` reports `not-configured`). |
+| realtime alerts | Mobile foreground view of fetched events matching saved-location radii; background push remains unconfigured (`mobile/src/services/pushNotifications.ts`). |
 | static layers | Imported fault and volcano reference vectors (Epic 3); landslide and InSAR remain stretch work. |
 
 ---

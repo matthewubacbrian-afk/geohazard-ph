@@ -417,3 +417,17 @@ Empty layers remain explicitly labeled until source data is loaded.
 The Epic 2 integration and event-feed hover fixes are already merged. Standards
 remediation adds consistent API errors, structured startup logging, portable ML tests,
 Testing Library web tests, and a typed mobile API mapping boundary.
+
+## Epic 4: Mobile nearby alerts
+
+The mobile starter now has **Nearby**, **Saved locations**, and **Alerts** tabs. Enter
+coordinates and a radius of 1–500 km to see matching events from the existing
+`GET /api/v1/events` feed. The app stores saved locations, the API URL, and the last
+successful event list on the device; when the API is offline, cached events remain visible
+with an offline label and retry action.
+
+In **Saved locations**, configure a device-reachable API URL ending in `/api/v1` (for example,
+`http://192.168.1.20:8000/api/v1` when the phone and development server share a LAN). The
+default URL is empty. The in-app alert list checks for new events on startup or when refreshed;
+background push delivery is not configured. Saved coordinates stay on the device and are not
+sent to the backend.

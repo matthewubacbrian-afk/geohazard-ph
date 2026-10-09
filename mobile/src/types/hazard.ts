@@ -31,3 +31,17 @@ export type HazardEvent = {
   isPrimary: boolean | null;
   matchConfidence: number | null;
 };
+
+export type SavedLocation = {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius_km: number;
+};
+
+export type NearbyHazard = {
+  event: HazardEvent;
+  location_id: string;
+  distance_km: number;
+};
