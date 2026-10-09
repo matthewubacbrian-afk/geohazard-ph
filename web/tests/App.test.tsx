@@ -9,7 +9,7 @@ import App from '../src/App';
 
 describe('application routes', () => {
   it.each([
-    ['/', /Patterns\.Predictions\.Protection/i],
+    ['/', /Public hazard data for informed local planning/i],
     ['/about', /About GeoHazard/i],
     ['/data-sources', /Data Sources/i],
     ['/historical', /Historical Event Browser/i],
@@ -24,7 +24,7 @@ describe('application routes', () => {
     window.history.pushState({}, '', '/missing');
     render(<App />);
 
-    expect(screen.getByText(/Patterns\.Predictions\.Protection/i)).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /Public hazard data for informed local planning/i })).toBeTruthy();
   });
 
   it('navigates through the shared navigation without local view state', () => {
@@ -35,5 +35,19 @@ describe('application routes', () => {
 
     expect(screen.getByRole('heading', { name: 'About GeoHazard' })).toBeTruthy();
     expect(window.location.pathname).toBe('/about');
+  });
+
+  it('keeps shared navigation controls keyboard reachable and identifies the current page', () => {
+    window.history.pushState({}, '', '/about');
+    render(<App />);
+
+    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'About' })).toHaveAttribute('aria-current', 'page');
+    const dataSources = screen.getByRole('button', { name: 'Data Sources' });
+    dataSources.focus();
+    expect(dataSources).toHaveFocus();
+    const settings = screen.getByRole('button', { name: 'Settings' });
+    settings.focus();
+    expect(settings).toHaveFocus();
   });
 });

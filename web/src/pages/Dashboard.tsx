@@ -33,7 +33,6 @@ const navItems = [
   'About',
   'Data Sources',
   'Historical',
-  'Contact',
 ];
 
 type DashboardProps = {

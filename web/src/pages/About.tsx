@@ -2,7 +2,7 @@ import TopNav from "../components/layout/TopNav";
 import type { View } from "../types/views";
 import styles from "./InformationalPage.module.css";
 
-const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Historical", "Contact"];
+const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Historical"];
 
 type AboutProps = {
   onNavigate?: (view: View) => void;
@@ -33,9 +33,12 @@ export default function About({ onNavigate, onSettings }: AboutProps) {
           <section className={styles.panel}>
             <h2>How to read risk profiles</h2>
             <p>
-              Risk profiles summarize historical records. They are descriptive statistical
-              profiles rather than predictions, forecasts, or official warnings.
+              Risk profiles summarize historical records. Risk profiles are descriptive
+              statistics, not earthquake predictions. They are not forecasts or official warnings.
             </p>
+          </section>
+          <section className={styles.notice} aria-label="Advisory status">
+            <p>GeoHazard PH is not an official PHIVOLCS/NDRRMC advisory.</p>
           </section>
         </div>
       </div>

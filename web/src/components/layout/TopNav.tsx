@@ -58,10 +58,10 @@ export default function TopNav({
                 </button>
               ) : (
                 <a
-                  href={item === "Contact" ? "mailto:support@geohazard.ph" : "#"}
+                  href="#"
                   className={linkClassName}
                   aria-current={isActive ? "page" : undefined}
-                  onClick={item === "Contact" ? undefined : (event) => event.preventDefault()}
+                  onClick={(event) => event.preventDefault()}
                 >
                   {item}
                 </a>

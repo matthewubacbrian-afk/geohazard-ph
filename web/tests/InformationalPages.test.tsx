@@ -10,7 +10,21 @@ describe('informational pages', () => {
     render(<About />);
 
     expect(screen.getByRole('heading', { name: 'About GeoHazard' })).toBeTruthy();
-    expect(screen.getByText(/descriptive statistical profiles rather than predictions/i)).toBeTruthy();
+    expect(screen.getByText(/Risk profiles are descriptive statistics, not earthquake predictions\./)).toBeTruthy();
+    expect(screen.getByText('GeoHazard PH is not an official PHIVOLCS/NDRRMC advisory.')).toBeTruthy();
+  });
+
+  it('describes the methodology without presenting invented risk measurements', async () => {
+    const { default: Hero } = await import('../src/pages/Hero');
+    render(<Hero />);
+
+    expect(screen.getByRole('heading', { name: /Public hazard data for informed local planning/i })).toBeTruthy();
+    expect(screen.queryByText(/predictions\.protection|before the ground shakes/i)).toBeNull();
+    expect(screen.queryByText(/sample risk profiling output/i)).toBeNull();
+    expect(screen.queryByRole('link', { name: /privacy policy|contact support/i })).toBeNull();
+    expect(document.querySelector('a[href="mailto:support@geohazard.ph"]')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Contact' })).toBeNull();
+    expect(screen.getAllByText('Risk profiles are descriptive statistics, not earthquake predictions.')).toHaveLength(1);
   });
 
   it('identifies current sources and attribution', () => {
