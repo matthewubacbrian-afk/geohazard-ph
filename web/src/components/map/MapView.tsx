@@ -1,5 +1,5 @@
 import type { StaticLayer } from "../../types/staticLayer";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { HazardEvent } from "../../types/hazard";
@@ -77,6 +77,7 @@ export default function MapView({
   riskProfiles = [],
   showRiskLayer = false,
 }: MapViewProps) {
+  const eventSummaryId = useId();
   const referenceLayers = useRef({
     faults,
     volcanoZones,
@@ -134,9 +135,10 @@ export default function MapView({
               type: "line",
               source: id,
               paint: {
-                "line-color": cssVar("--hazard-fault"),
-                "line-width": 2.5,
-                "line-opacity": 0.9,
+                "line-color": cssVar("--accent"),
+                "line-width": 2.75,
+                "line-opacity": 0.95,
+                "line-blur": 0.15,
               },
             },
             before,
@@ -148,9 +150,9 @@ export default function MapView({
               type: "fill",
               source: id,
               paint: {
-                "fill-color": cssVar("--hazard-volcano"),
-                "fill-opacity": 0.18,
-                "fill-outline-color": cssVar("--hazard-volcano"),
+                "fill-color": cssVar("--risk-moderate"),
+                "fill-opacity": 0.28,
+                "fill-outline-color": cssVar("--text"),
               },
             },
             map.getLayer("faults") ? "faults" : before,
@@ -191,8 +193,7 @@ export default function MapView({
       data: toFeatureCollection(eventsRef.current),
     });
 
-    const markerColor = cssVar("--accent");
-    const markerStroke = cssVar("--white") || "var(--white)";
+    const markerStroke = cssVar("--surface-card", "#fffefa");
 
     map.addLayer({
       id: "event-circles",
@@ -204,12 +205,22 @@ export default function MapView({
           ["linear"],
           ["max", 0, ["min", 9, ["coalesce", ["get", "magnitude"], 0]]],
           0,
-          5,
+          4,
           9,
-          15,
+          13,
         ],
-        "circle-color": markerColor,
-        "circle-stroke-width": 1.5,
+        "circle-color": [
+          "step",
+          ["coalesce", ["get", "magnitude"], 0],
+          cssVar("--magnitude-low"),
+          3,
+          cssVar("--magnitude-moderate"),
+          5,
+          cssVar("--magnitude-high"),
+          7,
+          cssVar("--magnitude-very-high"),
+        ],
+        "circle-stroke-width": 2.5,
         "circle-stroke-color": markerStroke,
         "circle-opacity": 0.9,
       },
@@ -263,12 +274,22 @@ export default function MapView({
               "High",
               cssVar("--risk-high"),
               "Moderate",
-              cssVar("--risk-medium"),
+              cssVar("--risk-moderate"),
               "Low",
               cssVar("--risk-low"),
               cssVar("--text-faint"),
             ],
-            "fill-opacity": 0.35,
+            "fill-opacity": [
+              "match",
+              ["get", "label"],
+              "Very High",
+              0.4,
+              "High",
+              0.34,
+              "Moderate",
+              0.28,
+              0.22,
+            ],
           },
         },
         map.getLayer("event-circles") ? "event-circles" : undefined,
@@ -280,15 +301,37 @@ export default function MapView({
         type: "line",
         source: "risk-regions",
         paint: {
-          "line-color": cssVar("--text-muted"),
-          "line-width": 1,
-          "line-opacity": 0.7,
+          "line-color": cssVar("--surface-card"),
+          "line-width": 3,
+          "line-opacity": 0.95,
         },
       });
+    }
+    const riskPatterns = [
+      { label: "Low", id: "risk-regions-outline-low", dash: [1, 0] },
+      { label: "Moderate", id: "risk-regions-outline-moderate", dash: [2, 1] },
+      { label: "High", id: "risk-regions-outline-high", dash: [1, 1] },
+      { label: "Very High", id: "risk-regions-outline-very-high", dash: [3, 1, 1, 1] },
+    ] as const;
+    for (const pattern of riskPatterns) {
+      if (!map.getLayer(pattern.id)) {
+        map.addLayer({
+          id: pattern.id,
+          type: "line",
+          source: "risk-regions",
+          filter: ["==", ["get", "label"], pattern.label],
+          paint: {
+            "line-color": cssVar("--text"),
+            "line-width": 1.5,
+            "line-dasharray": [...pattern.dash],
+          },
+        });
+      }
     }
     const visibility = referenceLayers.current.showRiskLayer ? "visible" : "none";
     map.setLayoutProperty("risk-regions-fill", "visibility", visibility);
     map.setLayoutProperty("risk-regions-outline", "visibility", visibility);
+    for (const { id } of riskPatterns) map.setLayoutProperty(id, "visibility", visibility);
   };
 
   // Keep the map and camera while replacing only its style.
@@ -429,9 +472,39 @@ export default function MapView({
   }, [selectedEvent]);
 
   return (
-    <div className={styles.canvas} aria-label="Hazard map">
+    <div
+      className={styles.canvas}
+      role="region"
+      aria-label="Hazard event map"
+      aria-describedby={eventSummaryId}
+    >
       <div ref={mapContainer} className={styles.container} />
-      <span className="sr-only">{events.length} events loaded</span>
+      <span id={eventSummaryId} className="sr-only">
+        {showEvents
+          ? `${events.length} events shown on the map.`
+          : `Event layer hidden. ${events.length} events are available.`}
+      </span>
+      <section className={styles.magnitudeLegend} aria-label="Magnitude legend">
+        <h3 className={styles.legendTitle}>Magnitude</h3>
+        <ul className={styles.legendList}>
+          <li className={styles.legendRow}>
+            <span className={`${styles.magnitudeKey} ${styles.magnitudeKeyLow}`} aria-hidden="true" />
+            <span>0–2.9 · small</span>
+          </li>
+          <li className={styles.legendRow}>
+            <span className={`${styles.magnitudeKey} ${styles.magnitudeKeyModerate}`} aria-hidden="true" />
+            <span>3.0–4.9 · medium</span>
+          </li>
+          <li className={styles.legendRow}>
+            <span className={`${styles.magnitudeKey} ${styles.magnitudeKeyHigh}`} aria-hidden="true" />
+            <span>5.0–6.9 · large</span>
+          </li>
+          <li className={styles.legendRow}>
+            <span className={`${styles.magnitudeKey} ${styles.magnitudeKeyVeryHigh}`} aria-hidden="true" />
+            <span>7.0+ · largest</span>
+          </li>
+        </ul>
+      </section>
       {events.length === 0 && (
         <div className={styles.empty}>No events to display.</div>
       )}

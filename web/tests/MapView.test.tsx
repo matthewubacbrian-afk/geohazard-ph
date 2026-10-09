@@ -76,8 +76,8 @@ describe('MapView style lifecycle', () => {
     expect(eventLayer?.[0].paint?.['circle-radius']).toEqual([
       'interpolate', ['linear'],
       ['max', 0, ['min', 9, ['coalesce', ['get', 'magnitude'], 0]]],
-      0, 5,
-      9, 15,
+      0, 4,
+      9, 13,
     ]);
   });
   it('renders risk regions and toggles their visibility', () => {
@@ -95,18 +95,16 @@ describe('MapView style lifecycle', () => {
     );
 
     view.rerender(<MapView events={[event]} riskProfiles={[riskProfile]} showRiskLayer={false} />);
-    expect(mapInstance.setLayoutProperty).toHaveBeenLastCalledWith(
-      'risk-regions-outline',
-      'visibility',
-      'none',
-    );
+    expect(mapInstance.setLayoutProperty).toHaveBeenCalledWith('risk-regions-outline', 'visibility', 'none');
+    expect(mapInstance.setLayoutProperty).toHaveBeenCalledWith('risk-regions-outline-high', 'visibility', 'none');
   });
   it('assigns distinct overlay colors to each canonical risk label', () => {
     const colors = {
-      '--risk-very-high': '#8f201a',
-      '--risk-high': '#c0392b',
-      '--risk-medium': '#e3a655',
-      '--risk-low': '#6bb4b1',
+      '--risk-very-high': '#702820',
+      '--risk-high': '#99422f',
+      '--risk-moderate': '#75500e',
+      '--risk-low': '#315b4c',
+      '--surface-card': '#fffefa',
     };
     for (const [name, value] of Object.entries(colors)) {
       document.documentElement.style.setProperty(name, value);
@@ -119,11 +117,39 @@ describe('MapView style lifecycle', () => {
       'match', ['get', 'label'],
       'Very High', colors['--risk-very-high'],
       'High', colors['--risk-high'],
-      'Moderate', colors['--risk-medium'],
+      'Moderate', colors['--risk-moderate'],
       'Low', colors['--risk-low'],
       expect.any(String),
     ]);
+    const patternedOutline = mapInstance.addLayer.mock.calls.find(([layer]) => layer.id === 'risk-regions-outline-high');
+    expect(patternedOutline?.[0]).toMatchObject({ filter: ['==', ['get', 'label'], 'High'], paint: { 'line-dasharray': [1, 1] } });
+    const haloOutline = mapInstance.addLayer.mock.calls.find(([layer]) => layer.id === 'risk-regions-outline');
+    expect(haloOutline?.[0].paint).toMatchObject({ 'line-color': '#fffefa', 'line-width': 3 });
     for (const name of Object.keys(colors)) document.documentElement.style.removeProperty(name);
+  });
+  it('shows a distinct boundary pattern for every risk label and hides all cues when disabled', () => {
+    const cues = [
+      { label: 'Low', id: 'risk-regions-outline-low', dash: [1, 0] },
+      { label: 'Moderate', id: 'risk-regions-outline-moderate', dash: [2, 1] },
+      { label: 'High', id: 'risk-regions-outline-high', dash: [1, 1] },
+      { label: 'Very High', id: 'risk-regions-outline-very-high', dash: [3, 1, 1, 1] },
+    ];
+    const view = render(<MapView events={[]} riskProfiles={[riskProfile]} showRiskLayer />);
+    act(() => emit('style.load'));
+
+    for (const cue of cues) {
+      const layer = mapInstance.addLayer.mock.calls.find(([candidate]) => candidate.id === cue.id);
+      expect(layer?.[0]).toMatchObject({
+        filter: ['==', ['get', 'label'], cue.label],
+        paint: { 'line-dasharray': cue.dash },
+      });
+      expect(mapInstance.setLayoutProperty).toHaveBeenCalledWith(cue.id, 'visibility', 'visible');
+    }
+
+    view.rerender(<MapView events={[]} riskProfiles={[riskProfile]} showRiskLayer={false} />);
+    for (const cue of cues) {
+      expect(mapInstance.setLayoutProperty).toHaveBeenCalledWith(cue.id, 'visibility', 'none');
+    }
   });
   it.each(BASEMAP_IDS)('renders markers after the initial %s style loads', (basemap) => {
     render(<MapView events={[event]} basemap={basemap} />);
@@ -199,5 +225,42 @@ describe('static map layers', () => {
       features: [expect.objectContaining({geometry: fault.geometry})],
     }));
     expect(mapInstance.flyTo).not.toHaveBeenCalled();
+  });
+});
+
+describe('map symbol palette', () => {
+  it('renders magnitude ranges with size/color cues and an accessible event summary', () => {
+    render(<MapView events={[event, { ...event, id: 'e2', magnitude: 7.2 }]} />);
+
+    expect(screen.getByRole('region', { name: 'Hazard event map' })).toHaveAccessibleDescription(
+      '2 events shown on the map.',
+    );
+    const legend = screen.getByRole('region', { name: 'Magnitude legend' });
+    expect(legend).toHaveTextContent('Magnitude');
+    expect(legend).not.toHaveTextContent(/Mw|Lower|Moderate|High|Very high/i);
+    expect(legend).toHaveTextContent('0–2.9');
+    expect(legend).toHaveTextContent('3.0–4.9');
+    expect(legend).toHaveTextContent('5.0–6.9');
+    expect(legend).toHaveTextContent('7.0+');
+    expect(legend).toHaveTextContent('small');
+    expect(legend).toHaveTextContent('medium');
+    expect(legend).toHaveTextContent('large');
+    expect(legend).toHaveTextContent('largest');
+  });
+  it('uses a bounded neutral magnitude ramp and a high-contrast marker halo', () => {
+    const tokens = { '--magnitude-low': '#69645a', '--magnitude-moderate': '#58544d', '--magnitude-high': '#413d37', '--magnitude-very-high': '#292824', '--surface-card': '#fffefa' };
+    for (const [name, value] of Object.entries(tokens)) document.documentElement.style.setProperty(name, value);
+    render(<MapView events={[event]} />);
+    act(() => emit('style.load'));
+    const paint = mapInstance.addLayer.mock.calls.find(([layer]) => layer.id === 'event-circles')?.[0].paint;
+    expect(paint?.['circle-color']).toEqual([
+      'step', ['coalesce', ['get', 'magnitude'], 0], '#69645a', 3, '#58544d', 5, '#413d37', 7, '#292824',
+    ]);
+    expect(paint?.['circle-radius']).toEqual([
+      'interpolate', ['linear'], ['max', 0, ['min', 9, ['coalesce', ['get', 'magnitude'], 0]]], 0, 4, 9, 13,
+    ]);
+    expect(paint?.['circle-stroke-width']).toBe(2.5);
+    expect(paint?.['circle-stroke-color']).toBe('#fffefa');
+    for (const name of Object.keys(tokens)) document.documentElement.style.removeProperty(name);
   });
 });

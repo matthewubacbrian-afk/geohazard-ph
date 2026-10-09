@@ -96,10 +96,10 @@
 .legendTitle { margin: 0 0 8px; color: var(--text); font: 600 11px/1.4 var(--font-mono); }
 .legendRow { margin-top: 6px; }
 .legendLabel { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 12px; }
-.swatch { width: 12px; height: 12px; border: 1px solid var(--outline); border-radius: 2px; }
-.swatch--very-high { background: var(--risk-very-high); }
-.swatch--high { background: var(--risk-high); }
-.swatch--medium { background: var(--risk-medium); }
+.swatch { width: 14px; height: 14px; flex: 0 0 auto; border: 1px solid var(--text); border-radius: var(--radius-square); }
+.swatch--very-high { background-color: var(--risk-very-high); background-image: radial-gradient(var(--surface-card) 1px, transparent 1.5px); background-size: 4px 4px; }
+.swatch--high { background-color: var(--risk-high); background-image: repeating-linear-gradient(45deg, transparent 0 3px, var(--surface-card) 3px 4px), repeating-linear-gradient(-45deg, transparent 0 3px, var(--surface-card) 3px 4px); }
+.swatch--medium { background-color: var(--risk-moderate); background-image: repeating-linear-gradient(135deg, transparent 0 3px, var(--surface-card) 3px 4px); }
 .swatch--low { background: var(--risk-low); }
 
 @media (max-width: 640px) {

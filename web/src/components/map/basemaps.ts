@@ -40,7 +40,7 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
   streets: {
     id: 'streets',
     label: 'Streets',
-    style: 'https://tiles.openfreemap.org/styles/bright',
+    style: 'https://tiles.openfreemap.org/styles/positron',
   },
   satellite: {
     id: 'satellite',
