@@ -85,6 +85,9 @@ the Caddyfile, the deploy script, and `.env.staging.example`.
 
 ### Oracle Cloud Infrastructure Always Free A1
 
+This repository and its release workflow do not create OCI resources or provision
+a VM; the operator performs the instance and network setup in the OCI Console.
+
 Oracle Always Free compute is provisioned only in the tenancy's home region. The
 published Always Free A1 allowance is a total of 2 OCPUs and 12 GB memory across
 A1 instances, plus 200 GB total block volume allowance. Capacity is not guaranteed:
