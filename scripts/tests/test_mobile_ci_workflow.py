@@ -36,6 +36,20 @@ class MobileCiWorkflowTests(unittest.TestCase):
 
         self.assertEqual(result.stdout.split(maxsplit=1)[0], "100755", result.stdout)
 
+    def test_ios_simulator_build_uses_pods_without_signing(self):
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("  ios-simulator:", workflow)
+        ios_job = workflow[workflow.index("  ios-simulator:") :]
+
+        self.assertIn("runs-on: macos-15", ios_job)
+        self.assertIn("cache-dependency-path: mobile/package-lock.json", ios_job)
+        self.assertIn("run: npm ci", ios_job)
+        self.assertIn("run: pod install", ios_job)
+        self.assertIn("ios/GeoHazardPH.xcworkspace", ios_job)
+        self.assertIn("-scheme GeoHazardPH", ios_job)
+        self.assertIn("generic/platform=iOS Simulator", ios_job)
+        self.assertIn("CODE_SIGNING_ALLOWED=NO", ios_job)
+
 
 if __name__ == "__main__":
     unittest.main()

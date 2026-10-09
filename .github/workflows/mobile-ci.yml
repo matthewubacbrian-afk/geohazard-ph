@@ -31,3 +31,29 @@ jobs:
       - name: Build Android debug app
         run: ./gradlew assembleDebug
         working-directory: mobile/android
+
+  ios-simulator:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+        working-directory: mobile
+      - name: Install iOS pods
+        run: pod install
+        working-directory: mobile/ios
+      - name: Build iOS simulator app
+        working-directory: mobile
+        run: |
+          xcodebuild \
+            -workspace ios/GeoHazardPH.xcworkspace \
+            -scheme GeoHazardPH \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
