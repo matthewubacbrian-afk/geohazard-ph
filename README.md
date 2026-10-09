@@ -2,6 +2,8 @@
 
 GeoHazard PH is a Project NOAH-inspired geologic hazard monitoring platform for the Philippines. The repository is a monorepo for the API, web dashboard, ML risk-profile pipeline, mobile starter shell, infrastructure, and source-data documentation.
 
+For the evidence-based status of each epic, its operational prerequisites, and deferred work, see the [current project status](docs/project-status.md).
+
 ## What Is Included
 
 - `backend/` - FastAPI API, ingestion workers, services, database models, and backend tests.
@@ -400,12 +402,10 @@ The **Volcano bulletins** dashboard view uses `GET /api/v1/volcanoes`, showing
 PHIVOLCS alert levels, source links, observation/retrieval dates and stale-cache
 status. No Kaggle credentials are required.
 
-**Integration dependency:** Person A must wire `on_committed=publish` in the
-canonical ingestion path before regular ingests emit realtime messages. This
-Person B slice leaves `ingest.py` unchanged. Live PHIVOLCS fetching also requires
-a valid trusted TLS chain; this environment currently reports a certificate
-validation failure. See [the runbook](docs/runbook.md) for configuration,
-failure behavior, verification and the exact Person A handoff.
+The PHIVOLCS/realtime integration is merged: the canonical ingestion path
+publishes committed event changes to the realtime channel. Live PHIVOLCS fetching
+depends on a valid trusted TLS chain and reachable source; see [the runbook](docs/runbook.md#ingestion-failure)
+for failure handling and verification guidance.
 
 ## Epic 3: static hazard layers
 

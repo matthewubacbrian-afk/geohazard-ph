@@ -81,14 +81,26 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile.prod
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.image.outputs.prefix }}-api:${{ github.sha }}
       - uses: docker/build-push-action@v7
         with:
           context: ./web
           file: ./web/Dockerfile.prod
           push: true
+          platforms: linux/amd64,linux/arm64
           build-args: VITE_API_BASE_URL=/api/v1
           tags: ${{ steps.image.outputs.prefix }}-web:${{ github.sha }}
+      - name: Verify published image architectures
+        env:
+          IMAGE_PREFIX: ${{ steps.image.outputs.prefix }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          for image in api web; do
+            docker buildx imagetools inspect "$IMAGE_PREFIX-$image:$IMAGE_TAG" --raw \
+              | jq -e '.manifests | map(.platform.os + "/" + .platform.architecture) | (index("linux/amd64") != null and index("linux/arm64") != null)' \
+              > /dev/null
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: staging-release-${{ github.sha }}
