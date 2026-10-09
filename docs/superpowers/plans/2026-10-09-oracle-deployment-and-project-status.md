@@ -43,11 +43,11 @@
 - The existing API and web tags remain `${IMAGE_PREFIX}-api:${GITHUB_SHA}` and `${IMAGE_PREFIX}-web:${GITHUB_SHA}`.
 - Both image builds publish `linux/amd64` and `linux/arm64` variants under a single manifest tag.
 
-- [ ] **Step 1: Add explicit target platforms to both Buildx builds**
+- [x] **Step 1: Add explicit target platforms to both Buildx builds**
 
 Add `platforms: linux/amd64,linux/arm64` to each existing `docker/build-push-action@v7` step. Keep existing contexts, Dockerfiles, tags, login, and web build arg unchanged.
 
-- [ ] **Step 2: Add a published-manifest verification step**
+- [x] **Step 2: Add a published-manifest verification step**
 
 After both image build steps and before uploading the bundle, add a step that inspects each immutable tag and fails unless both architectures exist:
 
@@ -65,7 +65,7 @@ After both image build steps and before uploading the bundle, add a step that in
           done
 ```
 
-- [ ] **Step 3: Validate workflow and deployment configuration**
+- [x] **Step 3: Validate workflow and deployment configuration**
 
 Run from the repository root:
 
@@ -77,7 +77,7 @@ git diff --check
 
 Expected: all commands exit successfully. The release workflow's manifest check is the integration verification after publishing; no claim of OCI-host deployment is made.
 
-- [ ] **Step 4: Commit the workflow change**
+- [x] **Step 4: Commit the workflow change**
 
 ```powershell
 git add .github/workflows/deploy-staging.yml
@@ -94,23 +94,23 @@ git commit -m "ci: publish staging images for ARM64"
 - Continue using `.env.staging`, `IMAGE_PREFIX`, `IMAGE_TAG`, `SITE_DOMAIN`, `POSTGRES_PASSWORD`, `DATABASE_URL`, `CORS_ORIGINS`, `RISK_PROFILE_EXPORT_FILE`, and `INGEST_POLL_INTERVAL_SECONDS`.
 - Release command stays `bash scripts/deploy_staging.sh <40-character-release-sha> https://<site-domain>`.
 
-- [ ] **Step 1: Add an OCI Always Free prerequisites section**
+- [x] **Step 1: Add an OCI Always Free prerequisites section**
 
 Document account/home-region selection and that the operator must select an Always Free eligible `VM.Standard.A1.Flex` ARM instance. State Oracle's current tenancy totals (2 OCPUs, 12 GB RAM, 200 GB block storage in the home region), that shape capacity may be unavailable, and that paid resources/overages can incur charges. Link Oracle's official Always Free resource page and launch-instance tutorial. Make clear this repository does not create OCI resources or guarantee availability.
 
-- [ ] **Step 2: Document secure network, SSH, DNS, and host setup**
+- [x] **Step 2: Document secure network, SSH, DNS, and host setup**
 
 Give ordered Console steps: create/use a VCN with a public subnet and internet gateway/route; assign a public IP; permit inbound TCP 22 only from the operator's source IP and inbound TCP 80/443 from clients; do not open 5432 or 6379; allow outbound DNS/HTTPS for GHCR and source feeds; add matching host firewall rules; create the DNS A record; wait for DNS resolution. Describe keeping the private SSH key private. Link to Oracle security-list guidance and Docker's official Ubuntu engine installation instructions. The operator verifies `uname -m` reports `aarch64`, Docker works, and `docker compose version` is available before continuing.
 
-- [ ] **Step 3: Document release bundle, image access, and risk-profile preparation**
+- [x] **Step 3: Document release bundle, image access, and risk-profile preparation**
 
 Explain how to run **Prepare Staging Release** on `main`, download the artifact associated with the release SHA, and extract it on the VM. Explain that packages may be private; if so, log in to GHCR interactively using a token with only `read:packages`, and never place the token in the repository or shell command text. Before starting the stack, copy the trained `ml/model_artifacts/v1/risk_profiles.json` export to the host path configured by `RISK_PROFILE_EXPORT_FILE` (for example `./deploy-data/risk_profiles.json`), ensure the file exists and is readable, then create `.env.staging` from the example and replace all sample values. State that this historical statistical profile is descriptive, not a prediction, and that an untrained fixture is for local smoke testing only.
 
-- [ ] **Step 4: Document deployment verification, backups, rollback, and cleanup**
+- [x] **Step 4: Document deployment verification, backups, rollback, and cleanup**
 
 Include commands to inspect the release SHA and architecture manifest; run the deploy script; verify `/health`, `/api/v1/events`, and `/api/v1/risk-profile/clusters`; inspect Compose service health and logs; and diagnose GHCR auth, DNS/ports/TLS, missing export, disk, and health-check failures. Include timestamped Postgres dump and restore commands and a safe method to back up the named Caddy data volume before upgrades. Explain previous-SHA rollback, when database restore is needed, retaining volumes on ordinary shutdown (`compose down` without `-v`), and clean removal of the VM, attached boot/block volumes, public IP, and DNS after saving required backups.
 
-- [ ] **Step 5: Review instructions against actual repository interfaces**
+- [x] **Step 5: Review instructions against actual repository interfaces**
 
 Check every variable and command against `.env.staging.example`, `compose.staging.yml`, `scripts/deploy_staging.sh`, and the output structure in `ml/src/ml/train.py`. Remove commands that refer to unavailable files, ports, or service names. Run:
 
@@ -121,7 +121,7 @@ git diff --check
 
 Expected: Compose configuration and whitespace validation succeed.
 
-- [ ] **Step 6: Commit the runbook change**
+- [x] **Step 6: Commit the runbook change**
 
 ```powershell
 git add docs/runbook.md
@@ -140,7 +140,7 @@ git commit -m "docs: add Oracle Always Free deployment guide"
 - `docs/project-status.md` is the authoritative current status page.
 - Historical design and implementation plans remain historical records; their old unchecked boxes are not treated as current backlog without evidence.
 
-- [ ] **Step 1: Create the current project status register**
+- [x] **Step 1: Create the current project status register**
 
 Record these evidence-based statuses and link relevant implementation plans, specs, runbook sections, and code where helpful:
 
@@ -156,11 +156,11 @@ Record these evidence-based statuses and link relevant implementation plans, spe
 
 Add a short project conventions section explaining this register supersedes the conflicting phase summaries and old unchecked plan checkboxes. Distinguish implementation status from data import and actual deployment status.
 
-- [ ] **Step 2: Link overview documents to the canonical register**
+- [x] **Step 2: Link overview documents to the canonical register**
 
 Add a concise status link in the README near the project overview. At the start of `geohazard-development-framework.md`, label its schedule as the original planning framework and direct readers to `docs/project-status.md`. Update `docs/geohazard-development-framework.md` to point to the register and align Epic 5/6 labels with the current scope without deleting the historical intent.
 
-- [ ] **Step 3: Verify status statements against committed evidence**
+- [x] **Step 3: Verify status statements against committed evidence**
 
 Use `git log`, code paths, README content, the Epic 4 plan/spec, and the Epic 3 runbook section. Avoid treating unchecked historical plans as pending work. Confirm no status statement implies mobile background push or national static-layer completeness.
 
@@ -173,7 +173,7 @@ git diff --check
 
 Expected: structure and whitespace checks succeed.
 
-- [ ] **Step 4: Commit status and roadmap updates**
+- [x] **Step 4: Commit status and roadmap updates**
 
 ```powershell
 git add docs/project-status.md README.md geohazard-development-framework.md docs/geohazard-development-framework.md
