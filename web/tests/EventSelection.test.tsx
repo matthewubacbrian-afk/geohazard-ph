@@ -80,6 +80,18 @@ describe('activity selection', () => {
     expect(screen.getByText('Coordinates')).toBeTruthy();
   });
 
+  it('clears map target and details when the category filter hides the selected event', () => {
+    renderDashboard();
+    act(() => state.selectOnMap?.(event));
+    expect(screen.getByText('Map target: e1')).toBeTruthy();
+    expect(screen.getByText('Coordinates')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Baseline events' }));
+
+    expect(screen.getByText('No map target')).toBeTruthy();
+    expect(screen.queryByText('Coordinates')).toBeNull();
+  });
+
   it('clears the map target and details when the selected event disappears', () => {
     const dashboard = renderDashboard();
     act(() => state.selectOnMap?.(event));
