@@ -63,6 +63,24 @@ describe('DashboardSidebar map layers dropdown', () => {
 });
 
 describe('DashboardSidebar layers', () => {
+  it('keeps accessible names for every view, toggle, date, basemap, and magnitude control', () => {
+    renderSidebar();
+
+    for (const label of ['Map', 'Seismic filters', 'Historical data', 'Volcano bulletins', 'Risk reports']) {
+      expect(screen.getByRole('button', { name: new RegExp(`^${label}$`) })).toBeInTheDocument();
+    }
+    for (const label of ['Live events', 'Risk overlay', 'Fault lines', 'Volcano zones']) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument();
+    }
+    for (const label of ['Critical events', 'Elevated events', 'Baseline events']) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument();
+    }
+    expect(screen.getByRole('button', { name: /map layers/i })).toBeInTheDocument();
+    expect(screen.getByLabelText('Start date')).toBeInTheDocument();
+    expect(screen.getByLabelText('End date')).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Minimum magnitude' })).toBeInTheDocument();
+  });
+
   it('labels event buckets separately from regional risk profiles', () => {
     renderSidebar();
 

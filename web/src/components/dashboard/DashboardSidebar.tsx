@@ -208,6 +208,7 @@ export default function DashboardSidebar({
           </h3>
           <input
             type="range"
+            aria-label="Minimum magnitude"
             min="1"
             max="9"
             step="0.1"

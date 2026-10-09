@@ -12,7 +12,8 @@
 .main {
   display: grid;
   flex: 1;
-  grid-template-columns: minmax(216px, 0.82fr) minmax(460px, 2.65fr) minmax(310px, 1fr);
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr) minmax(300px, 360px);
+  grid-template-rows: minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
 }
@@ -30,9 +31,8 @@
   flex-direction: column;
   width: auto;
   min-width: 0;
-  height: 100%;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
   background: var(--surface-raised);
   border-left: 1px solid var(--border-strong);
 }
@@ -46,7 +46,7 @@
 
   .main {
     flex: none;
-    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 2.2fr);
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
     grid-template-rows: minmax(560px, 72svh) auto;
     grid-template-areas:
       "sidebar map"
@@ -63,7 +63,6 @@
 
   .sidePanel {
     grid-area: activity;
-    height: auto;
     max-height: 72svh;
     min-height: 480px;
     border-top: 1px solid var(--border-strong);
@@ -78,7 +77,7 @@
 
   .main {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(520px, 68svh) auto;
+    grid-template-rows: auto minmax(460px, 68svh) minmax(0, auto);
     grid-template-areas:
       "sidebar"
       "map"
@@ -86,7 +85,10 @@
   }
 
   .sidePanel {
+    height: auto;
     max-height: none;
     min-height: 480px;
+    overflow: visible;
+    border-left: 0;
   }
 }
