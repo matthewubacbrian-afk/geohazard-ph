@@ -4,6 +4,8 @@ GeoHazard PH is a Project NOAH-inspired geologic hazard monitoring platform for 
 
 For the evidence-based status of each epic, its operational prerequisites, and deferred work, see the [current project status](docs/project-status.md).
 
+To start the web app on Windows, follow the [local quick start](#run-the-project-locally-windows).
+
 ## What Is Included
 
 - `backend/` - FastAPI API, ingestion workers, services, database models, and backend tests.
@@ -24,193 +26,152 @@ manual workflow in `.github/workflows/deploy-staging.yml`. See
 [docs/runbook.md](docs/runbook.md) for host setup, reconciliation, deployment,
 and rollback commands.
 
-## Prerequisites
+## Run The Project Locally (Windows)
 
-Install these before running the project locally:
+This is the quickest way to run the web dashboard and API on your computer. You do
+not need Kaggle credentials, the ML tools, or the mobile app for this setup.
 
-- Python 3.11
-- Node.js and npm
-- Docker Desktop
-- Git
-- Kaggle credentials, only if training risk-profile models from Kaggle
+### Before you start
 
-On Windows, the ML training wrapper prefers the Python launcher:
+Install:
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it.
+- [Python 3.11](https://www.python.org/downloads/) with the Python launcher (`py`).
+- [Node.js LTS](https://nodejs.org/) (npm is included).
+- Git, if you still need to clone the repository.
+
+Open PowerShell in the repository folder. Confirm Python and Node are available:
 
 ```powershell
 py -3.11 --version
+node --version
+npm --version
+docker --version
 ```
 
-## First-Time Setup
+### One-time setup
 
-### Linux (Bash)
+Run these commands from the repository root. If you already have a `.env` file,
+keep it; otherwise copy the example settings. Then create the backend environment
+and install the backend and web dependencies:
 
-Use Python 3.11 and separate virtual environments for the API and ML packages.
-Run these commands from the repository root. Keep an existing `.env` if you
-have already configured it:
-
-```bash
-test -f .env || cp .env.example .env
-python3.11 -m venv backend/.venv
-backend/.venv/bin/python -m pip install -e './backend[dev]'
-python3.11 -m venv ml/.venv
-ml/.venv/bin/python -m pip install -e './ml[dev]'
-(cd web && npm ci)
-python3.11 scripts/verify_structure.py
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+py -3.11 -m venv backend/.venv
+backend/.venv/Scripts/python.exe -m pip install -e "backend[dev]"
+Push-Location web
+npm ci
+Pop-Location
 ```
 
-On Linux, Docker Engine with the Compose plugin can be used in place of Docker
-Desktop. If the daemon is stopped, start it with `sudo systemctl start docker`.
-Your user must have access to the Docker daemon to run the commands below.
+### Start the app
 
-Start Postgres and Redis, wait for Postgres to accept connections, and apply
-the database migrations before starting the API:
+You will use three PowerShell windows. Keep the API and web windows open while you
+use the app.
 
-```bash
+**Window 1 — database and cache** (from the repository root):
+
+```powershell
 docker compose up -d postgres redis
 docker compose exec postgres pg_isready -U geohazard -d geohazard
-(cd backend && .venv/bin/alembic upgrade head)
 ```
 
-Run the API and web app in separate terminals:
+Wait until the last command says the database accepts connections. If it is still
+starting, run that command again.
 
-```bash
-# Terminal 1, from the repository root
-cd backend
-.venv/bin/uvicorn app.main:app --reload
-```
-
-```bash
-# Terminal 2, from the repository root
-cd web
-npm run dev
-```
-
-Open `http://localhost:5173` for the dashboard or `http://localhost:8000/docs`
-for the API documentation. To populate the earthquake feed, run
-`(cd backend && .venv/bin/python -m ingestion.scheduler)` from the repository
-root after applying migrations. This fetches live USGS data.
-
-For local sample risk profiles, set `RISK_PROFILE_EXPORT_PATH=tests/fixtures/risk_profiles.json`
-in the root `.env`; the path is relative to the backend working directory.
-Kaggle credentials are needed for training unless you pass `--offline`.
-
-Verify the installation from the repository root:
-
-```bash
-# Create the separate integration-test database once.
-docker compose exec postgres createdb -U geohazard geohazard_test
-(cd backend && .venv/bin/pytest -v)
-(cd ml && .venv/bin/pytest -v)
-(cd web && npm test && npm run build)
-```
-
-The mobile starter is optional for dashboard development. Install its dependencies
-with `(cd mobile && npm ci)` when working on mobile.
-
-### Windows (PowerShell)
-
-Run these commands from the repository root:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Start local infrastructure:
-
-```powershell
-docker compose up postgres redis
-```
-
-Install backend dependencies:
+**Window 2 — database setup and API** (from the repository root):
 
 ```powershell
 Set-Location backend
-pip install -e ".[dev]"
-Set-Location ..
+..\.venv\Scripts\python.exe -m alembic upgrade head
+..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
-Install web dependencies:
+The first command applies the database migrations. Keep this window open; the API
+is available at <http://localhost:8000>, and its interactive documentation is at
+<http://localhost:8000/docs>.
+
+**Window 3 — web dashboard** (from the repository root):
 
 ```powershell
 Set-Location web
-npm install
-Set-Location ..
-```
-
-Install ML dependencies:
-
-```powershell
-Set-Location ml
-pip install -e ".[dev]"
-Set-Location ..
-```
-
-Verify the expected project structure:
-
-```powershell
-python scripts\verify_structure.py
-```
-
-## Run The App
-
-Use three terminal windows: one for infrastructure, one for the backend, and one for the web app.
-
-Terminal 1, from the repository root:
-
-```powershell
-docker compose up postgres redis
-```
-
-Terminal 2, from `backend/`:
-
-```powershell
-uvicorn app.main:app --reload
-```
-
-The API runs at:
-
-```text
-http://localhost:8000
-```
-
-Terminal 3, from `web/`:
-
-```powershell
 npm run dev
 ```
 
-The web app usually runs at:
-
-```text
-http://localhost:5173
-```
-
-If the frontend needs a different API URL, set this in `web/.env.local`
-(Vite reads environment files from `web/`):
+Open <http://localhost:5173> in your browser. The dashboard connects to the local
+API by default. If you need to change that address, create `web/.env.local` with:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
-The backend allows the Vite dev origins (`http://localhost:5173` and `http://127.0.0.1:5173`) by default via the `CORS_ORIGINS` setting. Add or change allowed origins through `CORS_ORIGINS` in `.env` using a JSON array (the frontend calls the API directly from the browser, so the origin must be listed here):
+Restart the web development server after changing its environment file.
 
-```env
-CORS_ORIGINS=["http://localhost:5173","http://127.0.0.1:5173"]
-```
+### Show live earthquake events (optional)
 
-## Run With Docker Compose
-
-To start Postgres, Redis, the API, and the worker together:
+The API and dashboard can start without the ingestion worker. To fetch live events,
+open a fourth PowerShell window after the database is ready:
 
 ```powershell
+Set-Location backend
+..\.venv\Scripts\python.exe -m ingestion.scheduler
+```
+
+The worker polls USGS and PHIVOLCS sources. It needs internet access and may take a
+minute to complete its first polling cycle. Press `Ctrl+C` to stop it.
+
+### Stop the app
+
+Press `Ctrl+C` in the API, dashboard, and worker windows. Stop the database and cache
+from the repository root:
+
+```powershell
+docker compose down
+```
+
+This keeps the local database volume so your data remains for the next run. To remove
+the database data too, use `docker compose down --volumes`.
+
+### Linux/macOS
+
+Install Python 3.11, Node.js, Docker Compose, and Git. From the repository root, run
+these setup commands (keep an existing `.env` file):
+
+```bash
+test -f .env || cp .env.example .env
+python3.11 -m venv backend/.venv
+backend/.venv/bin/python -m pip install -e './backend[dev]'
+(cd web && npm ci)
+docker compose up -d postgres redis
+(cd backend && .venv/bin/alembic upgrade head)
+```
+
+Start the API and web dashboard in separate terminals from the repository root:
+
+```bash
+cd backend && .venv/bin/uvicorn app.main:app --reload
+```
+
+```bash
+cd web && npm run dev
+```
+
+Open <http://localhost:5173>. The API documentation is at <http://localhost:8000/docs>.
+
+### Run everything with Docker Compose (optional)
+
+To run the API, ingestion worker, database, and cache in containers, first make sure
+`.env` exists, then run this from the repository root:
+
+```powershell
+docker compose up -d postgres redis
+docker compose run --rm api alembic upgrade head
 docker compose up --build
 ```
 
-Useful local ports:
-
-- API: `http://localhost:8000`
-- Postgres: `localhost:5432`
-- Redis: `localhost:6379`
+Open <http://localhost:8000/docs> for the API. To stop the containers, press
+`Ctrl+C`, or run `docker compose down` from another terminal. This Docker option does
+not start the web dashboard; use the local web steps above to run it.
 
 ## Live Earthquake Ingestion
 
