@@ -96,7 +96,14 @@ before provisioning.
 1. In the OCI Console, select the tenancy's **home region** and open **Compute → Instances → Create instance**.
 2. Name the instance, select **Ubuntu 24.04** as the image, and choose the **VM.Standard.A1.Flex** shape. Configure no more than the available A1 free allowance (2 OCPUs and 12 GB memory total); confirm the console identifies the selected image and shape as Always Free eligible before creating it.
 3. Select or create a VCN and a **public subnet** with a route to an internet gateway. Assign a public IPv4 address. Add your SSH public key during instance creation. Keep the private key private; never upload it to the repository or deployment bundle.
-4. In the subnet's security list or the instance's network security group, allow inbound TCP 22 only from your current operator IP in CIDR form, and TCP 80 and 443 from clients (`0.0.0.0/0`, and `::/0` only if IPv6 is configured). Do not open TCP 5432 or 6379. Permit outbound DNS and HTTPS/network access so the host can reach GHCR, DNS resolvers, and configured event-source feeds. See [OCI security list rules](https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/securitylists.htm).
+4. Inspect every security list attached to the subnet and every network security
+   group attached to the instance; their ingress rules apply cumulatively. Remove
+   any broad inbound TCP 22 rule whose source is `0.0.0.0/0` or `::/0`, then add
+   an inbound TCP 22 rule limited to your current operator IP in CIDR form. Allow
+   TCP 80 and 443 from clients (`0.0.0.0/0`, and `::/0` only if IPv6 is
+   configured). Do not open TCP 5432 or 6379. Permit outbound DNS and HTTPS/network
+   access so the host can reach GHCR, DNS resolvers, and configured event-source
+   feeds. See [OCI security list rules](https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/securitylists.htm).
 5. Create a DNS A record for the deployment hostname pointing to the instance's public IPv4 address. Wait until the name resolves to that address before deployment; Caddy needs working DNS and publicly reachable ports 80/443 to obtain TLS certificates.
 6. Connect from Windows PowerShell using the private key you created or selected:
 
@@ -139,19 +146,7 @@ and the event sources.
    `compose.staging.yml`, `infra/caddy/Caddyfile`, `scripts/deploy_staging.sh`,
    and `.env.staging.example`; extract all files together into one directory on
    the VM, preserving the `infra/caddy` and `scripts` paths.
-2. Confirm the published API and web image manifests include both ARM64 and
-   AMD64 before deployment. If the GHCR packages are private, perform the GHCR
-   login in step 3 before inspecting them. Use the actual image prefix and SHA
-   from the workflow:
-
-   ```bash
-   docker buildx imagetools inspect ghcr.io/owner/geohazard-ph-api:<sha>
-   docker buildx imagetools inspect ghcr.io/owner/geohazard-ph-web:<sha>
-   ```
-
-   Replace `owner` and `<sha>` with the workflow's image prefix and release SHA;
-   each manifest must list `linux/arm64` and `linux/amd64`.
-3. If the GHCR package is private, authenticate with a GitHub token that has only
+2. If the GHCR packages are private, authenticate with a GitHub token that has only
    `read:packages` access. Do not put the token in a command argument, shell
    history, or committed file. Enter it at the prompt:
 
@@ -164,6 +159,16 @@ and the event sources.
 
    Protect Docker's credential configuration on the VM and log out of GHCR after
    deployment if desired with `docker logout ghcr.io`.
+3. Confirm the published API and web image manifests include both ARM64 and
+   AMD64. Use the actual image prefix and SHA from the workflow:
+
+   ```bash
+   docker buildx imagetools inspect ghcr.io/owner/geohazard-ph-api:<sha>
+   docker buildx imagetools inspect ghcr.io/owner/geohazard-ph-web:<sha>
+   ```
+
+   Replace `owner` and `<sha>` with the workflow's image prefix and release SHA;
+   each manifest must list `linux/arm64` and `linux/amd64`.
 4. Generate the production ML output from the repository root on your Windows
    development machine. Normal training requires `KAGGLE_USERNAME` and
    `KAGGLE_KEY` credentials in the environment or `.env` file. The `-Offline`
@@ -186,24 +191,55 @@ and the event sources.
    ```
 
    The extracted bundle directory must be `/home/ubuntu/geohazard-release` in
-   this example. On the VM, validate that the JSON is non-empty and is a
-   non-empty list of objects with a non-empty string `region_name` (the required
-   `RiskProfile` field), then check file readability:
+   this example. Connect to the VM and, in its terminal, change into that directory
+   before validating the export:
+
+   ```bash
+   cd /home/ubuntu/geohazard-release
+   ```
+
+   Keep this directory as the working directory for the remaining `.env.staging`,
+   Compose, backup, deployment, and recovery commands. Validate that the JSON is
+   a non-empty list of objects whose fields match `RiskProfile` in
+   `backend/app/schemas/risk_profile.py`. This standard-library check needs no
+   Pydantic installation on the VM:
 
    ```bash
    python3 - <<'PY'
    import json
+   import math
    from pathlib import Path
 
    path = Path("./deploy-data/risk_profiles.json")
+   assert path.is_file() and path.stat().st_size > 0, "risk profile export is missing or empty"
    data = json.loads(path.read_text(encoding="utf-8"))
    assert isinstance(data, list) and data, "expected a non-empty JSON list"
-   assert all(
-       isinstance(item, dict)
-       and isinstance(item.get("region_name"), str)
-       and item["region_name"].strip()
-       for item in data
-   ), "each profile must be an object with a non-empty string region_name"
+
+   def valid_profile(item):
+       return (
+           isinstance(item, dict)
+           and isinstance(item.get("region_name"), str)
+           and bool(item["region_name"].strip())
+           and isinstance(item.get("cluster"), int)
+           and not isinstance(item["cluster"], bool)
+           and isinstance(item.get("label"), str)
+           and isinstance(item.get("confidence"), (int, float))
+           and not isinstance(item["confidence"], bool)
+           and math.isfinite(item["confidence"])
+           and isinstance(item.get("feature_importances"), dict)
+           and all(
+               isinstance(key, str)
+               and isinstance(value, (int, float))
+               and not isinstance(value, bool)
+               and math.isfinite(value)
+               for key, value in item["feature_importances"].items()
+           )
+           and isinstance(item.get("model_version"), str)
+           and isinstance(item.get("generated_at"), str)
+           and isinstance(item.get("dataset_snapshot"), str)
+       )
+
+   assert all(valid_profile(item) for item in data), "one or more profiles do not match RiskProfile fields"
    print(f"Validated {len(data)} risk profiles")
    PY
    test -s ./deploy-data/risk_profiles.json && test -r ./deploy-data/risk_profiles.json
@@ -285,9 +321,15 @@ curl --fail https://SITE_DOMAIN/health
 ```
 
 Replace the dump placeholder with the chosen backup filename and `SITE_DOMAIN`
-with the actual hostname. Restore Caddy's saved state, if needed, by streaming the
-chosen archive into the proxy container with
-`docker compose --env-file .env.staging -f compose.staging.yml exec -T proxy tar -C / -xzf - < backups/caddy-state-<date>.tar.gz`.
+with the actual hostname. Restore Caddy's saved state, if needed, using a temporary
+Compose container attached to the same named volumes:
+
+```bash
+docker compose --env-file .env.staging -f compose.staging.yml stop proxy
+docker compose --env-file .env.staging -f compose.staging.yml run --rm -T --no-deps --entrypoint tar proxy -C / -xzf - < backups/caddy-state-<date>.tar.gz
+docker compose --env-file .env.staging -f compose.staging.yml start proxy
+```
+
 Never run `down -v` during routine updates or recovery; it deletes named volumes.
 
 To roll back application images, verify database migration compatibility and
