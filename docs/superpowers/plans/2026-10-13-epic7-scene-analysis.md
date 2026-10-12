@@ -74,9 +74,9 @@ Run the packaged model loader with networking disabled and a pre-provisioned loc
 
 **Preflight evidence (2026-10-13):** Steps 1–2 are complete; host-only measurements for Step 3 are recorded, but the step remains open pending Python 3.12/Linux package resolution and deployment image impact. The isolated Windows x64 / CPython 3.11.9 run measured dependency pins, wheel/install sizes, model artifact size, cache-only load, CPU inference, and peak RSS; see `docs/data-sources.md`. The PyTorch CPU index lists the chosen Torch/torchvision pins for CPython 3.12 on both target Linux architectures, but those wheels were not installed. The offline load required `DetrConfig.use_pretrained_backbone=False` to avoid a separate timm checkpoint fetch; checkpoint load reported zero missing keys and four unused `num_batches_tracked` buffers. A socket guard and Hugging Face offline environment flags were active during inference; a missing local directory raised offline `OSError`. This does not verify CPython 3.12/Linux package resolution or inference, staging resource fit, or Docker image delta. Docker Desktop's Linux daemon is unavailable; staging publishes `linux/amd64` and `linux/arm64`, runs API/migration/worker from a shared image, sets no per-service memory/CPU limits, and documents a total 2 OCPU / 12 GB host allowance. Do not change `pyproject.toml` or deployment images until those deployment-target costs and resource headroom are measured. Step 5's conversion to the future typed unavailable error must be verified when the adapter exists; no adapter code is part of Task 1.
 
-- [ ] **Step 6: Commit measured model/deployment foundation**
+- [x] **Step 6: Record measured model preflight documentation**
 
-Run `git diff --check`, inspect the staged file list, and commit only this task’s dependency/provisioning/source documentation as `chore: provision pinned scene analysis model`.
+Run `git diff --check`, inspect the staged file list, and commit only the Task 1 preflight documentation as `docs: record epic 7 model preflight`. Do not include dependency or deployment-image changes until the deployment-target gate is verified. The follow-up documentation commit is `058e625`; the earlier docs-only commit `d99ef9f` remains in history with its original subject.
 
 ### Task 2: Define and implement deterministic in-memory analysis
 
@@ -102,25 +102,27 @@ def analyze_scene(image: Image.Image, segmenter: PanopticSegmenter) -> SceneAnal
 
 Use frozen dataclasses: `ImagePoint(x: float, y: float)`, `CandidateRegion(rank: int, surface_class: str, polygon: tuple[ImagePoint, ...], area_fraction: float, compactness: float, model_confidence: float, ranking_score: float)`, `VisualCue(class_name: str, model_confidence: float)`, and `SceneAnalysisResult(result_status: Literal["candidates_found", "no_clear_candidate"], candidate_regions: tuple[CandidateRegion, ...], visual_cues: tuple[VisualCue, ...])`. The route adds `model_version` and the two fixed limitations from the response schema. Supported candidate labels are exactly `floor-other`, `floor-stone`, `floor-tile`, `floor-wood`, `ground-other`, `road`, `pavement`, `grass`, and `gravel` in the pinned config; do not use a generic `floor` label. Use deterministic 4-connected component labeling over the binary masks. Trace each component outer boundary from pixel-edge transitions and simplify it with a pure-Python Douglas–Peucker helper implemented in this module; do not add SciPy/OpenCV solely for contours.
 
-- [ ] **Step 1: Write failing image validation tests**
+- [x] **Step 1: Write failing image validation tests**
 
 Create tests for strict JPEG only, invalid signature/decode, malformed dimensions, >4096 edge, >12,000,000 pixels, and EXIF orientation normalization. Keep all bytes in `io.BytesIO`; assert the decoded image is RGB with metadata removed. Run `cd backend && pytest -q tests/unit/test_scene_analysis.py`; expected: import/collection failure because the service module is absent.
 
-- [ ] **Step 2: Write failing candidate and scoring tests**
+- [x] **Step 2: Write failing candidate and scoring tests**
 
 Use tiny synthetic masks injected as `PanopticSegment` values, independent of a model or network. Test unsupported labels and confidence `<0.50` excluded; connected components `<1%` excluded; each eligible candidate’s normalized closed polygon is in `[0,1]` and has ≤64 vertices; top five only; area/compactness/model-score formula exact within `1e-6`; score ties sorted by area then top-left; no candidates return `no_clear_candidate`; visual cues dedupe classes using max confidence and lexical order.
 
-- [ ] **Step 3: Run focused tests and verify expected failures**
+- [x] **Step 3: Run focused tests and verify expected failures**
 
 Run `cd backend && pytest -q tests/unit/test_scene_analysis.py`; expected: failing import or missing functions, before implementation.
 
-- [ ] **Step 4: Implement bounded decode and pure mask processing**
+- [x] **Step 4: Implement bounded decode and pure mask processing**
 
 Implement typed domain errors (`InvalidSceneImage`, `SceneAnalysisUnavailable`), image decode with header dimension checks before full pixel load, EXIF transpose and RGB re-encode in memory, class allow-list filtering, binary connected components, area/perimeter calculations, deterministic sort, contour simplification/closure, coordinate normalization, and cue aggregation. Keep all algorithm functions independent of FastAPI, config, network, and DB.
 
-- [ ] **Step 5: Run focused unit tests and commit**
+- [x] **Step 5: Run focused unit tests and commit**
 
 Run `cd backend && pytest -q tests/unit/test_scene_analysis.py` and `cd backend && ruff check app/services/scene_analysis.py tests/unit/test_scene_analysis.py`. Expected: all unit tests pass without model weights or network. Commit `feat: add deterministic scene candidate analysis`.
+
+**Task 2 verification and review:** Code review passed. Branch verification reported 17 focused scene-analysis tests and 100 backend unit tests passing; Ruff passed for changed files. Whole-package `ruff check app tests` still reports six pre-existing findings outside Epic 7 (risk-profile schema, dedup imports, source/event parser test imports, and a broad exception). These baseline findings were not changed in Task 2.
 
 ### Task 3: Add typed API contract, streaming body cap, errors, and contracts
 
