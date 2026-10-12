@@ -144,3 +144,14 @@ When a spec or plan introduces a new concept:
 - PHIVOLCS volcano overlays: source-rendered base-surge, lava, pyroclastic-density-current
   and lahar reference images used when local `VolcanoZone` vectors are absent.
   These are remotely rendered hazard maps, not imported polygons or live alert levels.
+
+## 7. Camera scene analysis
+
+| Term | Canonical field / meaning |
+| --- | --- |
+| scene analysis | `SceneAnalysis`, endpoint `/scene-analyses`; transient visual review of one user-captured image, with no server-side image/history persistence. |
+| candidate region | `candidate_regions[]`; image-space connected floor/ground component ranked for visual review, not a verified safe place. |
+| polygon | `polygon`; closed list of normalized `{x, y}` image points from top-left origin, each coordinate in `[0, 1]`; not GeoJSON or map coordinates. |
+| visual cue | `visual_cues[]`; recognized model class and model confidence shown for review, not an inferred hazard verdict. |
+| ranking score | `ranking_score`; deterministic weighted visual-review ordering value in `[0, 1]`, never a safety probability or confidence. |
+| model version | `model_version`; model ID and immutable model-artifact revision that produced scene-analysis cues. |
