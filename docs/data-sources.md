@@ -84,7 +84,7 @@ because they do not resolve a Kaggle version.
 
   ```powershell
   $root = Join-Path $env:TEMP ("epic7-model-preflight-repro-" + [guid]::NewGuid().ToString('N'))
-  New-Item -ItemType Directory -Path $root | Out-Null
+  New-Item -ItemType Directory -Path $root -ErrorAction Stop | Out-Null
   py -3.11 -m venv "$root\venv"
   $py = "$root\venv\Scripts\python.exe"
   @'
