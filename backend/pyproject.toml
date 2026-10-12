@@ -16,7 +16,9 @@ dependencies = [
   "beautifulsoup4>=4.12.0",
   "alembic>=1.13.0",
   "shapely>=2.0,<3",
-  "fiona>=1.10,<2"
+  "fiona>=1.10,<2",
+  "Pillow==12.3.0",
+  "numpy==2.2.6"
 ]
 
 [project.optional-dependencies]

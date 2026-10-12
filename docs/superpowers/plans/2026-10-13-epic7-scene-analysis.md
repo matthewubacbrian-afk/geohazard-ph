@@ -130,7 +130,7 @@ Run `cd backend && pytest -q tests/unit/test_scene_analysis.py` and `cd backend 
 - Create: `backend/app/schemas/scene_analysis.py`
 - Create: `backend/app/api/v1/scene_analyses.py`
 - Modify: `backend/app/main.py`, `backend/app/config.py`, `.env.example`
-- Create: `backend/tests/integration/test_scene_analyses_api.py`
+- Create: `backend/tests/unit/test_scene_analyses_api.py` (DB-free ASGI route contract tests)
 - Modify: `docs/api-contracts.md`, `docs/error-handling-and-logging.md`, `CODING_STANDARDS.md`, `docs/glossary.md`
 
 **Interfaces:**
@@ -153,29 +153,33 @@ async def post_scene_analysis(request: Request) -> SceneAnalysisResponse: ...
 
 `CandidateRegion`: `rank:int`, `surface_class:str`, `polygon:list[ImagePoint]`, `area_fraction:float`, `compactness:float`, `model_confidence:float`, `ranking_score:float`. `ImagePoint`: `x:float`, `y:float`. `VisualCue`: `class_name:str`, `model_confidence:float`. JSON success is unwrapped. Request max is 5,593,000 bytes; decoded max 4 MiB. Error envelope codes/statuses: `invalid_scene_image`/422, `scene_image_too_large`/413, `scene_analysis_unavailable`/503.
 
-- [ ] **Step 1: Write failing schema and route tests**
+- [x] **Step 1: Write failing schema and route tests**
 
-Build requests with the existing `client` fixture from `backend/tests/integration/conftest.py`. Override/inject a fake `PanopticSegmenter` so route tests require no weights or network. Assert response schema and exact snake_case fields; bad JSON/base64/media/image return 422 envelope; missing model returns 503 envelope; bodies over cap return 413 envelope.
+Build a separate DB-free FastAPI app and inject a fake `PanopticSegmenter`; the existing integration `client` fixture starts migrated PostGIS and cannot run in this environment. Assert response schema and exact snake_case fields; bad JSON/base64/media/image return 422 envelope; missing model returns 503 envelope; bodies over cap return 413 envelope.
 
-- [ ] **Step 2: Test streaming limit and privacy behavior**
+- [x] **Step 2: Test streaming limit and privacy behavior**
 
 Add ASGI receive-stream tests for the exact cap, cap+1 with `Content-Length`, and cap+1 without it. Verify the route reads no more than cap+1 bytes before returning 413, body bytes never appear in captured logs/errors, and no file/cache/database writes occur. Never use the JSON test client's auto body logging or a real image fixture.
 
-- [ ] **Step 3: Run API tests to establish expected failures**
+- [x] **Step 3: Run API tests to establish expected failures**
 
-Run `cd backend && pytest -q tests/integration/test_scene_analyses_api.py`; expected: route/schema are missing and all new cases fail.
+Run `cd backend && pytest -q tests/unit/test_scene_analyses_api.py`; expected: route/schema are missing and collection fails.
 
-- [ ] **Step 4: Implement schemas, streamed body reader, and route**
+- [x] **Step 4: Implement schemas, streamed body reader, and route**
 
 Create Pydantic output schemas and enforce normalized polygon bounds, closure, candidate limits, numeric `[0,1]` fields, and result-status consistency. In the route, require JSON content type; read `request.stream()` in chunks and stop immediately after aggregate size exceeds 5,593,000; decode JSON only after the bounded read; pass the image to the analysis service. Inject the segmenter through a dependency. Translate expected service errors to the standard envelope and do not catch unexpected errors locally. Register `scene_analyses.router` once in `backend/app/main.py`.
 
-- [ ] **Step 5: Add deployment settings and API contract docs**
+- [x] **Step 5: Add deployment settings and API contract docs**
 
 Add `scene_analysis_model_id`, `scene_analysis_model_revision`, and `scene_analysis_model_cache_dir` to `backend/app/config.py` and `.env.example`, with model ID/revision fixed to the approved pin and a documented local cache path. Add 413 to the coding-standard HTTP table and document endpoint, caps, schemas, and error codes in `docs/api-contracts.md`. Document image/body exclusion from logs and trace payloads in `docs/error-handling-and-logging.md`; ensure `docs/glossary.md` uses the same endpoint and field definitions.
 
-- [ ] **Step 6: Verify and commit the API**
+- [x] **Step 6: Verify and commit the API**
 
-Run `cd backend && pytest -q tests/integration/test_scene_analyses_api.py tests/unit/test_scene_analysis.py` and `cd backend && ruff check app/api/v1/scene_analyses.py app/schemas/scene_analysis.py app/services/scene_analysis.py tests/unit/test_scene_analysis.py tests/integration/test_scene_analyses_api.py`. Expected: route, validation, error and unit tests pass. Commit `feat: add scene analysis API`.
+Run `cd backend && pytest -q tests/unit/test_scene_analyses_api.py tests/unit/test_scene_analysis.py` and Ruff on all changed Python files. The PostGIS integration suite remains separate and is not required for the DB-free route checks. Commit `feat: add scene analysis API`.
+
+**Task 3 verification note:** API tests live under `tests/unit` because the shared autouse integration fixture requires local PostGIS. The route contract suite uses an isolated ASGI app and injected fake segmenter. Lightweight direct dependencies use exact Pillow 12.3.0 and NumPy 2.2.6 pins measured in the Task 1 CPython 3.11 preflight; both are compatible with Python >=3.11. Heavy model runtime packaging remains gated pending Linux/ARM64 and deployment-resource measurements.
+
+The test-first run failed collection as expected because `app.api.v1.scene_analyses` did not exist. Focused API and service tests pass (34); the full backend unit suite passes (117). Ruff passes for changed Python files, structure verification reports all 140 scaffold paths present, and `git diff --check` passes. A full backend pytest run was attempted but did not complete: its integration autouse fixture connects to the unavailable local PostGIS service (PostgreSQL is stopped and Docker is unavailable). No integration pass is claimed.
 
 ### Task 4: Add the web capture and polygon/checklist experience
 

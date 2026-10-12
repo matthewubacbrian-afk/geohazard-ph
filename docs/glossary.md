@@ -155,3 +155,7 @@ When a spec or plan introduces a new concept:
 | visual cue | `visual_cues[]`; recognized model class and model confidence shown for review, not an inferred hazard verdict. |
 | ranking score | `ranking_score`; deterministic weighted visual-review ordering value in `[0, 1]`, never a safety probability or confidence. |
 | model version | `model_version`; model ID and immutable model-artifact revision that produced scene-analysis cues. |
+| image_base64 | `image_base64`; standard base64 JPEG request field without a data URL prefix; transient input, never persisted or logged. |
+| mime_type | `mime_type`; scene-analysis input media type, fixed to `image/jpeg`. |
+| result_status | `result_status`; `candidates_found` when candidate regions exist, otherwise `no_clear_candidate`. |
+| scene-analysis limitations | `limitations`; fixed caveats that visual cues do not determine safety and one image cannot assess structural stability, hidden hazards, or route access. |

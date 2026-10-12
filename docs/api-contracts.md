@@ -145,6 +145,24 @@ When adding or changing an endpoint:
 - [ ] Cover the route in an integration test and the service in a unit test (`docs/testing-standards.md`).
 - [ ] Update `docs/runbook.md` or `docs/geohazard-system-architecture.md` when endpoints list changes.
 
+## Scene analysis: `POST /api/v1/scene-analyses`
+
+Accepts a JSON object with `image_base64` (standard base64 without a data URL
+prefix) and `mime_type: "image/jpeg"`. The request body is capped at 5,593,000
+bytes while streaming; decoded JPEG data is capped at 4 MiB, 4096 pixels on
+either edge, and 12,000,000 pixels total. Success is an unwrapped
+`SceneAnalysisResponse`: `model_version`, `result_status`, `candidate_regions`,
+`visual_cues`, and two fixed `limitations`. Candidate fields are `rank`,
+`surface_class`, closed normalized `polygon` points (`x`, `y`), `area_fraction`,
+`compactness`, `model_confidence`, and `ranking_score`. Scores and coordinates
+are bounded to `[0, 1]`; at most five candidate regions are returned.
+
+Invalid JSON, base64, media type, or JPEG returns 422
+(`invalid_scene_image`). Oversized request or decoded image returns 413
+(`scene_image_too_large`). Missing local model artifacts or unavailable model
+runtime returns 503 (`scene_analysis_unavailable`). Images are processed in
+memory and are not persisted.
+
 ## 9. Known Deviations
 
 Tracked as backlog items in `docs/superpowers/plans/2026-08-29-standards-gap-remediation.md`. New and edited endpoints must conform today.
