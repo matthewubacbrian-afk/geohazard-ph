@@ -74,6 +74,24 @@ describe('scene review capture screen', () => {
     expect(screen.getByText(/sent to this project’s python service for temporary analysis/i)).toBeInTheDocument();
   });
 
+  it('opens only one camera stream when the user clicks twice rapidly', async () => {
+    let resolveStream: ((stream: MediaStream) => void) | undefined;
+    const stop = vi.fn();
+    const stream = { getTracks: () => [{ stop }] } as unknown as MediaStream;
+    const getUserMedia = vi.fn(() => new Promise<MediaStream>((resolve) => { resolveStream = resolve; }));
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia } });
+    vi.spyOn(HTMLVideoElement.prototype, 'play').mockResolvedValue();
+    const { unmount } = render(<SceneAnalysis onExit={vi.fn()} />);
+    const openButton = screen.getByRole('button', { name: /open camera/i });
+
+    fireEvent.click(openButton);
+    fireEvent.click(openButton);
+    expect(getUserMedia).toHaveBeenCalledOnce();
+    resolveStream?.(stream);
+    await waitFor(() => expect(screen.getByRole('button', { name: /capture photo/i })).toBeInTheDocument());
+    unmount();
+    expect(stop).toHaveBeenCalledOnce();
+  });
   it('reports unsupported and denied camera states without claiming safety', async () => {
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: vi.fn().mockRejectedValue(new Error('denied')) } });
     render(<SceneAnalysis onExit={vi.fn()} />);
@@ -116,6 +134,12 @@ describe('scene review capture screen', () => {
     const overlay = await screen.findByRole('img', { name: /candidate region 1/i });
     expect(overlay.querySelector('polygon')).toHaveAttribute('points', '10,10 90,10 90,90 10,90 10,10');
     expect(screen.getByText(/chair/i)).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Evidence for candidate 1' })).toHaveTextContent(/visible area: 20%/i);
+    expect(screen.getByRole('list', { name: 'Evidence for candidate 1' })).toHaveTextContent(/shape compactness: 80%/i);
+    expect(screen.getByRole('list', { name: 'Evidence for candidate 1' })).toHaveTextContent(/model confidence: 90%/i);
+    expect(screen.getByRole('button', { name: /candidate region 1/i })).toHaveTextContent(/ranking heuristic: 0\.70/i);
+    expect(screen.getByText(/relative area × 0\.50.*shape compactness × 0\.30.*model confidence × 0\.20/i)).toBeInTheDocument();
+    expect(screen.queryByText(/70% cue score/i)).not.toBeInTheDocument();
     expect(screen.getByText(/visual cues only—not a safety assessment/i)).toBeInTheDocument();
     expect(analyze).toHaveBeenCalledWith(expect.objectContaining({ image_base64: 'ZmFrZQ==', mime_type: 'image/jpeg' }), expect.any(AbortSignal));
   });

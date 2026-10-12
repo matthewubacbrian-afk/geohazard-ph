@@ -23,6 +23,7 @@ export default function SceneAnalysis({
 }: SceneAnalysisProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const cameraOpeningRef = useRef(false);
   const controllerRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const [capture, setCapture] = useState<SceneCapture | null>(initialCapture ?? null);
@@ -61,9 +62,12 @@ export default function SceneAnalysis({
   }, [cameraActive]);
 
   async function openCamera() {
+    if (cameraOpeningRef.current || streamRef.current) return;
+    cameraOpeningRef.current = true;
     setCameraError(null);
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError('Camera access is not available in this browser or page context.');
+      cameraOpeningRef.current = false;
       return;
     }
     try {
@@ -78,6 +82,8 @@ export default function SceneAnalysis({
       if (mountedRef.current) {
         setCameraError('Camera permission was denied or the camera is unavailable. Check browser permissions and try again.');
       }
+    } finally {
+      cameraOpeningRef.current = false;
     }
   }
 
@@ -211,14 +217,19 @@ export default function SceneAnalysis({
         {analysis && <section aria-labelledby="evidence-title">
           <h2 id="evidence-title">Evidence checklist</h2>
           {analysis.candidate_regions.length === 0 ? <p>No clear open-area candidate was identified in this image.</p> : <>
-            <p>Visible candidate regions are ranked by image cues for review.</p>
+            <p>Visible candidate regions are ranked by image cues for review. The review-order heuristic is: (relative area × 0.50) + (shape compactness × 0.30) + (model confidence × 0.20), where relative area = min(candidate visible pixel area ÷ largest candidate visible pixel area, 1). The score is a heuristic review-order value, not a percent or probability of safety.</p>
             <ul className={styles.candidateList} aria-label="Candidate areas">
               {analysis.candidate_regions.map((candidate) => <li key={candidate.rank}>
                 <button type="button" className={`${styles.candidate} ${candidate.rank === selectedRank ? styles.selected : ''}`}
                   aria-pressed={candidate.rank === selectedRank} aria-label={`Candidate region ${candidate.rank}: ${candidate.surface_class}`}
                   onClick={() => setSelectedRank(candidate.rank)}>
-                  Candidate {candidate.rank} · {candidate.surface_class.replace(/-/g, ' ')} · {Math.round(candidate.ranking_score * 100)}% cue score
+                  Candidate {candidate.rank} · {candidate.surface_class.replace(/-/g, ' ')} · ranking heuristic: {candidate.ranking_score.toFixed(2)} (0.00–1.00)
                 </button>
+                <ul className={styles.checklist} aria-label={`Evidence for candidate ${candidate.rank}`}>
+                  <li>Visible area: {Math.round(candidate.area_fraction * 100)}% of the image.</li>
+                  <li>Shape compactness: {Math.round(candidate.compactness * 100)}%.</li>
+                  <li>Model confidence: {Math.round(candidate.model_confidence * 100)}%.</li>
+                </ul>
               </li>)}
             </ul>
           </>}
