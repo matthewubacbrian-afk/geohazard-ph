@@ -72,6 +72,15 @@ because they do not resolve a Kaggle version.
   asset was refreshed at tolerance 0.001 (measured 1,233,793 bytes raw and 266 KB
   gzipped; the main JS bundle measured 576 KB gzipped with the asset included).
 
+## Scene analysis model (preflight)
+
+- Model: [facebook/detr-resnet-50-panoptic](https://huggingface.co/facebook/detr-resnet-50-panoptic), pinned to immutable revision `d53b52a799403a8867920f82c869e40732b47037`.
+- Model card license: Apache-2.0. The card identifies COCO 2017 panoptic training data; this is not locally validated against Philippine homes, malls, or disaster scenes and is not a safety model.
+- Revision files listed by the Hugging Face model API: `config.json`, `preprocessor_config.json`, `pytorch_model.bin`, and `README.md` (plus `.gitattributes`). Weights are not stored in Git.
+- Relevant exact `id2label` entries in that revision's `config.json`: `floor-other`, `floor-stone`, `floor-tile`, `floor-wood`, `ground-other`, `pavement`, `road`, `grass`, and `gravel`. The config does not define a label named exactly `floor`; downstream allow-lists must use the exact configured strings.
+- Source checks performed 2026-10-13: immutable revision API response, revision README model card, and revision `config.json`. The model card says the model was trained on COCO 2017 panoptic (118k annotated training images).
+- Runtime and deployment footprint have not been measured. The approved staging release requires one shared API image for both `linux/amd64` and `linux/arm64`; local Docker Engine was unavailable during preflight. Do not add model dependencies or default-image provisioning until both image architectures, offline loading, CPU inference, cold-load time, and peak memory have been measured. See the preflight status in the runbook and Epic 7 plan.
+
 ## Attribution
 
 Every client view that displays public hazard data should identify source and last-updated time. PHIVOLCS-derived scraped data should be labeled as unofficial aggregation and linked back to the source.

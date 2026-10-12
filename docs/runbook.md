@@ -1,5 +1,22 @@
 # Runbook
 
+## Epic 7 Model Packaging Preflight (2026-10-13)
+
+The pinned source `facebook/detr-resnet-50-panoptic@d53b52a799403a8867920f82c869e40732b47037`
+was verified at Hugging Face. Its model card declares Apache-2.0 and its config labels
+are recorded in [data-sources.md](data-sources.md). No weights are stored in Git.
+
+Packaging is not provisioned: the local Docker CLI is installed, but Docker Desktop's
+Linux daemon was unavailable during this preflight. The staging workflow builds one
+backend image for `linux/amd64` and `linux/arm64`, and the API and ingestion worker use
+that same image. `compose.staging.yml` defines no per-service CPU or memory limits;
+the runbook's OCI target allows 2 OCPUs and 12 GB total across all services. No
+dependency wheel/image delta, model artifact size, cold-load time, inference time,
+peak RSS, or offline inference result has therefore been measured. Do not enable
+model loading or provisioning in the shared image until those measurements are made
+for both published architectures and fit the deployment budget. Keep model loading
+lazy so the ingestion worker does not initialize it.
+
 ## Ingestion Failure
 
 1. Check which source failed and whether the source is reachable.

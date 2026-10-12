@@ -52,15 +52,15 @@
 - The model adapter loads `DetrImageProcessor` and `DetrForSegmentation` with the fixed model ID/revision and `local_files_only=True`. `PanopticSegmenter.segment(image: PIL.Image.Image) -> Sequence[PanopticSegment]` returns each `segments_info` entry as `class_name`, `mask: np.ndarray[bool]` (same height/width as the input), and `model_confidence` from its score. It maps `post_process_panoptic_segmentation` segment IDs to masks; it imports Transformers/Torch lazily and never accesses the network.
 - The initial source revision is `d53b52a799403a8867920f82c869e40732b47037`; preserve it exactly unless the source is unavailable/license-invalid, in which case stop and revise the spec before changing model.
 
-- [ ] **Step 1: Inspect deployment and Python environments**
+- [x] **Step 1: Inspect deployment and Python environments**
 
 Run `Get-Content backend/Dockerfile`, `Get-Content backend/Dockerfile.prod`, `Get-Content docker-compose.yml`, `Get-Content docker-compose.prod.yml`, `Get-Content compose.staging.yml`, and inspect `.github/workflows/deploy-staging.yml`. Record the Python base versions, image targets, staging memory/architecture assumptions, and whether API and ingestion worker share one image. Confirm the current worktree is clean except for the plan file.
 
-- [ ] **Step 2: Verify model artifacts and license**
+- [x] **Step 2: Verify model artifacts and license**
 
 Use the exact Hugging Face repository revision in the model URL; verify model card license, config labels, and files needed by Transformers. Record the immutable revision, source/license, and selected surface labels in `docs/data-sources.md`. Do not fetch/store full weights in the repository.
 
-- [ ] **Step 3: Measure CPU dependency and artifact cost**
+- [ ] **Step 3: Measure CPU dependency and artifact cost — blocked**
 
 Resolve Python 3.12-compatible CPU-only Torch, Transformers and Pillow versions. Build a throwaway local Docker image or isolated package install and record compressed wheel size, installed image delta, model artifact size, cold load time, CPU inference time, and peak resident memory on a small image. Do not stage generated weights or the throwaway image.
 
@@ -71,6 +71,8 @@ If the existing API image and staging memory can support the measured package/mo
 - [ ] **Step 5: Verify artifact loading is offline**
 
 Run the packaged model loader with networking disabled and a pre-provisioned local revision. Expected: it loads only that cached commit, reports the pinned `model_version`, and raises the typed unavailable error when files are missing. Run a single small CPU inference and record elapsed time and peak RSS; do not claim safety or quality validation.
+
+**Preflight evidence (2026-10-13):** Steps 1–2 are complete. The exact Hugging Face revision, Apache-2.0 model card, required repository files, and configured surface labels are recorded in `docs/data-sources.md`. The local Docker CLI has no reachable Linux daemon (`docker version` reports the Docker Desktop Linux engine pipe is missing). The staging workflow requires both `linux/amd64` and `linux/arm64`; the API, migration and ingestion worker use the same image; Compose declares no per-service memory/CPU limits; the documented host allowance is 2 OCPUs and 12 GB shared across services. Therefore image builds, CPU package/artifact/image costs, cache-only loading, inference latency, and peak RSS could not be measured. No dependency or deployment image changes are justified by this evidence. Resume Steps 3–5 when a Docker-enabled environment can measure the existing deployment targets; do not change the hosting boundary as part of this preflight.
 
 - [ ] **Step 6: Commit measured model/deployment foundation**
 
