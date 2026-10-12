@@ -4,10 +4,32 @@ Use this checklist to verify the existing Nearby, Saved locations, and Alerts fl
 an installed debug app. Record results separately for each runtime. The [README mobile
 section](../README.md#epic-4-mobile-nearby-alerts) has the project setup commands.
 
+## Epic 7 Scene Review (Android and iOS)
+
+These device checks are pending until a camera-capable runtime and configured API are
+available. Record Android and iOS independently; passing Jest does not verify native
+permissions or camera behavior.
+
+- [ ] Open **Scene review** and confirm no camera permission prompt appears until **Open camera** is tapped.
+- [ ] Allow camera access, capture an indoor scene (for example, a kitchen or mall interior), and confirm the preview appears.
+- [ ] Analyze the capture; verify candidate polygons align with the image, candidate selection updates the highlighted polygon, and the evidence checklist plus persistent visual-cue caveat are visible.
+- [ ] Capture an outdoor scene and repeat the overlay/checklist check.
+- [ ] Retake the photo and confirm the prior preview, candidate result, and selection are cleared before the camera reopens.
+- [ ] Deny camera access and confirm an actionable permission message appears without crashing; grant access in system settings and retry.
+- [ ] With API connectivity disabled, analyze a capture and confirm a safe retry message appears; restore connectivity and retry successfully.
+- [ ] Confirm a no-candidate response has a clear empty state and still displays the caveat.
+- [ ] Leave Scene review during and after analysis, return to it, and confirm the old image and analysis are gone.
+- [ ] Verify no gallery permission or photo-library picker is requested; photos are sent only for the selected analysis and are not saved to history.
+
+| Runtime | Camera/permission | API/overlay/checklist | Cleanup | Date / notes |
+| --- | --- | --- | --- | --- |
+| Android | Not run | Not run | Not run | Requires camera-capable device and configured API URL |
+| iOS | Not run | Not run | Not run | Requires camera-capable device and configured API URL |
+
 ## Prepare a runtime and API
 
-1. Start a development or staging API with `GET /api/v1/events` reachable from the
-   runtime. Confirm the endpoint returns a JSON array. To exercise a nearby match,
+1. Start a development or staging API with `GET /api/v1/events` and
+   `POST /api/v1/scene-analyses` reachable from the runtime. Confirm the events endpoint returns a JSON array. To exercise a nearby match,
    choose one event in that array and note its `latitude`, `longitude`, and
    `place_name`. If there are no events, mark the data-dependent checks blocked.
 2. On Android, use JDK 17, Android Studio, SDK Platform 34, Build Tools 34.0.0,
@@ -27,7 +49,7 @@ section](../README.md#epic-4-mobile-nearby-alerts) has the project setup command
 
 | Step | Action | Expected result |
 | --- | --- | --- |
-| 1 | Launch the app with no saved API URL or locations. | Nearby opens and prompts for an API URL and a saved location. The three tabs are reachable. |
+| 1 | Launch the app with no saved API URL or locations. | Nearby opens and prompts for an API URL and a saved location. All four tabs are reachable. |
 | 2 | In Saved locations, enter an invalid API URL, then the reachable URL ending in `/api/v1`; tap Save API URL. | The invalid URL shows a validation error. The valid URL shows a saved message. |
 | 3 | Try a blank location name, latitude outside -90 to 90, longitude outside -180 to 180, and radius outside 1 to 500 km. | Each invalid attempt is rejected and adds no location. |
 | 4 | Save a named location using the selected event's exact coordinates and a 1 km radius. Tap Refresh events in Nearby. | The location appears in Saved locations. Nearby shows the selected event with place, source, time, magnitude when reported, and distance. Alerts shows the same match and states that background push is not configured. |
@@ -35,6 +57,7 @@ section](../README.md#epic-4-mobile-nearby-alerts) has the project setup command
 | 6 | Close and relaunch the app while the API remains unreachable. | The API URL, saved location, and cached event list remain available. The data is labeled offline after refresh fails. |
 | 7 | Restore API access and refresh. Remove the matching location, then save a 1 km location whose coordinates are outside the radius of every event in the current feed. | The app clears the offline label after a successful refresh and displays “No events are within your saved radii.” |
 | 8 | Remove the remaining test location. | Saved locations no longer lists it, and Nearby prompts for a saved location. |
+| 9 | Open Scene review, capture a photo, and run scene analysis. | Candidate areas, visible cues, and limitations appear under the persistent visual-cue caveat; no image history is created. |
 
 If a valid event is unavailable, mark steps 4-7 blocked where they require a match or
 cached event data. Do not count an empty feed as a successful proximity test. If a
