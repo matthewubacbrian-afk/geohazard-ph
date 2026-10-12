@@ -76,7 +76,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#ffffff', borderColor: '#ccd4ce', borderRadius: 8, borderWidth: 1,
     marginTop: 8, padding: 12,
   },
-  candidateButtonSelected: { backgroundColor: '#e5f5eb', borderColor: '#16834a', borderWidth: 2 },
+  candidateButtonSelected: { backgroundColor: '#eaf0f3', borderColor: '#496273', borderWidth: 2 },
   candidateTitle: { color: '#17241f', fontSize: 15, fontWeight: '700', marginBottom: 4 },
   candidateMetric: { color: '#263630', fontSize: 13, lineHeight: 19, paddingVertical: 1 },
   checklistItem: { color: '#263630', fontSize: 15, lineHeight: 22, paddingVertical: 3 },

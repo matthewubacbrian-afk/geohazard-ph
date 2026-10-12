@@ -1,7 +1,12 @@
-import { analyzeScene, captureSceneImage, mapSceneAnalysisResponse } from '../src/services/sceneAnalysis';
+import {
+  analyzeScene, captureSceneImage, getRelativeAreaTerm, mapSceneAnalysisResponse,
+  SCENE_CANDIDATE_HIGHLIGHT,
+} from '../src/services/sceneAnalysis';
+import { styles } from '../src/styles';
 
 jest.mock('react-native-image-picker', () => ({ launchCamera: jest.fn() }));
 jest.mock('react-native', () => ({
+  StyleSheet: { create: (style: object) => style },
   PermissionsAndroid: {
     PERMISSIONS: { CAMERA: 'android.permission.CAMERA' },
     RESULTS: { GRANTED: 'granted', DENIED: 'denied', NEVER_ASK_AGAIN: 'never_ask_again' },
@@ -39,6 +44,26 @@ describe('scene analysis mobile service', () => {
     jest.clearAllMocks();
     global.fetch = jest.fn();
     (PermissionsAndroid.request as jest.Mock).mockResolvedValue(PermissionsAndroid.RESULTS.GRANTED);
+  });
+
+  it('normalizes the area ranking term against the largest candidate and handles edge values', () => {
+    expect(getRelativeAreaTerm(0.2, 0.5)).toBe(0.4);
+    expect(getRelativeAreaTerm(0.8, 0.5)).toBe(1);
+    expect(getRelativeAreaTerm(0.5, 0.5)).toBe(1);
+    expect(getRelativeAreaTerm(0.2, 0)).toBe(0);
+    expect(getRelativeAreaTerm(-0.2, 0.5)).toBe(0);
+    expect(getRelativeAreaTerm(Number.POSITIVE_INFINITY, 0.5)).toBe(0);
+  });
+
+  it('uses neutral slate candidate highlighting instead of safety-coded green', () => {
+    expect(SCENE_CANDIDATE_HIGHLIGHT).toEqual({
+      fill: 'rgba(66, 93, 111, 0.24)',
+      stroke: '#425d6f',
+    });
+    expect(styles.candidateButtonSelected).toMatchObject({
+      backgroundColor: '#eaf0f3',
+      borderColor: '#496273',
+    });
   });
 
   it('returns cancellation without treating it as an error', async () => {

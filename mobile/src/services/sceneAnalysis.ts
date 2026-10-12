@@ -4,6 +4,10 @@ import { launchCamera } from 'react-native-image-picker';
 import type { CapturedSceneImage, SceneAnalysisResult, SceneCandidate, ScenePoint } from '../types/sceneAnalysis';
 
 export const SCENE_ANALYSIS_CAVEAT = 'Visual cues only—not a safety assessment. Verify conditions and follow official emergency guidance.';
+export const SCENE_CANDIDATE_HIGHLIGHT = {
+  fill: 'rgba(66, 93, 111, 0.24)',
+  stroke: '#425d6f',
+} as const;
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const SURFACE_CLASSES = new Set([
   'floor-other', 'floor-stone', 'floor-tile', 'floor-wood', 'ground-other',
@@ -15,6 +19,13 @@ export class SceneAnalysisError extends Error {
     super(message);
     this.name = 'SceneAnalysisError';
   }
+}
+
+export function getRelativeAreaTerm(areaFraction: number, largestAreaFraction: number): number {
+  if (!Number.isFinite(areaFraction) || !Number.isFinite(largestAreaFraction) || largestAreaFraction <= 0) {
+    return 0;
+  }
+  return Math.min(Math.max(areaFraction, 0) / largestAreaFraction, 1);
 }
 
 export type CaptureOutcome =

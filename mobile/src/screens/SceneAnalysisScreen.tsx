@@ -3,7 +3,8 @@ import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'rea
 import Svg, { Polygon } from 'react-native-svg';
 
 import {
-  analyzeScene, captureSceneImage, SCENE_ANALYSIS_CAVEAT,
+  analyzeScene, captureSceneImage, getRelativeAreaTerm, SCENE_ANALYSIS_CAVEAT,
+  SCENE_CANDIDATE_HIGHLIGHT,
   type SceneAnalysisError,
 } from '../services/sceneAnalysis';
 import { styles } from '../styles';
@@ -93,6 +94,7 @@ export default function SceneAnalysisScreen({ apiBaseUrl, isActive }: Props) {
   }
 
   const selectedCandidate = result?.candidateRegions.find((candidate) => candidate.rank === selectedRank);
+  const largestCandidateArea = Math.max(0, ...(result?.candidateRegions.map((candidate) => candidate.areaFraction) ?? []));
   const imageWidth = image?.width || 1;
   const imageHeight = image?.height || 1;
 
@@ -121,9 +123,9 @@ export default function SceneAnalysisScreen({ apiBaseUrl, isActive }: Props) {
             {selectedCandidate ? (
               <Svg pointerEvents="none" preserveAspectRatio="xMidYMid meet" style={styles.sceneOverlay} viewBox={`0 0 ${imageWidth} ${imageHeight}`}>
                 <Polygon
-                  fill="rgba(34, 197, 94, 0.24)"
+                  fill={SCENE_CANDIDATE_HIGHLIGHT.fill}
                   points={selectedCandidate.polygon.map((point) => `${point.x * imageWidth},${point.y * imageHeight}`).join(' ')}
-                  stroke="#16834a"
+                  stroke={SCENE_CANDIDATE_HIGHLIGHT.stroke}
                   strokeWidth={Math.max(imageWidth, imageHeight) * 0.008}
                 />
               </Svg>
@@ -158,6 +160,7 @@ export default function SceneAnalysisScreen({ apiBaseUrl, isActive }: Props) {
                     >
                       <Text style={styles.candidateTitle}>Candidate {candidate.rank}: {candidate.surfaceClass}</Text>
                       <Text style={styles.candidateMetric}>Visible image area: {Math.round(candidate.areaFraction * 100)}%</Text>
+                      <Text style={styles.candidateMetric}>Relative area term: {getRelativeAreaTerm(candidate.areaFraction, largestCandidateArea).toFixed(2)} / 1.00</Text>
                       <Text style={styles.candidateMetric}>Shape compactness: {candidate.compactness.toFixed(2)} / 1.00</Text>
                       <Text style={styles.candidateMetric}>Model class confidence: {candidate.modelConfidence.toFixed(2)} / 1.00 (not safety confidence)</Text>
                       <Text style={styles.candidateMetric}>Weighted visual heuristic score: {candidate.rankingScore.toFixed(2)} / 1.00</Text>
