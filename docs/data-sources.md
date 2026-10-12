@@ -83,7 +83,7 @@ because they do not resolve a Kaggle version.
 - Reproduction used an isolated venv and cache outside the repository. With `$root` set to a fresh temporary directory:
 
   ```powershell
-  $root = Join-Path $env:TEMP 'epic7-model-preflight-repro'
+  $root = Join-Path $env:TEMP ("epic7-model-preflight-repro-" + [guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Path $root | Out-Null
   py -3.11 -m venv "$root\venv"
   $py = "$root\venv\Scripts\python.exe"
@@ -217,9 +217,10 @@ because they do not resolve a Kaggle version.
   $env:HF_HUB_OFFLINE = '1'
   $env:TRANSFORMERS_OFFLINE = '1'
   & $py $script $modelPath
+  & $py $script $modelPath
   ```
 
-  The script runs in a fresh process; its file reads use a warmed host file cache. It guards socket connections, sets both offline flags, and loads only local files. The output was load `0.471–0.483 s`, inference `23.094 s` and `26.944 s` over two runs, peak RSS `2,856,464,384` bytes, zero missing checkpoint keys, and four unused BatchNorm `num_batches_tracked` buffers. A separate offline lookup of a nonexistent model path raised `OSError` without a network attempt. Typed unavailable-error mapping remains part of the future adapter.
+  The GUID creates a unique, initially empty temporary directory. Each invocation starts a separate fresh process; both read the already downloaded files with a warmed host file cache. Each output reports that run's load time, inference time, and peak RSS. The recorded load range `0.471–0.483 s` and inference times `23.094 s` and `26.944 s` come from those two invocations; `2,856,464,384` bytes is the maximum RSS across them. Both runs reported zero missing checkpoint keys and four unused BatchNorm `num_batches_tracked` buffers. A separate offline lookup of a nonexistent model path raised `OSError` without a network attempt. Typed unavailable-error mapping remains part of the future adapter.
 - The pinned snapshot occupied 172,263,716 bytes (about 164.3 MiB), including `pytorch_model.bin` at 172,245,279 bytes. Cache-only loading succeeded with a process-cold load of 0.47–0.48 seconds after the host file cache had been warmed. Two 256×256 synthetic-image CPU runs with two Torch threads took 23.1 and 26.9 seconds; peak process RSS was 2,856,464,384 bytes (about 2,724 MiB). These are Windows host measurements, not Linux/container or production estimates, and make no model quality or safety claim.
 - Transformers' `DetrConfig` defaults to attempting to load a separate timm backbone checkpoint. To keep requests and startup offline, the loader must set `config.use_pretrained_backbone = False` before constructing `DetrForSegmentation`; the pinned checkpoint supplied all model parameters (zero missing parameter keys; four unused BatchNorm `num_batches_tracked` buffers). The run set `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, and guarded socket connections against network access.
 - The PyTorch CPU wheel index lists `torch==2.14.1+cpu` and `torchvision==0.29.1+cpu` wheels for CPython 3.12 on both `manylinux_2_28_x86_64` and `manylinux_2_28_aarch64`. This is index-availability evidence only; neither Linux wheel set was installed or measured.
