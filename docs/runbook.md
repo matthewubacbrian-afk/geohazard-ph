@@ -6,16 +6,26 @@ The pinned source `facebook/detr-resnet-50-panoptic@d53b52a799403a8867920f82c869
 was verified at Hugging Face. Its model card declares Apache-2.0 and its config labels
 are recorded in [data-sources.md](data-sources.md). No weights are stored in Git.
 
-Packaging is not provisioned: the local Docker CLI is installed, but Docker Desktop's
-Linux daemon was unavailable during this preflight. The staging workflow builds one
+An isolated CPU package and model-cache smoke run is recorded in
+[data-sources.md](data-sources.md): 167.2 MiB of runtime wheels, 848.3 MiB installed
+site-packages, a 164.3 MiB pinned model snapshot, 0.47–0.48 second process-cold load
+with a warm host file cache, 23.1–26.9 second CPU inference, and 2,724 MiB peak RSS.
+This ran on Windows x64 / CPython 3.11.9 and does not establish Linux or production
+performance. Cache-only model loading succeeded after explicitly disabling the
+secondary pretrained timm backbone initialization; use `local_files_only=True` and
+offline flags in the future adapter.
+
+Deployment packaging is still unverified: the local Docker CLI is installed, but
+Docker Desktop's Linux daemon was unavailable. The staging workflow builds one
 backend image for `linux/amd64` and `linux/arm64`, and the API and ingestion worker use
 that same image. `compose.staging.yml` defines no per-service CPU or memory limits;
-the runbook's OCI target allows 2 OCPUs and 12 GB total across all services. No
-dependency wheel/image delta, model artifact size, cold-load time, inference time,
-peak RSS, or offline inference result has therefore been measured. Do not enable
-model loading or provisioning in the shared image until those measurements are made
-for both published architectures and fit the deployment budget. Keep model loading
-lazy so the ingestion worker does not initialize it.
+the OCI target allows 2 OCPUs and 12 GB total across all services. The PyTorch CPU
+index lists the chosen CPython 3.12 Torch and torchvision wheels for both Linux
+architectures, but actual Linux package resolution/install, Docker image delta,
+production cold load/inference, and available staging resource headroom remain
+unmeasured. Do not enable model provisioning in the shared image until the deployment
+targets are measured and reviewed. Keep model initialization lazy so the ingestion
+worker does not initialize it.
 
 ## Ingestion Failure
 

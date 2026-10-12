@@ -56,7 +56,7 @@ The client requests camera permission only after the user activates the camera a
 
 The client retains its local preview only until retake, navigation away, or component unmount. The API does not retain the input or output image. Request bodies, base64 values, and image-derived paths are excluded from logs, tracing, analytics, and error detail. No database, cache, event, or model-training write is introduced.
 
-The backend runs the pinned `facebook/detr-resnet-50-panoptic` model on CPU. Only the existing recognized floor/ground/pavement/road/grass/gravel surface labels are eligible for candidate regions. A candidate is a connected component of eligible surface pixels with model confidence at least 0.50 and at least 1% of image pixels. Extract one external contour per component; simplify it while retaining a closed polygon of at most 64 normalized points. Coordinates use `x = pixel_x / image_width`, `y = pixel_y / image_height`, origin at top-left, values in `[0, 1]`. Return at most five candidates.
+The backend runs the pinned `facebook/detr-resnet-50-panoptic` model on CPU. Only exact configured surface labels `floor-other`, `floor-stone`, `floor-tile`, `floor-wood`, `ground-other`, `pavement`, `road`, `grass`, and `gravel` are eligible for candidate regions; the config has no label named exactly `floor`. A candidate is a connected component of eligible surface pixels with model confidence at least 0.50 and at least 1% of image pixels. Extract one external contour per component; simplify it while retaining a closed polygon of at most 64 normalized points. Coordinates use `x = pixel_x / image_width`, `y = pixel_y / image_height`, origin at top-left, values in `[0, 1]`. Return at most five candidates.
 
 Rank candidates deterministically with a visual-review score (not a safety probability):
 
@@ -84,7 +84,7 @@ Sort descending by `ranking_score`, then descending `area_fraction`, then ascend
     "result_status":"candidates_found",
     "candidate_regions":[{
       "rank":1,
-      "surface_class":"floor",
+      "surface_class":"floor-wood",
       "polygon":[{"x":0.12,"y":0.58},{"x":0.82,"y":0.58},{"x":0.82,"y":0.94},{"x":0.12,"y":0.94}],
       "area_fraction":0.21,
       "compactness":0.71,
