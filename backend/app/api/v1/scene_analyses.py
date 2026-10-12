@@ -2,7 +2,7 @@ import asyncio
 import base64
 import binascii
 import json
-from functools import lru_cache
+from threading import Lock
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.concurrency import run_in_threadpool
@@ -30,14 +30,19 @@ LIMITATIONS = [
 
 router = APIRouter(prefix="/scene-analyses", tags=["scene-analyses"])
 _analysis_semaphore = asyncio.Semaphore(1)
+_segmenter_lock = Lock()
+_segmenter: LocalPanopticSegmenter | None = None
 
 
-@lru_cache(maxsize=1)
 def get_segmenter() -> LocalPanopticSegmenter:
-    settings = get_settings()
-    return LocalPanopticSegmenter(
-        cache_dir=settings.scene_analysis_model_cache_dir,
-    )
+    global _segmenter
+    with _segmenter_lock:
+        if _segmenter is None:
+            settings = get_settings()
+            _segmenter = LocalPanopticSegmenter(
+                cache_dir=settings.scene_analysis_model_cache_dir,
+            )
+        return _segmenter
 
 
 async def _read_bounded_body(request: Request) -> bytes:

@@ -157,6 +157,38 @@ def test_cpu_analysis_runs_off_event_loop_thread(monkeypatch):
     assert analysis_thread != caller_thread
 
 
+def test_concurrent_dependency_resolution_creates_one_segmenter(monkeypatch, tmp_path):
+    from app.api.v1 import scene_analyses
+
+    calls = 0
+    created = []
+    barrier = threading.Barrier(8)
+
+    class Settings:
+        scene_analysis_model_cache_dir = tmp_path
+
+    class Segmenter:
+        def __init__(self, cache_dir):
+            nonlocal calls
+            calls += 1
+            time.sleep(0.03)
+            created.append(self)
+
+    monkeypatch.setattr(scene_analyses, "get_settings", lambda: Settings())
+    monkeypatch.setattr(scene_analyses, "LocalPanopticSegmenter", Segmenter)
+    monkeypatch.setattr(scene_analyses, "_segmenter", None)
+
+    def resolve_dependency():
+        barrier.wait()
+        return scene_analyses.get_segmenter()
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        segmenters = list(pool.map(lambda _: resolve_dependency(), range(8)))
+
+    assert calls == 1
+    assert all(segmenter is created[0] for segmenter in segmenters)
+
+
 def test_model_adapter_serializes_concurrent_inference(monkeypatch, tmp_path):
     from app.services.scene_analysis_model import LocalPanopticSegmenter
 
