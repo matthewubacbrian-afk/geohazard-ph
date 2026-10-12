@@ -1,3 +1,4 @@
+import tracemalloc
 from io import BytesIO
 
 import numpy as np
@@ -103,6 +104,69 @@ def test_analyze_splits_four_connected_components_and_returns_closed_normalized_
     assert all(0 <= point.x <= 1 and 0 <= point.y <= 1 for point in candidate.polygon)
     assert candidate.area_fraction == pytest.approx(0.09)
     assert candidate.compactness == pytest.approx(4 * np.pi * 9 / 12**2)
+
+
+def test_analyze_does_not_join_diagonally_touching_pixels() -> None:
+    mask = np.zeros((2, 2), dtype=bool)
+    mask[0, 0] = True
+    mask[1, 1] = True
+    result = analyze(Image.new("RGB", (2, 2)), [segment("grass", mask)])
+    assert len(result.candidate_regions) == 2
+    assert all(candidate.area_fraction == pytest.approx(0.25) for candidate in result.candidate_regions)
+
+
+def test_concave_component_polygon_is_clockwise_and_has_four_distinct_vertices() -> None:
+    mask = np.zeros((12, 12), dtype=bool)
+    mask[1:9, 1:3] = True
+    mask[7:9, 1:9] = True
+    candidate = analyze(Image.new("RGB", (12, 12)), [segment("road", mask)]).candidate_regions[0]
+    vertices = [(point.x, point.y) for point in candidate.polygon[:-1]]
+    signed_area = sum(
+        x1 * y2 - x2 * y1
+        for (x1, y1), (x2, y2) in zip(vertices, vertices[1:] + vertices[:1])
+    ) / 2
+    assert len(set(vertices)) >= 4
+    assert signed_area > 0  # positive shoelace area is clockwise in image coordinates
+
+
+def test_polygon_simplification_preserves_narrow_component_geometry() -> None:
+    mask = np.zeros((12, 12), dtype=bool)
+    mask[0, 4:6] = True
+    mask[1, 4] = True
+    mask[2:4, 4:6] = True
+    mask[4, 5] = True
+    mask[5, 5:7] = True
+    mask[6, 5] = True
+    candidate = analyze(Image.new("RGB", (12, 12)), [segment("road", mask)]).candidate_regions[0]
+    vertices = [(point.x, point.y) for point in candidate.polygon[:-1]]
+    signed_area = sum(
+        x1 * y2 - x2 * y1
+        for (x1, y1), (x2, y2) in zip(vertices, vertices[1:] + vertices[:1])
+    ) / 2
+    assert len(set(vertices)) >= 4
+    assert signed_area > 0
+
+
+def test_dense_component_does_not_materialize_a_python_object_per_pixel() -> None:
+    image = Image.new("RGB", (640, 640))
+    mask = np.ones((640, 640), dtype=bool)
+    tracemalloc.start()
+    try:
+        analyze(image, [segment("road", mask)])
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak < 12 * 1024 * 1024
+
+
+def test_dense_near_pixel_cap_image_yields_candidate_without_per_pixel_objects() -> None:
+    side = 3464  # 11,999,296 pixels, within the decoder's 12,000,000-pixel cap.
+    image = Image.new("RGB", (side, side))
+    mask = np.ones((side, side), dtype=bool)
+    result = analyze(image, [segment("road", mask)])
+    assert result.result_status == "candidates_found"
+    assert result.candidate_regions[0].area_fraction == 1.0
+    assert len(result.candidate_regions[0].polygon) <= 64
 
 
 def test_analyze_ranks_candidates_with_spec_formula_and_tie_breaks_by_area() -> None:
