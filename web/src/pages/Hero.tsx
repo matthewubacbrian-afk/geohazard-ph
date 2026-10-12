@@ -9,7 +9,7 @@ type HeroProps = {
   onSettings?: () => void;
 };
 
-const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Historical"];
+const navItems = ["Dashboard", "Scene Review", "How It Works", "About", "Data Sources", "Historical"];
 
 const steps = [
   {

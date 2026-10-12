@@ -17,6 +17,7 @@ const NAV_VIEWS: Record<string, View> = {
   About: "about",
   "Data Sources": "data-sources",
   Historical: "historical",
+  "Scene Review": "scene-analysis",
 };
 
 export default function TopNav({

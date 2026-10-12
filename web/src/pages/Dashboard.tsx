@@ -28,6 +28,7 @@ import {
 
 const navItems = [
   'Dashboard',
+  'Scene Review',
   'How It Works',
   'About',
   'Data Sources',

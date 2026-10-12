@@ -13,6 +13,7 @@ describe('application routes', () => {
     ['/about', /About GeoHazard/i],
     ['/data-sources', /Data Sources/i],
     ['/historical', /Historical Event Browser/i],
+    ['/scene-analysis', /Camera scene review/i],
   ])('renders the page at %s', (path, heading) => {
     window.history.pushState({}, '', path);
     render(<App />);
