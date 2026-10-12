@@ -1,9 +1,11 @@
+import asyncio
 import base64
 import binascii
 import json
 from functools import lru_cache
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
@@ -18,7 +20,7 @@ from app.services.scene_analysis import (
     analyze_scene,
     decode_scene_image,
 )
-from app.services.scene_analysis_model import LocalPanopticSegmenter
+from app.services.scene_analysis_model import MODEL_ID, MODEL_REVISION, LocalPanopticSegmenter
 
 MAX_REQUEST_BODY_BYTES = 5_593_000
 LIMITATIONS = [
@@ -27,14 +29,13 @@ LIMITATIONS = [
 ]
 
 router = APIRouter(prefix="/scene-analyses", tags=["scene-analyses"])
+_analysis_semaphore = asyncio.Semaphore(1)
 
 
 @lru_cache(maxsize=1)
 def get_segmenter() -> LocalPanopticSegmenter:
     settings = get_settings()
     return LocalPanopticSegmenter(
-        model_id=settings.scene_analysis_model_id,
-        revision=settings.scene_analysis_model_revision,
         cache_dir=settings.scene_analysis_model_cache_dir,
     )
 
@@ -64,6 +65,14 @@ async def post_scene_analysis(
     request: Request,
     segmenter: PanopticSegmenter = Depends(get_segmenter),
 ) -> SceneAnalysisResponse | JSONResponse:
+    async with _analysis_semaphore:
+        return await _handle_scene_analysis(request, segmenter)
+
+
+async def _handle_scene_analysis(
+    request: Request,
+    segmenter: PanopticSegmenter,
+) -> SceneAnalysisResponse | JSONResponse:
     if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "application/json":
         return error_response(422, "invalid_scene_image", "A JSON JPEG image request is required")
     try:
@@ -76,14 +85,13 @@ async def post_scene_analysis(
         if len(image_bytes) > MAX_IMAGE_BYTES:
             return error_response(413, "scene_image_too_large", "The decoded image exceeds the size limit")
         image = decode_scene_image(image_bytes, parsed.mime_type)
-        result = analyze_scene(image, segmenter)
+        result = await run_in_threadpool(analyze_scene, image, segmenter)
     except (ValidationError, binascii.Error, UnicodeDecodeError, json.JSONDecodeError, InvalidSceneImage, ValueError):
         return error_response(422, "invalid_scene_image", "The request must contain a valid bounded JPEG image")
     except SceneAnalysisUnavailable:
         return error_response(503, "scene_analysis_unavailable", "Scene analysis is temporarily unavailable")
 
-    settings = get_settings()
-    version = f"{settings.scene_analysis_model_id}@{settings.scene_analysis_model_revision}"
+    version = f"{MODEL_ID}@{MODEL_REVISION}"
     return SceneAnalysisResponse(
         model_version=version,
         result_status=result.result_status,

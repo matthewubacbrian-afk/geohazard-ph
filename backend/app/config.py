@@ -22,8 +22,6 @@ class Settings(BaseSettings):
     phivolcs_volcano_stale_seconds: int = Field(default=3600, ge=60)
     ingest_poll_interval_seconds: int = Field(default=60, ge=60)
     ingest_max_cycles: int | None = Field(default=None, ge=1)
-    scene_analysis_model_id: str = "facebook/detr-resnet-50-panoptic"
-    scene_analysis_model_revision: str = "d53b52a799403a8867920f82c869e40732b47037"
     scene_analysis_model_cache_dir: Path = Path(__file__).resolve().parents[2] / "model-cache"
 
     model_config = SettingsConfigDict(

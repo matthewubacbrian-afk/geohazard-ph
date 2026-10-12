@@ -2,7 +2,13 @@ import asyncio
 import base64
 import json
 import logging
+import sys
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from io import BytesIO
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -96,6 +102,109 @@ def test_fake_segmenter_success_and_exact_wire_fields(client):
     assert set(body["candidate_regions"][0]) == {
         "rank", "surface_class", "polygon", "area_fraction", "compactness", "model_confidence", "ranking_score"
     }
+
+
+def test_endpoint_model_version_uses_approved_fixed_pin(client, monkeypatch):
+    from app.api.v1 import scene_analyses
+
+    class OverrideSettings:
+        scene_analysis_model_cache_dir = None
+        scene_analysis_model_id = "attacker/alternate-model"
+        scene_analysis_model_revision = "mutable"
+
+    monkeypatch.setattr(scene_analyses, "get_settings", lambda: OverrideSettings())
+    response = client.post("/api/v1/scene-analyses", content=payload(), headers={"content-type": "application/json"})
+
+    assert response.status_code == 200
+    assert response.json()["model_version"] == (
+        "facebook/detr-resnet-50-panoptic@d53b52a799403a8867920f82c869e40732b47037"
+    )
+
+
+def test_cpu_analysis_runs_off_event_loop_thread(monkeypatch):
+    from starlette.requests import Request
+
+    from app.api.v1 import scene_analyses
+
+    caller_thread = threading.get_ident()
+    analysis_thread = None
+    original_analyze_scene = scene_analyses.analyze_scene
+
+    def record_analysis_thread(image, segmenter):
+        nonlocal analysis_thread
+        analysis_thread = threading.get_ident()
+        return original_analyze_scene(image, segmenter)
+
+    monkeypatch.setattr(scene_analyses, "analyze_scene", record_analysis_thread)
+    request_body = payload()
+    request_messages = iter([
+        {"type": "http.request", "body": request_body, "more_body": False},
+    ])
+
+    async def receive():
+        return next(request_messages)
+
+    scope = {
+        "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
+        "method": "POST", "scheme": "http", "path": "/api/v1/scene-analyses",
+        "raw_path": b"/api/v1/scene-analyses", "query_string": b"",
+        "headers": [(b"content-type", b"application/json")],
+        "client": ("test", 1), "server": ("test", 80), "state": {},
+    }
+    response = asyncio.run(scene_analyses.post_scene_analysis(Request(scope, receive), FakeSegmenter()))
+
+    assert response.model_version.startswith("facebook/detr-resnet-50-panoptic@")
+    assert analysis_thread != caller_thread
+
+
+def test_model_adapter_serializes_concurrent_inference(monkeypatch, tmp_path):
+    from app.services.scene_analysis_model import LocalPanopticSegmenter
+
+    state_lock = threading.Lock()
+    active_calls = 0
+    maximum_active_calls = 0
+
+    class Processor:
+        def __call__(self, **kwargs):
+            return {}
+
+        def post_process_panoptic_segmentation(self, output, target_sizes):
+            return [{"segments_info": [], "segmentation": np.zeros(target_sizes[0])}]
+
+    class Model:
+        config = SimpleNamespace(id2label={})
+
+        def __call__(self, **kwargs):
+            nonlocal active_calls, maximum_active_calls
+            with state_lock:
+                active_calls += 1
+                maximum_active_calls = max(maximum_active_calls, active_calls)
+            time.sleep(0.03)
+            with state_lock:
+                active_calls -= 1
+            return object()
+
+    model = LocalPanopticSegmenter(tmp_path)
+    load_calls = 0
+
+    def load_once():
+        nonlocal load_calls
+        if model._model is None:
+            load_calls += 1
+            time.sleep(0.03)
+            model._processor = Processor()
+            model._model = Model()
+
+    model._load = load_once
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(inference_mode=nullcontext))
+    image = Image.new("RGB", (2, 2))
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        results = list(pool.map(model.segment, [image] * 4))
+
+    assert results == [[], [], [], []]
+    assert load_calls == 1
+    assert maximum_active_calls == 1
 
 
 @pytest.mark.parametrize("content,content_type", [

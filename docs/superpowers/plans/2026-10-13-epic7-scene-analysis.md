@@ -171,7 +171,7 @@ Create Pydantic output schemas and enforce normalized polygon bounds, closure, c
 
 - [x] **Step 5: Add deployment settings and API contract docs**
 
-Add `scene_analysis_model_id`, `scene_analysis_model_revision`, and `scene_analysis_model_cache_dir` to `backend/app/config.py` and `.env.example`, with model ID/revision fixed to the approved pin and a documented local cache path. Add 413 to the coding-standard HTTP table and document endpoint, caps, schemas, and error codes in `docs/api-contracts.md`. Document image/body exclusion from logs and trace payloads in `docs/error-handling-and-logging.md`; ensure `docs/glossary.md` uses the same endpoint and field definitions.
+Add the approved model ID/revision as code constants that cannot be overridden through environment settings, and `scene_analysis_model_cache_dir` as the documented local cache setting. Add 413 to the coding-standard HTTP table and document endpoint, caps, schemas, and error codes in `docs/api-contracts.md`. Document image/body exclusion from logs and trace payloads in `docs/error-handling-and-logging.md`; ensure `docs/glossary.md` uses the same endpoint and field definitions.
 
 - [x] **Step 6: Verify and commit the API**
 
@@ -179,7 +179,7 @@ Run `cd backend && pytest -q tests/unit/test_scene_analyses_api.py tests/unit/te
 
 **Task 3 verification note:** API tests live under `tests/unit` because the shared autouse integration fixture requires local PostGIS. The route contract suite uses an isolated ASGI app and injected fake segmenter. Lightweight direct dependencies use exact Pillow 12.3.0 and NumPy 2.2.6 pins measured in the Task 1 CPython 3.11 preflight; both are compatible with Python >=3.11. Heavy model runtime packaging remains gated pending Linux/ARM64 and deployment-resource measurements.
 
-The test-first run failed collection as expected because `app.api.v1.scene_analyses` did not exist. Focused API and service tests pass (34); the full backend unit suite passes (117). Ruff passes for changed Python files, structure verification reports all 140 scaffold paths present, and `git diff --check` passes. A full backend pytest run was attempted but did not complete: its integration autouse fixture connects to the unavailable local PostGIS service (PostgreSQL is stopped and Docker is unavailable). No integration pass is claimed.
+The test-first run failed collection as expected because `app.api.v1.scene_analyses` did not exist. Before the runtime follow-up, focused API and service tests passed (34), and the full backend unit suite passed (117). The follow-up regression tests each failed against the original behavior, then passed after the fix: environment-like settings cannot change the model version, CPU analysis runs on a worker thread, and concurrent calls serialize initialization and inference. Current verification: API route tests 20 passed; full backend unit suite 120 passed (one existing Starlette/httpx deprecation warning); Ruff passes on changed Python files; structure verification reports all 140 scaffold paths present; and `git diff --check` passes. The PostGIS integration suite was not run for this follow-up; the earlier Task 3 attempt did not complete because PostgreSQL is stopped and Docker is unavailable. No integration pass is claimed.
 
 ### Task 4: Add the web capture and polygon/checklist experience
 
