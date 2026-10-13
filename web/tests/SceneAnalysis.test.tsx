@@ -20,7 +20,7 @@ const responsePayload: SceneAnalysisResponse = {
   visual_cues: [{ class_name: 'chair', model_confidence: 0.8 }],
   limitations: [
     'Visual scene cues only; this result does not determine whether any area is safe.',
-    'Blur, obstruction, lighting, or viewpoint can hide visual cues; one image cannot assess structural stability, hidden hazards, or route access.',
+    'Blur, obstruction, lighting, or viewpoint can hide visual cues. A single image cannot verify structural integrity, earthquake resistance, ground conditions, falling-glass or electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions.',
   ],
 };
 
@@ -82,7 +82,9 @@ describe('scene review capture screen', () => {
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia } });
     render(<SceneAnalysis onExit={vi.fn()} />);
     expect(getUserMedia).not.toHaveBeenCalled();
-    expect(screen.getByText(/visual cues only—not a safety assessment/i)).toBeInTheDocument();
+    expect(screen.getByText(/visual cue demonstrator only/i)).toBeInTheDocument();
+    expect(screen.getByText(/does not give emergency instructions, identify official shelters, or predict earthquakes/i)).toBeInTheDocument();
+    expect(screen.getByText(/not a safety assessment or a production-ready emergency decision tool/i)).toBeInTheDocument();
     expect(screen.getByText(/sent to this project’s python service for temporary analysis/i)).toBeInTheDocument();
   });
 
@@ -152,7 +154,9 @@ describe('scene review capture screen', () => {
     expect(screen.getByRole('button', { name: /candidate region 1/i })).toHaveTextContent(/ranking heuristic: 0\.70/i);
     expect(screen.getByText(/relative area × 0\.50.*shape compactness × 0\.30.*model confidence × 0\.20/i)).toBeInTheDocument();
     expect(screen.queryByText(/70% cue score/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/visual cues only—not a safety assessment/i)).toBeInTheDocument();
+    expect(screen.getByText(/visual cue demonstrator only/i)).toBeInTheDocument();
+    expect(screen.getByText(/does not give emergency instructions, identify official shelters, or predict earthquakes/i)).toBeInTheDocument();
+    expect(screen.getByText(/not a safety assessment or a production-ready emergency decision tool/i)).toBeInTheDocument();
     expect(analyze).toHaveBeenCalledWith(expect.objectContaining({ image_base64: 'ZmFrZQ==', mime_type: 'image/jpeg' }), expect.any(AbortSignal));
   });
 

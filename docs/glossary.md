@@ -161,4 +161,4 @@ When a spec or plan introduces a new concept:
 | sharpness score | variance of the four-neighbor grayscale Laplacian after reducing the longest image edge to 512 pixels; a provisional blur cue, not a general image-quality or obstruction score. |
 | scene image quality warning | API error `scene_image_quality_warning`; advisory result for a low provisional sharpness score, with retake and explicit continue actions. |
 | result_status | `result_status`; `candidates_found` when candidate regions exist, otherwise `no_clear_candidate`. |
-| scene-analysis limitations | `limitations`; fixed caveats that visual cues do not determine safety and one image cannot assess structural stability, hidden hazards, or route access. |
+| scene-analysis limitations | `limitations`; fixed caveats that visual cues do not determine safety, image conditions can hide cues, and one image cannot verify structural integrity, earthquake resistance, ground conditions, falling-glass or electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions. |

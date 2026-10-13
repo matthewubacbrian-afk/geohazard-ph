@@ -156,7 +156,12 @@ either edge, and 12,000,000 pixels total. Success is an unwrapped
 `visual_cues`, and two fixed `limitations`. Candidate fields are `rank`,
 `surface_class`, closed normalized `polygon` points (`x`, `y`), `area_fraction`,
 `compactness`, `model_confidence`, and `ranking_score`. Scores and coordinates
-are bounded to `[0, 1]`; at most five candidate regions are returned.
+are bounded to `[0, 1]`; at most five candidate regions are returned. The fixed
+limitations state that visual cues do not establish safety and that blur,
+obstruction, lighting, viewpoint, and a single image prevent verification of
+structural integrity, earthquake resistance, ground conditions, falling-glass or
+electrical hazards, egress, accessibility, routes, unseen areas, and changing
+conditions.
 
 Invalid JSON, base64, media type, or JPEG returns 422
 (`invalid_scene_image`). Oversized request or decoded image returns 413

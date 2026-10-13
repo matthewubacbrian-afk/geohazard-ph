@@ -103,6 +103,11 @@ def test_fake_segmenter_success_and_exact_wire_fields(client):
     body = response.json()
     assert set(body) == {"model_version", "result_status", "candidate_regions", "visual_cues", "limitations"}
     assert body["result_status"] == "candidates_found"
+    assert body["limitations"][1] == (
+        "Blur, obstruction, lighting, or viewpoint can hide visual cues. A single image cannot "
+        "verify structural integrity, earthquake resistance, ground conditions, falling-glass or "
+        "electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions."
+    )
     assert body["candidate_regions"][0]["surface_class"] == "grass"
     assert set(body["candidate_regions"][0]) == {
         "rank", "surface_class", "polygon", "area_fraction", "compactness", "model_confidence", "ranking_score"

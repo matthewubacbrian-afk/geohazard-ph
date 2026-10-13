@@ -92,7 +92,7 @@ Sort descending by `ranking_score`, then descending `area_fraction`, then ascend
       "ranking_score":0.81
     }],
     "visual_cues":[{"class_name":"chair","model_confidence":0.76}],
-    "limitations":["Visual scene cues only; this result does not determine whether any area is safe.","Blur, obstruction, lighting, or viewpoint can hide visual cues; one image cannot assess structural stability, hidden hazards, or route access."]
+    "limitations":["Visual scene cues only; this result does not determine whether any area is safe.","Blur, obstruction, lighting, or viewpoint can hide visual cues. A single image cannot verify structural integrity, earthquake resistance, ground conditions, falling-glass or electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions."]
   }
   ```
 
@@ -101,7 +101,7 @@ Sort descending by `ranking_score`, then descending `area_fraction`, then ascend
 - `backend/app/api/v1/scene_analyses.py` owns HTTP validation/error mapping; `backend/app/schemas/scene_analysis.py` defines request/response contracts; `backend/app/services/scene_analysis.py` owns in-memory decode, inference adapter, candidate extraction, ranking, and polygon normalization. The model adapter is injected so tests do not load/download weights.
 - The web route-level camera/review page uses `getUserMedia` after an explicit tap, stops tracks promptly, calls a typed API client, and draws returned polygons over the captured preview using normalized coordinates. It provides permission-denied, unsupported/insecure browser, capture failure, invalid-image, too-large, model-unavailable, loading, no-candidate, retry, and retake states.
 - Mobile uses `react-native-image-picker` `launchCamera` for a still capture, requests permission on tap, obtains a client-resized/compressed JPEG/base64 representation, and maps the snake_case wire response through an explicit service mapping. It renders the same preview, polygon, evidence, caveat, loading, and error states. No gallery fallback is included.
-- Both interfaces include persistent copy: “Visual cues only—not a safety assessment. Verify conditions and follow official emergency guidance.” Do not use “safe spot,” “safe zone,” or green safety-confidence styling.
+- Both interfaces include persistent copy: “Visual cue demonstrator only. This is not a safety assessment or a production-ready emergency decision tool. It does not give emergency instructions, identify official shelters, or predict earthquakes. Verify conditions and follow official emergency guidance.” Do not use “safe spot,” “safe zone,” or green safety-confidence styling.
 
 ### Configuration
 

@@ -44,7 +44,7 @@ function isSceneResponse(value: unknown): value is SceneAnalysisResponse {
     cue.model_confidence >= 0 && cue.model_confidence <= 1);
   const limitationsValid = value.limitations.length === 2 &&
     value.limitations[0] === 'Visual scene cues only; this result does not determine whether any area is safe.' &&
-    value.limitations[1] === 'Blur, obstruction, lighting, or viewpoint can hide visual cues; one image cannot assess structural stability, hidden hazards, or route access.';
+    value.limitations[1] === 'Blur, obstruction, lighting, or viewpoint can hide visual cues. A single image cannot verify structural integrity, earthquake resistance, ground conditions, falling-glass or electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions.';
   return candidatesValid && cuesValid && limitationsValid &&
     (value.candidate_regions.length > 0) === (value.result_status === 'candidates_found');
 }

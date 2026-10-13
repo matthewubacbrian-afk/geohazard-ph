@@ -47,10 +47,12 @@ not calibrated on a real-image benchmark. See [dataset and calibration notes](da
 The result is an image-based ranking for review, not a hazard verdict or safe-place
 recommendation. Candidate scores are deterministic visual heuristics based on relative
 area, compactness, and model confidence. They are not probabilities. Neither the model
-nor the score establishes structural stability, hidden hazards, ground condition, or
-route accessibility. Keep the on-screen caveat intact and direct users to official
-emergency guidance. Blur, obstruction, lighting, and viewpoint may hide or distort
-visual cues; the feature does not have a validated obstruction detector.
+nor the score establishes structural integrity, earthquake resistance, ground
+conditions, falling-glass or electrical hazards, egress, accessibility, routes,
+unseen areas, or changing conditions. Keep the on-screen demonstrator notice intact
+and direct users to official emergency guidance. Blur, obstruction, lighting, and
+viewpoint may hide or distort visual cues; the feature does not have a validated
+obstruction detector.
 
 The endpoint can return `503 scene_analysis_unavailable` in the default installation.
 That installation intentionally omits the large CPU model runtime and model weights

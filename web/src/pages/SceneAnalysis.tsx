@@ -10,7 +10,7 @@ type SceneAnalysisProps = {
   initialCapture?: SceneCapture;
 };
 
-const DISCLAIMER = 'Visual cues only—not a safety assessment. Verify conditions and follow official emergency guidance.';
+const DISCLAIMER = 'Visual cue demonstrator only. This is not a safety assessment or a production-ready emergency decision tool. It does not give emergency instructions, identify official shelters, or predict earthquakes. Verify conditions and follow official emergency guidance.';
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const MAX_IMAGE_EDGE = 1600;
 const JPEG_QUALITIES = [0.82, 0.68, 0.54, 0.4];

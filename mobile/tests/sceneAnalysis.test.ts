@@ -1,6 +1,6 @@
 import {
   analyzeScene, captureSceneImage, getRelativeAreaTerm, mapSceneAnalysisResponse,
-  SCENE_CANDIDATE_HIGHLIGHT,
+  SCENE_CANDIDATE_HIGHLIGHT, SCENE_ANALYSIS_CAVEAT,
 } from '../src/services/sceneAnalysis';
 import { styles } from '../src/styles';
 
@@ -33,11 +33,17 @@ const validWireResponse = {
   visual_cues: [{ class_name: 'chair', model_confidence: 0.88 }],
   limitations: [
     'Visual scene cues only; this result does not determine whether any area is safe.',
-    'Blur, obstruction, lighting, or viewpoint can hide visual cues; one image cannot assess structural stability, hidden hazards, or route access.',
+    'Blur, obstruction, lighting, or viewpoint can hide visual cues. A single image cannot verify structural integrity, earthquake resistance, ground conditions, falling-glass or electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions.',
   ],
 };
 
 describe('scene analysis mobile service', () => {
+  it('states the demonstrator and emergency decision limits', () => {
+    expect(SCENE_ANALYSIS_CAVEAT).toMatch(/visual cue demonstrator only/i);
+    expect(SCENE_ANALYSIS_CAVEAT).toMatch(/does not give emergency instructions, identify official shelters, or predict earthquakes/i);
+    expect(SCENE_ANALYSIS_CAVEAT).toMatch(/not a safety assessment or a production-ready emergency decision tool/i);
+  });
+
   const launch = launchCamera as jest.Mock;
 
   beforeEach(() => {
@@ -160,6 +166,10 @@ describe('scene analysis mobile service', () => {
     expect(() => mapSceneAnalysisResponse(validWireResponse)).not.toThrow();
     expect(() => mapSceneAnalysisResponse({ ...validWireResponse, candidate_regions: [{ ...validWireResponse.candidate_regions[0], polygon: [{ x: 2, y: 0 }] }] })).toThrow();
     expect(() => mapSceneAnalysisResponse({ ...validWireResponse, result_status: 'safe' })).toThrow();
+    expect(() => mapSceneAnalysisResponse({
+      ...validWireResponse,
+      limitations: [...validWireResponse.limitations.slice(0, 1), 'No limitations'],
+    })).toThrow();
   });
 
   it('maps an empty-candidate response for the explicit no-clear-candidate state', () => {

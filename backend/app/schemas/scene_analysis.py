@@ -62,7 +62,7 @@ class SceneAnalysisResponse(StrictSchema):
     def validate_limitations(self):
         if self.limitations != [
             "Visual scene cues only; this result does not determine whether any area is safe.",
-            "Blur, obstruction, lighting, or viewpoint can hide visual cues; one image cannot assess structural stability, hidden hazards, or route access.",
+            "Blur, obstruction, lighting, or viewpoint can hide visual cues. A single image cannot verify structural integrity, earthquake resistance, ground conditions, falling-glass or electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions.",
         ]:
             raise ValueError("limitations must match the fixed scene-analysis caveats")
         return self

@@ -26,7 +26,7 @@ from app.services.scene_analysis_model import MODEL_ID, MODEL_REVISION, LocalPan
 MAX_REQUEST_BODY_BYTES = 5_593_000
 LIMITATIONS = [
     "Visual scene cues only; this result does not determine whether any area is safe.",
-    "Blur, obstruction, lighting, or viewpoint can hide visual cues; one image cannot assess structural stability, hidden hazards, or route access.",
+    "Blur, obstruction, lighting, or viewpoint can hide visual cues. A single image cannot verify structural integrity, earthquake resistance, ground conditions, falling-glass or electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions.",
 ]
 
 router = APIRouter(prefix="/scene-analyses", tags=["scene-analyses"])

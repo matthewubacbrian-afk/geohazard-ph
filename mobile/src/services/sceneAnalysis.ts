@@ -3,7 +3,11 @@ import { launchCamera } from 'react-native-image-picker';
 
 import type { CapturedSceneImage, SceneAnalysisResult, SceneCandidate, ScenePoint } from '../types/sceneAnalysis';
 
-export const SCENE_ANALYSIS_CAVEAT = 'Visual cues only—not a safety assessment. Verify conditions and follow official emergency guidance.';
+export const SCENE_ANALYSIS_CAVEAT = 'Visual cue demonstrator only. This is not a safety assessment or a production-ready emergency decision tool. It does not give emergency instructions, identify official shelters, or predict earthquakes. Verify conditions and follow official emergency guidance.';
+const LIMITATIONS = [
+  'Visual scene cues only; this result does not determine whether any area is safe.',
+  'Blur, obstruction, lighting, or viewpoint can hide visual cues. A single image cannot verify structural integrity, earthquake resistance, ground conditions, falling-glass or electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions.',
+] as const;
 export const SCENE_CANDIDATE_HIGHLIGHT = {
   fill: 'rgba(66, 93, 111, 0.24)',
   stroke: '#425d6f',
@@ -129,7 +133,8 @@ export function mapSceneAnalysisResponse(payload: unknown): SceneAnalysisResult 
     || (payload.result_status !== 'candidates_found' && payload.result_status !== 'no_clear_candidate')
     || !Array.isArray(payload.candidate_regions) || payload.candidate_regions.length > 5
     || !Array.isArray(payload.visual_cues) || !Array.isArray(payload.limitations)
-    || payload.limitations.length !== 2 || payload.limitations.some((item) => typeof item !== 'string')) {
+    || payload.limitations.length !== LIMITATIONS.length
+    || payload.limitations.some((item, index) => item !== LIMITATIONS[index])) {
     throw new Error('Scene analysis response is invalid');
   }
   const candidateRegions = payload.candidate_regions.map(mapCandidate);
