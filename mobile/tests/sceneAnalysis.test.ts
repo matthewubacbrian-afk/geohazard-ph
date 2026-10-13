@@ -33,7 +33,7 @@ const validWireResponse = {
   visual_cues: [{ class_name: 'chair', model_confidence: 0.88 }],
   limitations: [
     'Visual scene cues only; this result does not determine whether any area is safe.',
-    'A single image cannot assess structural stability, hidden or changing hazards, or whether a route is accessible.',
+    'Blur, obstruction, lighting, or viewpoint can hide visual cues; one image cannot assess structural stability, hidden hazards, or route access.',
   ],
 };
 
@@ -109,7 +109,7 @@ describe('scene analysis mobile service', () => {
     expect(global.fetch).toHaveBeenCalledWith('https://api.example.test/api/v1/scene-analyses', expect.objectContaining({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image_base64: 'aGVsbG8=', mime_type: 'image/jpeg' }),
+      body: JSON.stringify({ image_base64: 'aGVsbG8=', mime_type: 'image/jpeg', accept_quality_warning: false }),
     }));
     expect(result).toEqual({
       modelVersion: validWireResponse.model_version,
@@ -138,6 +138,22 @@ describe('scene analysis mobile service', () => {
     await expect(analyzeScene('', 'aGVsbG8=')).rejects.toMatchObject({ code: 'not_configured' });
     (global.fetch as jest.Mock).mockRejectedValue(new Error('network detail'));
     await expect(analyzeScene('https://api.example.test', 'aGVsbG8=')).rejects.toMatchObject({ code: 'network_error' });
+  });
+
+  it('offers a retry payload that explicitly accepts the image quality warning', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => validWireResponse });
+    await analyzeScene('https://api.example.test', 'aGVsbG8=', undefined, true);
+    expect(global.fetch).toHaveBeenCalledWith('https://api.example.test/api/v1/scene-analyses', expect.objectContaining({
+      body: JSON.stringify({ image_base64: 'aGVsbG8=', mime_type: 'image/jpeg', accept_quality_warning: true }),
+    }));
+  });
+
+  it('maps the advisory blur response to a clear retake message', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 422, json: async () => ({
+      error: { code: 'scene_image_quality_warning', message: 'private detail', status: 422 },
+    }) });
+    await expect(analyzeScene('https://api.example.test', 'aGVsbG8='))
+      .rejects.toMatchObject({ code: 'scene_image_quality_warning', message: expect.stringMatching(/blurry.*retake/i) });
   });
 
   it('rejects malformed response fields and polygon geometry', () => {

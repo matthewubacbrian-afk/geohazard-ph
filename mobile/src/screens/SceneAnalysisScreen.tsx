@@ -27,6 +27,7 @@ export default function SceneAnalysisScreen({ apiBaseUrl, isActive }: Props) {
   const [isCapturing, setIsCapturing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [qualityWarning, setQualityWarning] = useState(false);
 
   useEffect(() => {
     isMounted.current = true;
@@ -47,6 +48,7 @@ export default function SceneAnalysisScreen({ apiBaseUrl, isActive }: Props) {
     setResult(null);
     setSelectedRank(1);
     setError(null);
+    setQualityWarning(false);
     setIsCapturing(false);
     setIsAnalyzing(false);
   }, [isActive]);
@@ -58,6 +60,7 @@ export default function SceneAnalysisScreen({ apiBaseUrl, isActive }: Props) {
       setImageBase64(null);
       setResult(null);
       setSelectedRank(1);
+      setQualityWarning(false);
     }
     setError(null);
     setIsCapturing(true);
@@ -72,21 +75,24 @@ export default function SceneAnalysisScreen({ apiBaseUrl, isActive }: Props) {
     }
   }
 
-  async function submitAnalysis() {
+  async function submitAnalysis(acceptQualityWarning = false) {
     if (!imageBase64) return;
     const controller = new AbortController();
     activeRequest.current = controller;
     setError(null);
+    setQualityWarning(false);
     setIsAnalyzing(true);
     try {
-      const nextResult = await analyzeScene(apiBaseUrl, imageBase64, controller.signal);
+      const nextResult = await analyzeScene(apiBaseUrl, imageBase64, controller.signal, acceptQualityWarning);
       if (!isMounted.current || !isActiveRef.current) return;
       setResult(nextResult);
       setImageBase64(null);
       setSelectedRank(1);
     } catch (reason) {
       if (controller.signal.aborted || !isMounted.current || !isActiveRef.current) return;
-      setError((reason as SceneAnalysisError).message ?? 'Could not analyze this scene. Please try again.');
+      const analysisError = reason as SceneAnalysisError;
+      if (analysisError.code === 'scene_image_quality_warning') setQualityWarning(true);
+      else setError(analysisError.message ?? 'Could not analyze this scene. Please try again.');
     } finally {
       if (activeRequest.current === controller) activeRequest.current = null;
       if (isMounted.current && isActiveRef.current) setIsAnalyzing(false);
@@ -133,6 +139,17 @@ export default function SceneAnalysisScreen({ apiBaseUrl, isActive }: Props) {
           </View>
           {!result ? (
             <>
+              {qualityWarning ? (
+                <View style={styles.card}>
+                  <Text accessibilityRole="alert" style={styles.body}>This photo may be blurry. Retake it for a clearer view. If you continue, image cues may be missed or incomplete.</Text>
+                  <Pressable accessibilityRole="button" disabled={isAnalyzing} onPress={() => void submitAnalysis(true)} style={styles.actionButton}>
+                    <Text style={styles.actionText}>Continue anyway</Text>
+                  </Pressable>
+                  <Pressable accessibilityRole="button" disabled={isCapturing || isAnalyzing} onPress={() => void capture(true)} style={styles.secondaryButton}>
+                    <Text style={styles.secondaryText}>Retake blurry photo</Text>
+                  </Pressable>
+                </View>
+              ) : null}
               <Pressable accessibilityRole="button" disabled={isAnalyzing} onPress={() => void submitAnalysis()} style={styles.actionButton}>
                 <Text style={styles.actionText}>{isAnalyzing ? 'Reviewing visual cues…' : 'Analyze captured scene'}</Text>
               </Pressable>

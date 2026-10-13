@@ -162,7 +162,9 @@ async function readError(response: Response): Promise<SceneAnalysisError> {
   }
   const message = code === 'scene_image_too_large'
     ? 'The captured photo is too large. Capture the scene again.'
-    : code === 'invalid_scene_image'
+    : code === 'scene_image_quality_warning'
+      ? 'This photo may be blurry or partly blocked. Retake it for a clearer view, or continue knowing cues may be missed.'
+      : code === 'invalid_scene_image'
       ? 'The captured photo could not be read. Please retake it.'
       : code === 'scene_analysis_unavailable'
         ? 'Scene analysis is temporarily unavailable. Try again later.'
@@ -170,7 +172,12 @@ async function readError(response: Response): Promise<SceneAnalysisError> {
   return new SceneAnalysisError(message, response.status, code);
 }
 
-export async function analyzeScene(baseUrl: string, imageBase64: string, signal?: AbortSignal): Promise<SceneAnalysisResult> {
+export async function analyzeScene(
+  baseUrl: string,
+  imageBase64: string,
+  signal?: AbortSignal,
+  acceptQualityWarning = false,
+): Promise<SceneAnalysisResult> {
   if (!baseUrl.trim()) throw new SceneAnalysisError('API URL is not configured', 0, 'not_configured');
   const normalizedBase = baseUrl.replace(/\/+$/, '');
   const endpoint = /\/api\/v1$/i.test(normalizedBase)
@@ -181,7 +188,11 @@ export async function analyzeScene(baseUrl: string, imageBase64: string, signal?
     response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image_base64: imageBase64, mime_type: 'image/jpeg' }),
+      body: JSON.stringify({
+        image_base64: imageBase64,
+        mime_type: 'image/jpeg',
+        accept_quality_warning: acceptQualityWarning,
+      }),
       signal,
     });
   } catch {
