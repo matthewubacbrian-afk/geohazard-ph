@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 from shutil import copyfile
 
 import pytest
@@ -20,8 +21,43 @@ def test_main_offline_disables_download(monkeypatch, tmp_path):
 
     monkeypatch.setattr(train_module, "run_training", fake_run_training)
 
-    assert train_module.main(["--offline"]) == 0
+    assert train_module.main([
+        "--offline",
+        "--phivolcs-csv", "phivolcs.csv",
+        "--usgs-csv", "usgs.csv",
+    ]) == 0
     assert captured["download"] is False
+    assert captured["phivolcs_paths"] == [Path("phivolcs.csv")]
+    assert captured["usgs_paths"] == [Path("usgs.csv")]
+
+
+def test_main_forwards_repeated_source_csv_flags(monkeypatch, tmp_path):
+    from ml import train as train_module
+
+    captured = {}
+
+    def fake_run_training(**kwargs):
+        captured.update(kwargs)
+        return train_module.TrainingResult(0, tmp_path, "v1")
+
+    monkeypatch.setattr(train_module, "run_training", fake_run_training)
+
+    assert train_module.main([
+        "--offline",
+        "--phivolcs-csv", "first.csv",
+        "--phivolcs-csv", "second.csv",
+        "--usgs-csv", "usgs.csv",
+    ]) == 0
+    assert captured["download"] is False
+    assert captured["phivolcs_paths"] == [Path("first.csv"), Path("second.csv")]
+    assert captured["usgs_paths"] == [Path("usgs.csv")]
+
+
+def test_main_offline_without_source_paths_fails(capsys, tmp_path):
+    from ml import train as train_module
+
+    assert train_module.main(["--offline", "--artifact-dir", str(tmp_path / "art")]) == 1
+    assert "PHIVOLCS and USGS" in capsys.readouterr().err
 
 
 def test_main_defaults_to_download(monkeypatch, tmp_path):

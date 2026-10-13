@@ -205,13 +205,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--offline",
         action="store_true",
-        help="Train from local data/raw CSVs instead of downloading",
+        help="Train from explicitly assigned local CSVs instead of downloading",
+    )
+    parser.add_argument(
+        "--phivolcs-csv",
+        action="append",
+        type=Path,
+        help="PHIVOLCS CSV path for offline training; repeat for multiple files",
+    )
+    parser.add_argument(
+        "--usgs-csv",
+        action="append",
+        type=Path,
+        help="USGS CSV path for offline training; repeat for multiple files",
     )
     parser.add_argument("--random-state", type=int, default=42, help="Random seed")
     args = parser.parse_args(argv)
 
     try:
         result = run_training(
+            phivolcs_paths=args.phivolcs_csv,
+            usgs_paths=args.usgs_csv,
             artifact_dir=Path(args.artifact_dir),
             artifact_version=args.artifact_version,
             download=not args.offline,
