@@ -157,5 +157,8 @@ When a spec or plan introduces a new concept:
 | model version | `model_version`; model ID and immutable model-artifact revision that produced scene-analysis cues. |
 | image_base64 | `image_base64`; standard base64 JPEG request field without a data URL prefix; transient input, never persisted or logged. |
 | mime_type | `mime_type`; scene-analysis input media type, fixed to `image/jpeg`. |
+| accept_quality_warning | `accept_quality_warning`; explicit per-request boolean that lets the user continue after a likely-blur warning; defaults to `false` and does not affect model ranking. |
+| sharpness score | variance of the four-neighbor grayscale Laplacian after reducing the longest image edge to 512 pixels; a provisional blur cue, not a general image-quality or obstruction score. |
+| scene image quality warning | API error `scene_image_quality_warning`; advisory result for a low provisional sharpness score, with retake and explicit continue actions. |
 | result_status | `result_status`; `candidates_found` when candidate regions exist, otherwise `no_clear_candidate`. |
 | scene-analysis limitations | `limitations`; fixed caveats that visual cues do not determine safety and one image cannot assess structural stability, hidden hazards, or route access. |

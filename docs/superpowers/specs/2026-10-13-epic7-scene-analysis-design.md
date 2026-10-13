@@ -12,7 +12,7 @@ GeoHazard PH has no camera-driven scene review feature. People indoors at home o
 - Analyze indoor and outdoor images through one Python backend path, using a pretrained panoptic-segmentation model and a deterministic, explainable ranking algorithm.
 - Return zero or more normalized image polygons for visible open floor/ground candidates, ranked by documented visual features, plus recognized object cues and limitations.
 - Present the same captured image with selectable/legible candidate polygons and an evidence checklist on web and mobile. Clearly describe results as visual candidates, never as safe locations.
-- Process image content only in bounded application memory, never log it, persist it, or use it for training. Keep only the client-side preview while the result screen is active; clear it on retake, exit, or screen unmount.
+- Process image content only in bounded backend memory; never log, persist, or train on uploaded image data. Keep the client preview transient and clear its URI/base64 references on retake, exit, or screen unmount. The native camera picker may stage a capture in app-specific temporary cache storage; do not save to the public photo library, and document that the picker/OS manages cache-file removal.
 - Cover analysis, validation, privacy behavior, client states, and geometry mapping with deterministic tests that use an injected fake segmenter and do not download model weights.
 
 ## Non-goals
@@ -30,7 +30,7 @@ GeoHazard PH has no camera-driven scene review feature. People indoors at home o
 - `facebook/detr-resnet-50-panoptic` is the chosen initial pretrained model candidate. Its model card reports COCO panoptic training and an Apache-2.0 model license; its label configuration includes floor/ground and common indoor/outdoor object classes. Pin an immutable model revision and record the upstream model/code license and source revision before shipping weights. The upstream class set and COCO scene distribution are imperfect for Philippine homes, malls, and disaster scenes; this is not a locally validated safety model. References: [model card](https://huggingface.co/facebook/detr-resnet-50-panoptic) and [label configuration](https://huggingface.co/facebook/detr-resnet-50-panoptic/raw/main/config.json).
 - The inference model is hosted by the existing Python API so web and mobile share behavior. PyTorch/Transformers can materially increase image size, cold start, CPU, and memory use. The implementation plan must explicitly inspect Docker targets and runtime resource limits, pin CPU-compatible dependencies, and measure/test loading before adding the model to default deployment images. The model is loaded once per process from the pinned local cache; requests must not trigger network downloads. If unavailable, return a safe 503 instead of switching to another model.
 - Browser camera access requires a secure context and user permission. Mobile camera access requires native runtime permission. Camera capture is an explicit user action. Web stops camera tracks immediately after capture or leaving the capture view; mobile clears its local image URI/base64 when the capture view closes.
-- The sample screenshot is a presentation reference only. Green “SAFE” labels and implied engineering/material judgments are excluded.
+- The sample screenshot is a presentation reference only. Green “SAFE” labels, traffic-light safety colors, and implied engineering/material judgments are excluded; candidate highlights use a neutral selection treatment.
 
 ## Alternatives Considered
 
@@ -92,7 +92,7 @@ Sort descending by `ranking_score`, then descending `area_fraction`, then ascend
       "ranking_score":0.81
     }],
     "visual_cues":[{"class_name":"chair","model_confidence":0.76}],
-    "limitations":["Visual scene cues only; this result does not determine whether any area is safe.","A single image cannot assess structural stability, hidden or changing hazards, or whether a route is accessible."]
+    "limitations":["Visual scene cues only; this result does not determine whether any area is safe.","Blur, obstruction, lighting, or viewpoint can hide visual cues; one image cannot assess structural stability, hidden hazards, or route access."]
   }
   ```
 
@@ -114,7 +114,7 @@ Use the existing API error envelope. Invalid client content is a 422 `invalid_sc
 
 ### Data considerations
 
-No ORM model, database migration, user identifier, location, history, or durable image artifact is added. All API fields use snake_case and image polygon points use normalized `x`/`y` pixel fractions (not map coordinates or GeoJSON). Inference outputs are visual model labels and image-space metrics only. The feature adds glossary terms for scene analysis, candidate region, visual cue, and ranking score.
+No ORM model, database migration, user identifier, location, history, public photo-library copy, or durable server-side image artifact is added. All API fields use snake_case and image polygon points use normalized `x`/`y` pixel fractions (not map coordinates or GeoJSON). Inference outputs are visual model labels and image-space metrics only. The feature adds glossary terms for scene analysis, candidate region, visual cue, and ranking score.
 
 ## Rollout
 
@@ -151,7 +151,7 @@ Implement as a separate `feat/epic7-scene-analysis` branch/worktree based on cur
 - Backend service tests use small synthetic masks and a fake model: invalid/oversize/unsupported input; indoor floor and outdoor road/grass regions; connected components and minimum thresholds; exact score formula and deterministic tie order; normalized closed polygons bounded in `[0,1]`; at most five candidates/64 vertices; no-candidate output; class evidence; image bytes not persisted or logged.
 - Backend API tests cover bounded streaming with and without `Content-Length`, valid request/response schema, malformed JSON/base64, invalid image, dimension/pixel caps, 413 cap, 422 envelope, 503 envelope, no model download, and no image/body in captured logs. No network or model weights in CI.
 - Web tests cover explicit camera permission request, denied/unsupported states, capture and track cleanup, retake and preview cleanup, request/loading/retry, result/no-candidate, normalized polygon-to-preview alignment, accessible evidence checklist, and persistent limitation copy.
-- Mobile tests cover permission denied/granted, capture cancellation, base64/JPEG sizing contract, explicit snake_case mapping, retake/exit cleanup, API errors and retry, polygon alignment, checklist, and limitation copy.
+- Mobile tests cover permission denied/granted, capture cancellation, base64/JPEG sizing contract, explicit snake_case mapping, retake/exit reference cleanup, relative-area evidence, neutral candidate highlight styling, API errors and retry, polygon alignment, checklist, and limitation copy. Device smoke checks confirm no public photo-library save; picker-created cache files follow the platform temporary-cache lifecycle.
 - Run backend pytest and Ruff; web Vitest and production build; mobile Jest and available TypeScript/native build checks; `python scripts/verify_structure.py`; and `git diff --check`. Hardware smoke tests require a physical device or a camera-capable emulator and are recorded separately from CI.
 
 ## Acceptance Criteria

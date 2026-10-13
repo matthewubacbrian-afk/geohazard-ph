@@ -12,8 +12,9 @@ site-packages, a 164.3 MiB pinned model snapshot, 0.47–0.48 second process-col
 with a warm host file cache, 23.1–26.9 second CPU inference, and 2,724 MiB peak RSS.
 This ran on Windows x64 / CPython 3.11.9 and does not establish Linux or production
 performance. Cache-only model loading succeeded after explicitly disabling the
-secondary pretrained timm backbone initialization; use `local_files_only=True` and
-offline flags in the future adapter.
+secondary pretrained timm backbone initialization. The API adapter uses
+`local_files_only=True`, disables that secondary pretrained backbone, and returns a
+typed unavailable response when runtime/model files cannot load.
 
 Deployment packaging is still unverified: the local Docker CLI is installed, but
 Docker Desktop's Linux daemon was unavailable. The staging workflow builds one
@@ -26,6 +27,51 @@ production cold load/inference, and available staging resource headroom remain
 unmeasured. Do not enable model provisioning in the shared image until the deployment
 targets are measured and reviewed. Keep model initialization lazy so the ingestion
 worker does not initialize it.
+
+## Epic 7 Scene Review
+
+Web and mobile clients capture a still JPEG only after the user taps **Open camera**.
+The client resizes the capture before sending it to `POST /api/v1/scene-analyses`; the
+backend enforces a 5,593,000-byte streamed request cap, 4 MiB decoded image cap, 4096
+pixel edge cap, and 12,000,000-pixel cap. The endpoint returns normalized image polygons,
+recognized visual cues, and fixed limitations. It does not store images or analysis
+history. Do not enable body logging, image thumbnails, request-body traces, or failure
+payload dumps on this route.
+
+Before segmentation, the API checks a provisional variance-of-Laplacian sharpness
+score. A low score returns `422 scene_image_quality_warning`; web and mobile let the
+user retake the image or explicitly continue. The score can flag some blur, but can
+also warn on smooth, dark, or low-texture scenes. The current threshold (`400.0`) is
+not calibrated on a real-image benchmark. See [dataset and calibration notes](data-sources.md#scene-analysis-model-preflight).
+
+The result is an image-based ranking for review, not a hazard verdict or safe-place
+recommendation. Candidate scores are deterministic visual heuristics based on relative
+area, compactness, and model confidence. They are not probabilities. Neither the model
+nor the score establishes structural stability, hidden hazards, ground condition, or
+route accessibility. Keep the on-screen caveat intact and direct users to official
+emergency guidance. Blur, obstruction, lighting, and viewpoint may hide or distort
+visual cues; the feature does not have a validated obstruction detector.
+
+The endpoint can return `503 scene_analysis_unavailable` in the default installation.
+That installation intentionally omits the large CPU model runtime and model weights
+while Linux/ARM64 packaging and deployment resource fit remain unverified. A configured
+`SCENE_ANALYSIS_MODEL_CACHE_DIR` alone does not provision a usable model. Do not fetch
+weights from request handling or add the model package to the shared API/ingestion image
+until the preflight gate is completed. Check `docs/data-sources.md` and the Epic 7 plan
+for measured constraints and the remaining gate.
+
+Mobile requires runtime camera permission on Android and the configured iOS camera-use
+description. The runtime must be able to reach an API base URL ending in `/api/v1`; an
+emulator needs its host-specific address rather than device localhost. Use
+`docs/mobile-runtime-smoke-test.md` to verify permission prompts, indoor/outdoor capture,
+overlay alignment, retry, retake, and transient cleanup on actual camera-capable
+runtimes. `react-native-image-picker` may stage its capture in app-specific temporary
+cache storage; the app disables public photo-library saving and clears URI/base64
+references on retake or exit, while the picker/OS manages cache-file removal. Automated
+API/client tests do not verify camera hardware.
+
+Web camera access requires browser support and a secure context, normally localhost for
+local development or HTTPS elsewhere.
 
 ## Ingestion Failure
 

@@ -10,9 +10,16 @@ These device checks are pending until a camera-capable runtime and configured AP
 available. Record Android and iOS independently; passing Jest does not verify native
 permissions or camera behavior.
 
+The native camera picker may place its capture in app-specific temporary cache storage;
+`saveToPhotos` is disabled, and the feature clears its URI/base64 references on retake or
+exit. The picker/OS manages removal of that temporary file; the feature does not copy it
+to the photo library or retain a server-side image/history.
+
 - [ ] Open **Scene review** and confirm no camera permission prompt appears until **Open camera** is tapped.
 - [ ] Allow camera access, capture an indoor scene (for example, a kitchen or mall interior), and confirm the preview appears.
 - [ ] Analyze the capture; verify candidate polygons align with the image, candidate selection updates the highlighted polygon, and the evidence checklist plus persistent visual-cue caveat are visible.
+- [ ] Use a deliberately defocused capture; confirm the quality warning offers **Retake blurry photo** and **Continue anyway**, and that continuing sends the explicit override.
+- [ ] Use a smooth or dim scene; record whether the provisional threshold warns on a usable image. Do not treat a passed synthetic test as calibration.
 - [ ] Capture an outdoor scene and repeat the overlay/checklist check.
 - [ ] Retake the photo and confirm the prior preview, candidate result, and selection are cleared before the camera reopens.
 - [ ] Deny camera access and confirm an actionable permission message appears without crashing; grant access in system settings and retry.
@@ -25,6 +32,26 @@ permissions or camera behavior.
 | --- | --- | --- | --- | --- |
 | Android | Not run | Not run | Not run | Requires camera-capable device and configured API URL |
 | iOS | Not run | Not run | Not run | Requires camera-capable device and configured API URL |
+
+## Epic 7 Scene Review (Browser)
+
+Run these checks in a camera-capable browser on `localhost` or HTTPS with the API model
+provisioned. A browser test suite does not exercise actual permission prompts, camera
+hardware, or API/model availability.
+
+- [ ] Open `/scene-analysis` and confirm the page does not request camera permission before **Open camera** is selected.
+- [ ] Allow permission, capture indoor and outdoor scenes, and confirm the preview aspect ratio is preserved and the camera track stops after capture.
+- [ ] Analyze a capture and confirm the normalized polygon overlays the correct preview area; selection, absolute/relative area, compactness, model class confidence, ranking formula/value, evidence checklist, and caveat agree.
+- [ ] Use a deliberately defocused capture; confirm the warning offers **Retake blurry photo** and **Continue anyway**, and that continuing sends `accept_quality_warning: true`.
+- [ ] Use a smooth or dim scene and record any false warning; the threshold is provisional and requires held-out benchmark calibration.
+- [ ] Retake and leave the page during pending capture/analysis; confirm old preview/results are cleared, tracks stop, and pending requests are aborted.
+- [ ] Deny camera permission or use an unsupported/insecure context; confirm an actionable state appears without a crash.
+- [ ] Make the API unavailable, retry after restoring it, and confirm a safe error/retry state and no image data in logs or history.
+- [ ] Confirm a no-candidate response still shows its limitation caveat.
+
+| Runtime | Camera/permission | API/overlay/checklist | Cleanup | Date / notes |
+| --- | --- | --- | --- | --- |
+| Browser | Not run | Not run | Not run | Requires camera-capable browser and model-provisioned API; current default API image returns typed unavailable response |
 
 ## Prepare a runtime and API
 

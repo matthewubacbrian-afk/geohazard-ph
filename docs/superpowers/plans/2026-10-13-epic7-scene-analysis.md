@@ -68,11 +68,11 @@ Resolve Python 3.12-compatible CPU-only Torch, Transformers and Pillow versions.
 
 If the existing API image and staging memory can support the measured package/model, pin exact versions and CPU wheel index and provision the pinned model as a build-time/local artifact without adding weights to Git. Keep model inference lazy and ensure the ingestion worker does not initialize the model. Otherwise, keep heavyweight dependencies out of the default API/worker image, document the measured constraint, and design an optional CPU scene-analysis deployment target that still serves the same `/api/v1/scene-analyses` contract through the existing API routing boundary; update the approved spec and ask for approval before implementing the changed hosting boundary.
 
-- [ ] **Step 5: Verify artifact loading is offline — host cache load passed; typed unavailable handling pending adapter**
+- [ ] **Step 5: Verify artifact loading is offline — host cache load and typed unavailable handling pass; deployment package remains gated**
 
 Run the packaged model loader with networking disabled and a pre-provisioned local revision. Expected: it loads only that cached commit, reports the pinned `model_version`, and raises the typed unavailable error when files are missing. Run a single small CPU inference and record elapsed time and peak RSS; do not claim safety or quality validation.
 
-**Preflight evidence (2026-10-13):** Steps 1–2 are complete; host-only measurements for Step 3 are recorded, but the step remains open pending Python 3.12/Linux package resolution and deployment image impact. The isolated Windows x64 / CPython 3.11.9 run measured dependency pins, wheel/install sizes, model artifact size, cache-only load, CPU inference, and peak RSS; see `docs/data-sources.md`. The PyTorch CPU index lists the chosen Torch/torchvision pins for CPython 3.12 on both target Linux architectures, but those wheels were not installed. The offline load required `DetrConfig.use_pretrained_backbone=False` to avoid a separate timm checkpoint fetch; checkpoint load reported zero missing keys and four unused `num_batches_tracked` buffers. A socket guard and Hugging Face offline environment flags were active during inference; a missing local directory raised offline `OSError`. This does not verify CPython 3.12/Linux package resolution or inference, staging resource fit, or Docker image delta. Docker Desktop's Linux daemon is unavailable; staging publishes `linux/amd64` and `linux/arm64`, runs API/migration/worker from a shared image, sets no per-service memory/CPU limits, and documents a total 2 OCPU / 12 GB host allowance. Do not change `pyproject.toml` or deployment images until those deployment-target costs and resource headroom are measured. Step 5's conversion to the future typed unavailable error must be verified when the adapter exists; no adapter code is part of Task 1.
+**Preflight evidence (2026-10-13):** Steps 1–2 are complete; host-only measurements for Step 3 are recorded, but the step remains open pending Python 3.12/Linux package resolution and deployment image impact. The isolated Windows x64 / CPython 3.11.9 run measured dependency pins, wheel/install sizes, model artifact size, cache-only load, CPU inference, and peak RSS; see `docs/data-sources.md`. The PyTorch CPU index lists the chosen Torch/torchvision pins for CPython 3.12 on both target Linux architectures, but those wheels were not installed. The offline load required `DetrConfig.use_pretrained_backbone=False` to avoid a separate timm checkpoint fetch; checkpoint load reported zero missing keys and four unused `num_batches_tracked` buffers. A socket guard and Hugging Face offline environment flags were active during inference; a missing local directory raised offline `OSError`. The implemented adapter uses local files only and maps unavailable files/runtime to the typed 503 response; the API contract is covered by a DB-free route test. This does not verify CPython 3.12/Linux package resolution or inference, staging resource fit, or Docker image delta. Docker Desktop's Linux daemon is unavailable; staging publishes `linux/amd64` and `linux/arm64`, runs API/migration/worker from a shared image, sets no per-service memory/CPU limits, and documents a total 2 OCPU / 12 GB host allowance. Do not change `pyproject.toml` or deployment images until those deployment-target costs and resource headroom are measured.
 
 - [x] **Step 6: Record measured model preflight documentation**
 
@@ -208,23 +208,27 @@ export async function analyzeScene(
 
 The screen camera entry calls `navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false})` only on user click, draws a captured frame to canvas, compresses a JPEG at ≤1600 px longest edge/≤4 MiB, encodes base64 without data URL prefix, stops every stream track after capture/unmount, and uses an absolutely positioned SVG/viewBox overlay with `preserveAspectRatio="none"` mapping `x*100%`,`y*100%` over the preview.
 
-- [ ] **Step 1: Write failing web client tests**
+- [x] **Step 1: Write failing web client tests**
 
 Mock `fetch`; assert request path, JSON content type, and payload; parse exact response; map 413/422/503 envelopes to a typed safe error; verify body/request values are never sent to console logs. Run `cd web && npm test -- SceneAnalysis.test.tsx`; expected: module/test failure before client implementation.
 
-- [ ] **Step 2: Write failing screen interaction tests**
+- [x] **Step 2: Write failing screen interaction tests**
 
 Mock `getUserMedia`, video readiness, `canvas.toBlob`, and API client. Assert no permission request before camera action; denied and unsupported states render; capture shows preview; all tracks stop; Analyze shows loading and then polygons plus checklist/caveat; no-candidate and retry states render; retake/exit clears image/base64 and aborts pending requests. Test overlay coordinates from `(0,0)` to `(1,1)` align to preview bounds.
 
-- [ ] **Step 3: Implement typed client and capture screen**
+- [x] **Step 3: Implement typed client and capture screen**
 
 Add exact wire types, typed `SceneAnalysisApiError`, request/response validation, capture stream lifecycle, JPEG resize/compression, base64 encoding, preview, polygon selection, evidence checklist, permission/network/model/no-candidate states, and persistent disclaimer. Reuse project tokens and CSS Modules, preserve reduced-motion/accessibility conventions, and expose the entry in dashboard navigation and `/scene-analysis` route.
 
-- [ ] **Step 4: Run web tests and production build**
+- [x] **Step 4: Run web tests and production build**
 
 Run `cd web && npm test -- SceneAnalysis.test.tsx`, then `cd web && npm test`, and `cd web && npm run build`. Expected: focused and full suites pass and TypeScript/Vite production build succeeds.
 
-- [ ] **Step 5: Commit web feature**
+- [x] **Step 5: Commit web feature**
+
+Web follow-up review fix `59dafe9` prevents duplicate concurrent camera opens and adds
+the ranking components and raw heuristic value to the Evidence checklist. Focused tests
+passed 15/15; all 129 web tests, production build, structure check, and diff check passed.
 
 Run `git diff --check`, inspect only web files are staged, then commit `feat: add web camera scene review`.
 
@@ -265,23 +269,29 @@ export function mapSceneAnalysisResponse(payload: unknown): SceneAnalysisResult;
 
 Use `react-native-image-picker` `launchCamera({mediaType:'photo', includeBase64:true, maxWidth:1600, maxHeight:1600, quality:0.82})`; reject cancellation without an error message; require an `image/jpeg` result with base64 ≤4 MiB decoded; remove data from component state when retaking/leaving. `analyzeScene(baseUrl, imageBase64)` POSTs the shared JSON contract and maps snake_case only in the service.
 
-- [ ] **Step 1: Write failing pure service/mapping tests**
+- [x] **Step 1: Write failing pure service/mapping tests**
 
 Mock picker and `fetch`; assert permission/cancel/no-asset paths, correct resized JPEG request body/path, 413/422/503 error mapping, field-by-field snake_case mapping, normalized polygon point preservation, malformed response rejection, and no request-body logging. Run `cd mobile && npm test -- --runTestsByPath tests/sceneAnalysis.test.ts`; expected: missing module/tests fail before implementation.
 
-- [ ] **Step 2: Implement capture service and response mapper**
+- [x] **Step 2: Implement capture service and response mapper**
 
 Wrap `launchCamera`, return a typed discriminated outcome for cancelled/captured/error, validate MIME/base64 size, call the API, parse the existing standard error envelope, and map wire fields explicitly to mobile camelCase. Keep pure mapping exports directly testable.
 
-- [ ] **Step 3: Implement mobile screen and navigation entry**
+- [x] **Step 3: Implement mobile screen and navigation entry**
 
 Build a thin screen for camera action, permission/cancel/loading/retry/error/empty/candidate states, local preview, rank selectors, normalized SVG polygon overlay, evidence checklist and persistent caveat. Add a “Scene review” entry to `RootNavigator` that does not interrupt nearby alerts or saved-location state. Add native camera permission description/config only where required by the current RN package; do not add gallery permissions.
 
-- [ ] **Step 4: Run mobile tests and native checks**
+- [x] **Step 4: Run mobile tests and available native checks — native build/hardware checks unavailable on this host**
 
 Run `cd mobile && npm test -- --runTestsByPath tests/sceneAnalysis.test.ts`, then `cd mobile && npm test`. Run the project-supported Android debug build and iOS simulator build if their SDKs are installed; otherwise record each missing tool and leave hardware/native smoke status unverified.
 
-- [ ] **Step 5: Commit mobile feature**
+- [x] **Step 5: Commit mobile feature**
+
+Mobile verification: clean `npm ci`; focused suite 10/10; full Jest suite 41/41;
+strict TypeScript check of changed app sources exits 0; React Native autolinking resolves
+the camera and SVG packages for Android and iOS. Native builds and camera hardware smoke
+checks remain unverified: Android SDK variables/tools are absent and host Java is 25
+(project requires 17); this Windows host has no iOS/Xcode toolchain.
 
 Run `git diff --check`, inspect staged paths for generated files/secrets, then commit `feat: add mobile camera scene review`.
 
@@ -291,19 +301,19 @@ Run `git diff --check`, inspect staged paths for generated files/secrets, then c
 - Modify: `docs/data-sources.md`, `docs/runbook.md`, `README.md`, `.env.example`, `docs/mobile-runtime-smoke-test.md`, `docs/project-status.md`, `docs/geohazard-system-architecture.md`.
 - Modify deployment/runtime files only if Task 1 measured the existing image and runtime as suitable.
 
-- [ ] **Step 1: Write failing documentation-structure checks if available**
+- [x] **Step 1: Write failing documentation-structure checks if available**
 
 Inspect `python scripts/verify_structure.py` for repository requirements; do not create a new test framework for prose. Ensure existing structure checks expect the new API module and screen paths only if the script enforces them.
 
-- [ ] **Step 2: Document the model, setup, and privacy contract**
+- [x] **Step 2: Document the model, setup, and privacy contract**
 
 Record exact model card URL, immutable revision, license, supported label list, dependencies, offline cache provisioning, image caps, API path/schema/errors, camera permissions, no logging/storage, runtime memory and latency measurements, and model-scene bias in data-source/runbook/README docs. Update the architecture diagram and epic status evidence. Add browser, Android, and iOS steps to `docs/mobile-runtime-smoke-test.md`; status must distinguish passed CI from unavailable hardware/deployed verification.
 
-- [ ] **Step 3: Verify end-to-end package contracts**
+- [ ] **Step 3: Verify end-to-end package contracts — DB-free suites pass; PostGIS-backed full suite blocked by stopped local PostgreSQL**
 
 Run `cd backend && pytest -v` and `ruff check app tests`; `cd web && npm test` and `npm run build`; `cd mobile && npm test`; `python scripts/verify_structure.py`; `git diff --check`. If actual model weights were provisioned, run one bounded local model inference offline and record model revision, cold load/inference time and peak RSS; do not claim classification accuracy or safety validation.
 
-- [ ] **Step 4: Perform camera smoke checks where devices are available**
+- [ ] **Step 4: Perform camera smoke checks where devices are available — no browser/native camera runtime available here**
 
 Run `docs/mobile-runtime-smoke-test.md` against browser localhost/HTTPS plus Android and iOS camera-capable runtimes: permission prompt only after action, capture, retake, analysis, overlay alignment, permission denial, network/API failure retry, camera track/preview/base64 cleanup. Record unavailable platforms as not run; do not mark them passed.
 

@@ -148,7 +148,8 @@ When adding or changing an endpoint:
 ## Scene analysis: `POST /api/v1/scene-analyses`
 
 Accepts a JSON object with `image_base64` (standard base64 without a data URL
-prefix) and `mime_type: "image/jpeg"`. The request body is capped at 5,593,000
+prefix), `mime_type: "image/jpeg"`, and optional `accept_quality_warning` (boolean,
+default `false`). The request body is capped at 5,593,000
 bytes while streaming; decoded JPEG data is capped at 4 MiB, 4096 pixels on
 either edge, and 12,000,000 pixels total. Success is an unwrapped
 `SceneAnalysisResponse`: `model_version`, `result_status`, `candidate_regions`,
@@ -160,8 +161,13 @@ are bounded to `[0, 1]`; at most five candidate regions are returned.
 Invalid JSON, base64, media type, or JPEG returns 422
 (`invalid_scene_image`). Oversized request or decoded image returns 413
 (`scene_image_too_large`). Missing local model artifacts or unavailable model
-runtime returns 503 (`scene_analysis_unavailable`). Images are processed in
-memory and are not persisted.
+runtime returns 503 (`scene_analysis_unavailable`). A low provisional Laplacian
+variance score returns 422 (`scene_image_quality_warning`) before model
+segmentation unless `accept_quality_warning: true` was explicitly supplied.
+This error uses the standard envelope; clients offer retake or continue. The
+override bypasses only the quality warning. Images are processed in memory and
+are not persisted. The sharpness threshold has not been calibrated on a held-out
+real-image benchmark.
 
 ## 9. Known Deviations
 
