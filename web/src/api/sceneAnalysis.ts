@@ -44,7 +44,7 @@ function isSceneResponse(value: unknown): value is SceneAnalysisResponse {
     cue.model_confidence >= 0 && cue.model_confidence <= 1);
   const limitationsValid = value.limitations.length === 2 &&
     value.limitations[0] === 'Visual scene cues only; this result does not determine whether any area is safe.' &&
-    value.limitations[1] === 'A single image cannot assess structural stability, hidden or changing hazards, or whether a route is accessible.';
+    value.limitations[1] === 'Blur, obstruction, lighting, or viewpoint can hide visual cues; one image cannot assess structural stability, hidden hazards, or route access.';
   return candidatesValid && cuesValid && limitationsValid &&
     (value.candidate_regions.length > 0) === (value.result_status === 'candidates_found');
 }
@@ -74,7 +74,9 @@ export async function analyzeScene(
     } catch {
       // Keep the status and safe generic message when a proxy returns a non-JSON response.
     }
-    const message = response.status === 413
+    const message = code === 'scene_image_quality_warning'
+      ? 'This photo may be blurry or partly blocked. Retake it for a clearer view, or continue knowing cues may be missed.'
+      : response.status === 413
       ? 'The captured image is too large. Retake it and try again.'
       : response.status === 422
         ? 'The captured image could not be analyzed. Retake it and try again.'

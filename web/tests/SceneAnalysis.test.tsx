@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { analyzeScene } from '../src/api/sceneAnalysis';
+import { analyzeScene, SceneAnalysisApiError } from '../src/api/sceneAnalysis';
 import SceneAnalysis from '../src/pages/SceneAnalysis';
 import type { SceneAnalysisResponse } from '../src/types/sceneAnalysis';
 
@@ -20,7 +20,7 @@ const responsePayload: SceneAnalysisResponse = {
   visual_cues: [{ class_name: 'chair', model_confidence: 0.8 }],
   limitations: [
     'Visual scene cues only; this result does not determine whether any area is safe.',
-    'A single image cannot assess structural stability, hidden or changing hazards, or whether a route is accessible.',
+    'Blur, obstruction, lighting, or viewpoint can hide visual cues; one image cannot assess structural stability, hidden hazards, or route access.',
   ],
 };
 
@@ -39,6 +39,18 @@ describe('scene analysis API', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image_base64: 'ZmFrZQ==', mime_type: 'image/jpeg' }),
     }));
+  });
+
+  it('maps the scene quality warning to a stable safe error', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      error: { code: 'scene_image_quality_warning', message: 'private detail', status: 422 },
+    }), { status: 422 })));
+    await expect(analyzeScene('/api/v1', { image_base64: 'private-image', mime_type: 'image/jpeg' }))
+      .rejects.toMatchObject({
+        status: 422,
+        code: 'scene_image_quality_warning',
+        message: expect.stringMatching(/blurry.*retake/i),
+      });
   });
 
   it.each([413, 422, 503])('maps HTTP %s to a safe typed error without exposing image data', async (status) => {
@@ -180,6 +192,34 @@ describe('scene review capture screen', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/temporarily unavailable/i);
     fireEvent.click(screen.getByRole('button', { name: /retry analysis/i }));
     expect(await screen.findByRole('heading', { name: /evidence checklist/i })).toBeInTheDocument();
+  });
+
+  it('offers retake or explicit continue for the blurry image warning', async () => {
+    const analyze = vi.fn()
+      .mockRejectedValueOnce(new SceneAnalysisApiError('This photo may be blurry.', 422, 'scene_image_quality_warning'))
+      .mockResolvedValueOnce(responsePayload);
+    render(<SceneAnalysis onExit={vi.fn()} initialCapture={{ previewUrl: 'data:image/jpeg;base64,ZmFrZQ==', imageBase64: 'ZmFrZQ==' }} analyze={analyze} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /analyze image/i }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/may be blurry/i);
+    fireEvent.click(screen.getByRole('button', { name: /continue anyway/i }));
+    expect(await screen.findByRole('heading', { name: /evidence checklist/i })).toBeInTheDocument();
+    expect(analyze).toHaveBeenLastCalledWith(
+      { image_base64: 'ZmFrZQ==', mime_type: 'image/jpeg', accept_quality_warning: true },
+      expect.any(AbortSignal),
+    );
+  });
+
+  it('clears a blurry capture when the user chooses retake', async () => {
+    const analyze = vi.fn().mockRejectedValue(new SceneAnalysisApiError(
+      'This photo may be blurry.', 422, 'scene_image_quality_warning',
+    ));
+    render(<SceneAnalysis onExit={vi.fn()} initialCapture={{ previewUrl: 'data:image/jpeg;base64,ZmFrZQ==', imageBase64: 'ZmFrZQ==' }} analyze={analyze} />);
+    fireEvent.click(screen.getByRole('button', { name: /analyze image/i }));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: /retake blurry photo/i }));
+    expect(screen.queryByRole('img', { name: /captured scene preview/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /open camera/i })).toBeInTheDocument();
   });
 
   it('aborts a pending analysis and clears its preview when retaking', async () => {

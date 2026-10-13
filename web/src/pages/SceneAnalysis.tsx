@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { analyzeScene as requestSceneAnalysis } from '../api/sceneAnalysis';
 import { API_BASE_URL } from '../api/client';
-import type { SceneAnalysisResponse, SceneCapture } from '../types/sceneAnalysis';
+import type { SceneAnalysisRequest, SceneAnalysisResponse, SceneCapture } from '../types/sceneAnalysis';
 import styles from './SceneAnalysis.module.css';
 
 type SceneAnalysisProps = {
   onExit: () => void;
-  analyze?: (request: { image_base64: string; mime_type: 'image/jpeg' }, signal: AbortSignal) => Promise<SceneAnalysisResponse>;
+  analyze?: (request: SceneAnalysisRequest, signal: AbortSignal) => Promise<SceneAnalysisResponse>;
   initialCapture?: SceneCapture;
 };
 
@@ -31,6 +31,7 @@ export default function SceneAnalysis({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<SceneAnalysisResponse | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [qualityWarning, setQualityWarning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedRank, setSelectedRank] = useState(1);
 
@@ -130,6 +131,7 @@ export default function SceneAnalysis({
     setCapture(compressedCapture);
     setAnalysis(null);
     setAnalysisError(null);
+    setQualityWarning(false);
     setSelectedRank(1);
   }
 
@@ -140,24 +142,32 @@ export default function SceneAnalysis({
     setCapture(null);
     setAnalysis(null);
     setAnalysisError(null);
+    setQualityWarning(false);
     setCameraError(null);
   }
 
-  async function submitAnalysis() {
+  async function submitAnalysis(acceptQualityWarning = false) {
     if (!capture) return;
     const controller = new AbortController();
     controllerRef.current?.abort();
     controllerRef.current = controller;
     setLoading(true);
     setAnalysisError(null);
+    setQualityWarning(false);
     try {
       const result = await analyze(
-        { image_base64: capture.imageBase64, mime_type: 'image/jpeg' },
+        { image_base64: capture.imageBase64, mime_type: 'image/jpeg', accept_quality_warning: acceptQualityWarning },
         controller.signal,
       );
       if (!controller.signal.aborted) setAnalysis(result);
     } catch (error) {
-      if (!controller.signal.aborted) setAnalysisError(error instanceof Error ? error.message : 'Scene analysis failed. Please try again.');
+      if (!controller.signal.aborted) {
+        if (error instanceof Error && 'code' in error && error.code === 'scene_image_quality_warning') {
+          setQualityWarning(true);
+        } else {
+          setAnalysisError(error instanceof Error ? error.message : 'Scene analysis failed. Please try again.');
+        }
+      }
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
@@ -202,7 +212,7 @@ export default function SceneAnalysis({
             </svg>}
           </div>
           <div className={styles.actions}>
-            <button type="button" className={styles.button} onClick={submitAnalysis} disabled={loading}>
+            <button type="button" className={styles.button} onClick={() => void submitAnalysis()} disabled={loading}>
               {loading ? 'Analyzing…' : analysis ? 'Analyze again' : 'Analyze image'}
             </button>
             <button type="button" className={styles.button} onClick={clearCapture}>Retake photo</button>
@@ -212,7 +222,12 @@ export default function SceneAnalysis({
         {loading && <p role="status">Analyzing the image in temporary memory…</p>}
         {analysisError && <div className={styles.notice}>
           <p className={styles.error} role="alert">{analysisError}</p>
-          <button type="button" className={styles.button} onClick={submitAnalysis}>Retry analysis</button>
+          <button type="button" className={styles.button} onClick={() => void submitAnalysis()}>Retry analysis</button>
+        </div>}
+        {qualityWarning && <div className={styles.notice} role="group" aria-label="Image quality choices">
+          <p role="alert">This photo may be blurry. Retake it for a clearer view. If you continue, image cues may be missed or incomplete.</p>
+          <button type="button" className={styles.button} onClick={() => void submitAnalysis(true)} disabled={loading}>Continue anyway</button>
+          <button type="button" className={styles.button} onClick={clearCapture} disabled={loading}>Retake blurry photo</button>
         </div>}
         {analysis && <section aria-labelledby="evidence-title">
           <h2 id="evidence-title">Evidence checklist</h2>

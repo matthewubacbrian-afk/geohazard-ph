@@ -1,6 +1,7 @@
 export type SceneAnalysisRequest = {
   image_base64: string;
   mime_type: 'image/jpeg';
+  accept_quality_warning?: boolean;
 };
 
 export type ImagePoint = { x: number; y: number };
