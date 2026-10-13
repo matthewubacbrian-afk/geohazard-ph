@@ -10,6 +10,7 @@ class StrictSchema(BaseModel):
 class SceneAnalysisRequest(StrictSchema):
     image_base64: str = Field(min_length=1)
     mime_type: Literal["image/jpeg"]
+    accept_quality_warning: bool = False
 
 
 class ImagePoint(StrictSchema):
@@ -61,7 +62,7 @@ class SceneAnalysisResponse(StrictSchema):
     def validate_limitations(self):
         if self.limitations != [
             "Visual scene cues only; this result does not determine whether any area is safe.",
-            "A single image cannot assess structural stability, hidden or changing hazards, or whether a route is accessible.",
+            "Blur, obstruction, lighting, or viewpoint can hide visual cues; one image cannot assess structural stability, hidden hazards, or route access.",
         ]:
             raise ValueError("limitations must match the fixed scene-analysis caveats")
         return self

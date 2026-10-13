@@ -3,14 +3,17 @@ from io import BytesIO
 
 import numpy as np
 import pytest
-from PIL import Image
+from PIL import Image, ImageFilter
 
 from app.services.scene_analysis import (
+    MIN_SHARPNESS_SCORE,
     InvalidSceneImage,
     PanopticSegment,
     PanopticSegmenter,
+    SceneImageQualityWarning,
     analyze_scene,
     decode_scene_image,
+    estimate_sharpness,
 )
 
 
@@ -39,7 +42,7 @@ class FakeSegmenter:
 
 def analyze(image: Image.Image, segments: list[PanopticSegment]):
     segmenter: PanopticSegmenter = FakeSegmenter(segments)
-    return analyze_scene(image, segmenter)
+    return analyze_scene(image, segmenter, accept_quality_warning=True)
 
 
 def test_decode_requires_jpeg_content_type_and_signature() -> None:
@@ -71,6 +74,39 @@ def test_decode_normalizes_orientation_to_rgb_and_drops_metadata() -> None:
     assert decoded.mode == "RGB"
     assert decoded.size == (2, 3)
     assert not decoded.getexif()
+
+
+def test_blurred_image_is_flagged_by_sharpness_metric() -> None:
+    image = Image.new("L", (64, 64), 0)
+    for x in range(0, 64, 8):
+        image.paste(255, (x, 0, x + 4, 64))
+    sharp = estimate_sharpness(image)
+    blurred = estimate_sharpness(image.filter(ImageFilter.GaussianBlur(radius=2)))
+    assert sharp >= MIN_SHARPNESS_SCORE
+    assert blurred < MIN_SHARPNESS_SCORE
+
+
+def test_likely_blurry_image_warns_before_model_inference() -> None:
+    image = Image.new("L", (64, 64), 127)
+
+    class TrackingSegmenter:
+        called = False
+
+        def segment(self, image):
+            self.called = True
+            return []
+
+    segmenter = TrackingSegmenter()
+    with pytest.raises(SceneImageQualityWarning):
+        analyze_scene(image, segmenter)
+    assert not segmenter.called
+
+
+def test_explicit_quality_override_allows_blurry_image_analysis() -> None:
+    image = Image.new("L", (64, 64), 127)
+    segmenter = FakeSegmenter([])
+    result = analyze_scene(image, segmenter, accept_quality_warning=True)
+    assert result.result_status == "no_clear_candidate"
 
 
 def test_analyze_filters_labels_confidence_and_small_components() -> None:

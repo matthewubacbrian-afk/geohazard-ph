@@ -50,8 +50,13 @@ def client(monkeypatch):
     return TestClient(app, raise_server_exceptions=False)
 
 
-def payload(data: bytes | None = None) -> bytes:
-    return json.dumps({"image_base64": base64.b64encode(data or jpeg()).decode(), "mime_type": "image/jpeg"}).encode()
+def payload(data: bytes | None = None, *, accept_quality_warning: bool = True) -> bytes:
+    body = {
+        "image_base64": base64.b64encode(data or jpeg()).decode(),
+        "mime_type": "image/jpeg",
+    }
+    body["accept_quality_warning"] = accept_quality_warning
+    return json.dumps(body).encode()
 
 
 def test_schema_is_strict_and_consistent():
@@ -104,6 +109,37 @@ def test_fake_segmenter_success_and_exact_wire_fields(client):
     }
 
 
+def test_blurry_image_returns_quality_warning_unless_user_overrides(client):
+    response = client.post(
+        "/api/v1/scene-analyses",
+        content=payload(jpeg(), accept_quality_warning=False),
+        headers={"content-type": "application/json"},
+    )
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "scene_image_quality_warning"
+    assert "blurry" in response.json()["error"]["message"].lower()
+
+
+def test_quality_warning_is_default_when_override_field_is_omitted(client):
+    request_body = json.loads(payload(jpeg()))
+    request_body.pop("accept_quality_warning")
+    response = client.post(
+        "/api/v1/scene-analyses",
+        json=request_body,
+    )
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "scene_image_quality_warning"
+
+
+def test_quality_override_reaches_model(client):
+    response = client.post(
+        "/api/v1/scene-analyses",
+        content=payload(jpeg(), accept_quality_warning=True),
+        headers={"content-type": "application/json"},
+    )
+    assert response.status_code == 200
+
+
 def test_endpoint_model_version_uses_approved_fixed_pin(client, monkeypatch):
     from app.api.v1 import scene_analyses
 
@@ -130,10 +166,12 @@ def test_cpu_analysis_runs_off_event_loop_thread(monkeypatch):
     analysis_thread = None
     original_analyze_scene = scene_analyses.analyze_scene
 
-    def record_analysis_thread(image, segmenter):
+    def record_analysis_thread(image, segmenter, *, accept_quality_warning=False):
         nonlocal analysis_thread
         analysis_thread = threading.get_ident()
-        return original_analyze_scene(image, segmenter)
+        return original_analyze_scene(
+            image, segmenter, accept_quality_warning=accept_quality_warning
+        )
 
     monkeypatch.setattr(scene_analyses, "analyze_scene", record_analysis_thread)
     request_body = payload()

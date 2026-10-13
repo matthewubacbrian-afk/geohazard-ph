@@ -16,6 +16,7 @@ MAX_IMAGE_EDGE = 4096
 MAX_IMAGE_PIXELS = 12_000_000
 MIN_COMPONENT_FRACTION = 0.01
 MIN_MODEL_CONFIDENCE = 0.50
+MIN_SHARPNESS_SCORE = 400.0  # Provisional until held-out real-image calibration is recorded.
 MAX_CANDIDATES = 5
 MAX_POLYGON_POINTS = 64
 
@@ -40,6 +41,14 @@ class InvalidSceneImage(ValueError):
 
 class SceneAnalysisUnavailable(RuntimeError):
     """Scene segmentation is unavailable."""
+
+
+class SceneImageQualityWarning(RuntimeError):
+    """The image may be too blurry for reliable visual cue extraction."""
+
+    def __init__(self, sharpness_score: float) -> None:
+        super().__init__("The image may be blurry")
+        self.sharpness_score = sharpness_score
 
 
 @dataclass(frozen=True)
@@ -113,8 +122,34 @@ def decode_scene_image(image_bytes: bytes, mime_type: str) -> Image.Image:
         raise InvalidSceneImage("The JPEG could not be decoded") from exc
 
 
-def analyze_scene(image: Image.Image, segmenter: PanopticSegmenter) -> SceneAnalysisResult:
+def estimate_sharpness(image: Image.Image) -> float:
+    """Return grayscale Laplacian variance after reducing the longest edge to 512 px."""
+    grayscale_image = image.convert("L")
+    grayscale_image.thumbnail((512, 512), Image.Resampling.BILINEAR)
+    grayscale = np.asarray(grayscale_image, dtype=np.float32)
+    if grayscale.shape[0] < 3 or grayscale.shape[1] < 3:
+        return 0.0
+    center = grayscale[1:-1, 1:-1]
+    laplacian = (
+        grayscale[:-2, 1:-1]
+        + grayscale[2:, 1:-1]
+        + grayscale[1:-1, :-2]
+        + grayscale[1:-1, 2:]
+        - 4 * center
+    )
+    return float(np.var(laplacian, dtype=np.float64))
+
+
+def analyze_scene(
+    image: Image.Image,
+    segmenter: PanopticSegmenter,
+    *,
+    accept_quality_warning: bool = False,
+) -> SceneAnalysisResult:
     """Extract and rank bounded surface components from injected panoptic masks."""
+    sharpness_score = estimate_sharpness(image)
+    if sharpness_score < MIN_SHARPNESS_SCORE and not accept_quality_warning:
+        raise SceneImageQualityWarning(sharpness_score)
     segments = segmenter.segment(image)
     width, height = image.size
     if width <= 0 or height <= 0:

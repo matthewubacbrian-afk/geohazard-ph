@@ -17,6 +17,7 @@ from app.services.scene_analysis import (
     InvalidSceneImage,
     PanopticSegmenter,
     SceneAnalysisUnavailable,
+    SceneImageQualityWarning,
     analyze_scene,
     decode_scene_image,
 )
@@ -25,7 +26,7 @@ from app.services.scene_analysis_model import MODEL_ID, MODEL_REVISION, LocalPan
 MAX_REQUEST_BODY_BYTES = 5_593_000
 LIMITATIONS = [
     "Visual scene cues only; this result does not determine whether any area is safe.",
-    "A single image cannot assess structural stability, hidden or changing hazards, or whether a route is accessible.",
+    "Blur, obstruction, lighting, or viewpoint can hide visual cues; one image cannot assess structural stability, hidden hazards, or route access.",
 ]
 
 router = APIRouter(prefix="/scene-analyses", tags=["scene-analyses"])
@@ -90,7 +91,18 @@ async def _handle_scene_analysis(
         if len(image_bytes) > MAX_IMAGE_BYTES:
             return error_response(413, "scene_image_too_large", "The decoded image exceeds the size limit")
         image = decode_scene_image(image_bytes, parsed.mime_type)
-        result = await run_in_threadpool(analyze_scene, image, segmenter)
+        result = await run_in_threadpool(
+            analyze_scene,
+            image,
+            segmenter,
+            accept_quality_warning=parsed.accept_quality_warning,
+        )
+    except SceneImageQualityWarning:
+        return error_response(
+            422,
+            "scene_image_quality_warning",
+            "This photo may be blurry. Retake it or continue with reduced reliability.",
+        )
     except (ValidationError, binascii.Error, UnicodeDecodeError, json.JSONDecodeError, InvalidSceneImage, ValueError):
         return error_response(422, "invalid_scene_image", "The request must contain a valid bounded JPEG image")
     except SceneAnalysisUnavailable:
