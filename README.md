@@ -228,19 +228,21 @@ Train with the latest Kaggle data:
 .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1
 ```
 
-Preserve the local CSVs under `ml/data/raw/` and use `-Offline` to reuse saved
-inputs without downloading (`--offline` for the Python CLI):
+Preserve the local CSVs under `ml/data/raw/` and assign each one to its source
+when training offline. Replace these example paths with the files you saved:
 
 ```powershell
-.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline
+.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline `
+  -PhivolcsCsv 'ml\data\raw\phivolcs.csv' `
+  -UsgsCsv 'ml\data\raw\usgs.csv'
 ```
 
-Automatic CLI local discovery currently treats all CSVs as PHIVOLCS inputs.
-For mixed PHIVOLCS/USGS snapshots, this applies Manila time normalization to USGS
-timestamps and can change deduplication, so these flags alone may not reproduce
-download-mode output. For source-correct reproducible processing of saved inputs,
-call `ml.train.run_training(download=False, phivolcs_paths=[...], usgs_paths=[...])`
-with separate explicit lists of `Path` objects for each source.
+Use an array for either PowerShell parameter when a source has multiple CSVs.
+The Python CLI has repeatable `--phivolcs-csv` and `--usgs-csv` flags with
+`--offline`. Offline training requires at least one file from each source; it
+does not guess a source from a filename or directory. Programmatic callers can
+pass separate `phivolcs_paths` and `usgs_paths` lists to
+`ml.train.run_training(download=False, ...)`.
 
 Generated artifacts are written under:
 
@@ -260,6 +262,9 @@ Expected outputs include:
 In `metadata.json`, `datasets[].version` records the integer Kaggle version for
 each downloaded dataset, distinguishing retrains that used different source
 versions. Offline runs record `null` because no Kaggle version is resolved.
+For both modes, `metadata.json` also records each input CSV's source, filename,
+size in bytes, and SHA-256 digest under `input_files` so the exact input bytes
+can be identified without storing local absolute paths.
 
 The generated labels are descriptive statistical profiles based on historical records. They are not earthquake predictions.
 

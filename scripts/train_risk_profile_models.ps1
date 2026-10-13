@@ -1,16 +1,25 @@
 param(
   [string]$ArtifactVersion = "v1",
-  [switch]$Offline
+  [switch]$Offline,
+  [string[]]$PhivolcsCsv = @(),
+  [string[]]$UsgsCsv = @()
 )
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-Set-Location (Join-Path $RepoRoot "ml")
 
 $Arguments = @("-m", "ml.train", "--artifact-version", $ArtifactVersion)
 if ($Offline) {
   $Arguments += "--offline"
 }
+foreach ($CsvPath in $PhivolcsCsv) {
+  $Arguments += @("--phivolcs-csv", (Resolve-Path -LiteralPath $CsvPath).Path)
+}
+foreach ($CsvPath in $UsgsCsv) {
+  $Arguments += @("--usgs-csv", (Resolve-Path -LiteralPath $CsvPath).Path)
+}
+
+Set-Location (Join-Path $RepoRoot "ml")
 
 $PreviousPythonPath = $env:PYTHONPATH
 if ([string]::IsNullOrWhiteSpace($PreviousPythonPath)) {
