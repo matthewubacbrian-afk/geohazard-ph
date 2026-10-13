@@ -17,11 +17,11 @@
 .video, .preview { display: block; max-width: 100%; max-height: 68vh; width: auto; height: auto; object-fit: contain; background: var(--ink); }
 .previewFrame { position: relative; width: fit-content; max-width: 100%; margin-inline: auto; background: var(--ink); }
 .overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.candidateShape { fill: color-mix(in srgb, var(--mineral) 25%, transparent); stroke: var(--mineral); stroke-width: .7; vector-effect: non-scaling-stroke; }
-.candidateShapeSelected { fill: color-mix(in srgb, var(--mineral) 40%, transparent); stroke-width: 1.2; }
+.candidateShape { fill: color-mix(in srgb, var(--focus-ring) 25%, transparent); stroke: var(--focus-ring); stroke-width: .7; vector-effect: non-scaling-stroke; }
+.candidateShapeSelected { fill: color-mix(in srgb, var(--focus-ring) 40%, transparent); stroke-width: 1.2; }
 .candidateList { display: flex; flex-wrap: wrap; gap: .5rem; padding: 0; list-style: none; }
 .candidate { padding: .55rem .75rem; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface-raised); color: inherit; cursor: pointer; }
-.selected { border-color: var(--mineral); font-weight: 700; }
+.selected { border-color: var(--focus-ring); font-weight: 700; }
 .checklist { padding-left: 1.3rem; }
 .checklist li { margin: .5rem 0; }
 
