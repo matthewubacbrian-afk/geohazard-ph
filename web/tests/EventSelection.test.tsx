@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Dashboard from '../src/pages/Dashboard';
 
 const event = {
@@ -50,11 +51,17 @@ afterEach(() => {
 });
 
 function renderDashboard() {
-  return render(
-    <MemoryRouter>
-      <Dashboard />
-    </MemoryRouter>,
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const view = render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
+  return { ...view, queryClient };
 }
 
 describe('activity selection', () => {
@@ -66,7 +73,7 @@ describe('activity selection', () => {
     expect(screen.getByText('Map target: e1')).toBeTruthy();
     expect(screen.getByText('Coordinates')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: /close/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close detail' }));
     expect(screen.getByText('No map target')).toBeTruthy();
     expect(screen.queryByText('Coordinates')).toBeNull();
   });
@@ -99,9 +106,11 @@ describe('activity selection', () => {
 
     state.events = [];
     dashboard.rerender(
-      <MemoryRouter>
-        <Dashboard />
-      </MemoryRouter>,
+      <QueryClientProvider client={dashboard.queryClient}>
+        <MemoryRouter>
+          <Dashboard />
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByText('No map target')).toBeTruthy();

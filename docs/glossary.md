@@ -51,6 +51,9 @@ Related contracts:
 | is_primary | `is_primary` | Display-authority flag; exactly one row in a canonical group should be primary. |
 | match_confidence | `match_confidence` | Numeric confidence assigned when cross-source rows are canonicalized. |
 | EventChange | `EventChange` | Post-commit event-change payload used by realtime consumers. |
+| dashboard notification | `DashboardNotification` | Browser-local record created from a primary realtime `EventChange`; identified by its `canonical_id`. It is not an official warning or server-delivered notification. |
+| notification received time | `received_at` | Browser time when a realtime event was received; distinct from the event's `occurred_at`. |
+| notification read time | `read_at` | Browser time when a notification was marked read; null means unread. |
 | match_and_link | `match_and_link` | Synchronous ingest operation that matches cross-source rows into canonical groups. |
 | canonical reconciliation | `reconcile_canonical_events` | Preview or apply regrouping of persisted source rows after matching rules or source records change. |
 | event density | `event_density` | Coordinate-spread density proxy; not events per km² until authoritative boundaries exist. |

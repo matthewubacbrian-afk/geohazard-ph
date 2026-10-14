@@ -13,7 +13,13 @@
   background: var(--surface-raised);
 }
 
-.nav--dashboard { background: var(--surface-raised); }
+.nav--dashboard { background: var(--surface-brand); border-bottom-color: var(--border-on-brand); }
+.navWithStatus { grid-template-columns: max-content minmax(0, 1fr) max-content max-content; }
+.nav--dashboard .brand { color: var(--text-on-brand); }
+.nav--dashboard .linkBtn { color: var(--text-muted-on-brand); }
+.nav--dashboard .linkBtn:hover { color: var(--text-on-brand); }
+.nav--dashboard .linkBtnActive { border-bottom-color: var(--field-terracotta); color: var(--text-on-brand); }
+.statusSlot { display: flex; align-items: center; justify-self: end; min-width: 0; }
 .brand {
   color: var(--text);
   font-family: var(--font-display);
@@ -79,11 +85,15 @@
 }
 .settingsBtn:hover { border-color: var(--accent); background: var(--surface-container); }
 .settingsBtn:active { transform: translateY(1px); }
+.nav--dashboard .settingsBtn { border-color: var(--border-on-brand); color: var(--text-on-brand); }
+.nav--dashboard .settingsBtn:hover { border-color: var(--field-terracotta); background: rgba(255, 252, 245, 0.08); }
 
 @media (max-width: 900px) {
   .nav { gap: var(--space-3); padding-inline: var(--space-4); }
   .links { gap: var(--space-2); }
   .linkBtn { font-size: 9px; letter-spacing: 0.025em; }
+  .navWithStatus { grid-template-columns: max-content minmax(0, 1fr) max-content max-content; }
+  .brand { font-size: 22px; }
 }
 @media (max-width: 640px) {
   .nav {
@@ -94,6 +104,11 @@
   }
   .brand { grid-area: brand; font-size: 24px; }
   .settingsBtn { grid-area: settings; min-width: 88px; padding-inline: var(--space-3); }
+  .navWithStatus {
+    grid-template-areas: "brand settings" "links links" "status status";
+    grid-template-columns: minmax(0, 1fr) max-content;
+  }
+  .statusSlot { grid-area: status; justify-self: start; width: 100%; padding-top: var(--space-1); border-top: 1px solid var(--border-on-brand); }
   .links {
     grid-area: links;
     display: grid;

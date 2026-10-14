@@ -1,94 +1,35 @@
-.page {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100svh;
-  min-height: 560px;
-  overflow: hidden;
-  background: var(--surface);
-  color: var(--text);
+.page { display: flex; flex-direction: column; width: 100%; height: 100svh; min-height: 640px; overflow: hidden; background: var(--surface); color: var(--text); }
+.main { display: grid; flex: 1; grid-template-columns: minmax(300px, 25vw) minmax(0, 1fr) minmax(330px, 27vw); min-height: 0; overflow: hidden; }
+.controlsCollapsed { grid-template-columns: 56px minmax(0, 1fr) minmax(330px, 27vw); }
+.activityCollapsed { grid-template-columns: minmax(300px, 25vw) minmax(0, 1fr) 56px; }
+.controlsCollapsed.activityCollapsed { grid-template-columns: 56px minmax(0, 1fr) 56px; }
+.main > :first-child { min-width: 0; }
+.sidePanel { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; border-left: 1px solid var(--border-subtle); background: var(--surface-raised); }
+.activityContent { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--outline-variant) transparent; }
+.activityContent::-webkit-scrollbar { width: 5px; }
+.activityContent::-webkit-scrollbar-thumb { border-radius: var(--radius-pill); background: var(--outline-variant); }
+@media (max-width: 1200px) and (min-width: 901px) {
+  .controlsCollapsed { grid-template-columns: 56px minmax(0, 1fr); }
+  .activityCollapsed { grid-template-columns: minmax(260px, 29vw) minmax(0, 1fr); }
+  .controlsCollapsed.activityCollapsed { grid-template-columns: 56px minmax(0, 1fr); }
 }
 
-.main {
-  display: grid;
-  flex: 1;
-  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr) minmax(300px, 360px);
-  grid-template-rows: minmax(0, 1fr);
-  min-width: 0;
-  min-height: 0;
+@media (max-width: 1200px) and (min-width: 901px) {
+  .main { grid-template-columns: minmax(260px, 29vw) minmax(0, 1fr); grid-template-rows: minmax(520px, 1fr) minmax(320px, 42vh); grid-template-areas: "controls map" "activity activity"; overflow: auto; }
+  .main > :first-child { grid-area: controls; }
+  .main > :nth-child(2) { grid-area: map; }
+  .sidePanel { grid-area: activity; border-top: 1px solid var(--border-subtle); border-left: 0; }
 }
 
-.main > :nth-child(1) {
-  min-width: 0;
-}
-
-.main > :nth-child(2) {
-  min-width: 0;
-}
-
-.sidePanel {
-  display: flex;
-  flex-direction: column;
-  width: auto;
-  min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
-  background: var(--surface-raised);
-  border-left: 1px solid var(--border-strong);
-}
-
-@media (max-width: 1100px) {
-  .page {
-    height: auto;
-    min-height: 100svh;
-    overflow: visible;
-  }
-
-  .main {
-    flex: none;
-    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-    grid-template-rows: minmax(560px, 72svh) auto;
-    grid-template-areas:
-      "sidebar map"
-      "activity activity";
-  }
-
-  .main > :nth-child(1) {
-    grid-area: sidebar;
-  }
-
-  .main > :nth-child(2) {
-    grid-area: map;
-  }
-
-  .sidePanel {
-    grid-area: activity;
-    max-height: 72svh;
-    min-height: 480px;
-    border-top: 1px solid var(--border-strong);
-    border-left: 0;
-  }
+@media (max-width: 900px) {
+  .controlsCollapsed,.activityCollapsed,.controlsCollapsed.activityCollapsed { display:flex; }
+  .page { height: auto; min-height: 100svh; overflow: visible; }
+  .main { display: flex; flex-direction: column; flex: none; overflow: visible; }
+  .sidePanel { min-height: 420px; border-top: 1px solid var(--border-subtle); border-left: 0; overflow: visible; }
+  .activityContent { overflow: visible; }
 }
 
 @media (max-width: 640px) {
-  .page {
-    min-height: 100svh;
-  }
-
-  .main {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(460px, 68svh) minmax(0, auto);
-    grid-template-areas:
-      "sidebar"
-      "map"
-      "activity";
-  }
-
-  .sidePanel {
-    height: auto;
-    max-height: none;
-    min-height: 480px;
-    overflow: visible;
-    border-left: 0;
-  }
+  .main { min-width: 0; }
+  .sidePanel { min-height: 500px; }
 }

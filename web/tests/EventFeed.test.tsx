@@ -37,7 +37,7 @@ describe('EventFeed', () => {
       <EventFeed events={events} isLoading={false} error={null} onRetry={() => {}} />,
     );
 
-    expect(screen.getAllByText(/Regional activity/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Recent events/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/2 events/i).length).toBeGreaterThan(0);
   });
 

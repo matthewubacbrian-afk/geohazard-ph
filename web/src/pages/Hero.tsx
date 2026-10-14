@@ -42,7 +42,7 @@ export default function Hero({ onNavigate, onSettings }: HeroProps) {
         activeItem="How It Works"
         onNavigate={onNavigate}
         onSettings={onSettings}
-        theme="hero"
+        theme="dashboard"
       />
 
       <section className={styles.heroSection}>

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { View } from "../../types/views";
 import styles from "./TopNav.module.css";
 
@@ -7,6 +8,7 @@ type TopNavProps = {
   onNavigate?: (view: View) => void;
   onSettings?: () => void;
   theme?: "hero" | "dashboard";
+  status?: ReactNode;
 };
 
 // Map a nav label to an app view, for items that navigate. Labels without a
@@ -25,6 +27,7 @@ export default function TopNav({
   onNavigate,
   onSettings,
   theme = "hero",
+  status,
 }: TopNavProps) {
   const isDashboardTheme = theme === "dashboard";
   const resolvedActiveItem =
@@ -32,10 +35,11 @@ export default function TopNav({
 
   return (
     <nav
-      className={`${styles.nav} ${isDashboardTheme ? styles["nav--dashboard"] : ""}`}
+      className={`${styles.nav} ${isDashboardTheme ? styles["nav--dashboard"] : ""} ${status ? styles.navWithStatus : ''}`}
       aria-label="Main navigation"
+      data-theme={theme}
     >
-      <div className={styles.brand}>GeoHazard</div>
+      <div className={styles.brand}>GeoHazard PH</div>
 
       <ul className={styles.links}>
         {items.map((item) => {
@@ -70,6 +74,8 @@ export default function TopNav({
           );
         })}
       </ul>
+
+      {status && <div className={styles.statusSlot}>{status}</div>}
 
       <button type="button" className={styles.settingsBtn} onClick={onSettings}>
         Settings

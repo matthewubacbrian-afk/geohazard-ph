@@ -1,14 +1,12 @@
 import type { StaticLayer } from '../../types/staticLayer';
 import type { VolcanoOverlayState } from '../map/volcanoOverlays';
-import { useState } from 'react';
-import Icon from '../common/Icon';
 import styles from "./DashboardMapArea.module.css";
 import Skeleton from "../common/Skeleton";
+import DashboardSummaryBar from './DashboardSummaryBar';
 import MapView from "../map/MapView";
 import type { BasemapId } from "../map/basemaps";
 import type { HazardEvent } from "../../types/hazard";
 import { useRiskProfiles } from "../../hooks/useRiskProfiles";
-import { useEventSummary } from "../../hooks/useEventSummary";
 
 type DashboardMapAreaProps = {
   events: HazardEvent[];
@@ -26,7 +24,6 @@ type DashboardMapAreaProps = {
   onSelectEvent?: (event: HazardEvent) => void;
   showEvents?: boolean;
   showRiskLayer?: boolean;
-  onViewDetailedReport?: () => void;
 };
 
 const RISK_LABELS = [
@@ -48,29 +45,12 @@ export default function DashboardMapArea({
   onSelectEvent,
   showEvents = true,
   showRiskLayer = true,
-  onViewDetailedReport,
 }: DashboardMapAreaProps) {
-  const [showRegionCard, setShowRegionCard] = useState(true);
-  const {
-    data: summary,
-    isLoading: summaryLoading,
-    error: summaryError,
-    refetch: refetchSummary,
-  } = useEventSummary();
   const {
     data: riskProfiles = [],
     error: riskProfilesError,
     refetch: refetchRiskProfiles,
   } = useRiskProfiles();
-
-  const avgMagnitude =
-    !summaryLoading && !summaryError && summary?.avg_magnitude != null
-      ? summary.avg_magnitude
-      : null;
-  const eventCount =
-    !summaryLoading && !summaryError && summary?.event_count != null
-      ? summary.event_count
-      : null;
 
   return (
     <main className={styles.mapArea} aria-label="Geospatial risk dashboard map">
@@ -87,6 +67,8 @@ export default function DashboardMapArea({
         riskProfiles={riskProfiles}
         showRiskLayer={showRiskLayer}
       />
+
+      <DashboardSummaryBar events={events} isLoading={isLoading} error={error} />
 
       {isLoading && !error && (
         <div className={styles.status} role="status">
@@ -129,104 +111,6 @@ export default function DashboardMapArea({
         ))}
       </div>}
 
-      {showRegionCard && <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <div>
-            <h3 className={styles.cardTitle}>Philippines</h3>
-            <p className={styles.cardSub}>Regional activity</p>
-          </div>
-          <button
-            type="button"
-            className={styles.cardClose}
-            aria-label="Close panel"
-            onClick={() => setShowRegionCard(false)}
-          >
-            <Icon name="close" />
-          </button>
-        </div>
-
-        {summaryLoading ? (
-          <div className={styles.statGrid} role="status" aria-label="Loading event summary">
-            <div className={`${styles.stat} ${styles.statWide}`}>
-              <Skeleton width={16} height={46} />
-              <div>
-                <Skeleton width={90} height={10} />
-                <Skeleton width={60} height={16} />
-              </div>
-            </div>
-            <div className={styles.stat}>
-              <Skeleton width={80} height={10} />
-              <Skeleton width={44} height={20} />
-            </div>
-            <div className={styles.stat}>
-              <Skeleton width={80} height={10} />
-              <Skeleton width={44} height={20} />
-            </div>
-            <div className={`${styles.stat} ${styles.statFull}`}>
-              <Skeleton width={120} height={10} />
-              <Skeleton width="100%" height={40} />
-            </div>
-          </div>
-        ) : summaryError ? (
-          <div className={styles.statGrid} role="alert">
-            <div className={`${styles.stat} ${styles.statFull}`}>
-              <span className={styles.statLabel}>Regional summary</span>
-              <p className={styles.faultBox}>Summary unavailable.</p>
-              <button
-                type="button"
-                className={styles.retryBtn}
-                onClick={() => { void refetchSummary(); }}
-              >
-                Retry summary
-              </button>
-            </div>
-          </div>
-        ) : !summary ? (
-          <div className={styles.statGrid}>
-            <div className={`${styles.stat} ${styles.statFull}`}>
-              <span className={styles.statLabel}>Regional summary</span>
-              <p className={styles.faultBox}>No regional summary available.</p>
-            </div>
-          </div>
-        ) : (
-          <div className={styles.statGrid}>
-            <div className={`${styles.stat} ${styles.statWide}`}>
-              <span className={styles.statMarker} />
-              <div>
-                <span className={styles.statLabel}>Classification</span>
-                <strong className={styles.statValue}>
-                  <span>Coming soon</span>
-                </strong>
-              </div>
-            </div>
-
-            <div className={styles.stat}>
-              <span className={styles.statLabel}>Avg Magnitude</span>
-              <strong className={styles.statValue}>
-                {avgMagnitude != null ? avgMagnitude.toFixed(2) : "—"}
-                {avgMagnitude != null ? <span> Mw</span> : null}
-              </strong>
-            </div>
-
-            <div className={styles.stat}>
-              <span className={styles.statLabel}>Events in area</span>
-              <strong className={styles.statValue}>
-                {eventCount != null ? eventCount.toLocaleString() : "—"}
-                {eventCount != null ? <span> events</span> : null}
-              </strong>
-            </div>
-
-            <div className={`${styles.stat} ${styles.statFull}`}>
-              <span className={styles.statLabel}>Dominant Fault System</span>
-              <div className={styles.faultBox}>Coming soon</div>
-            </div>
-          </div>
-        )}
-
-        <div className={styles.cardFooter}>
-          <button type="button" onClick={onViewDetailedReport}>View Detailed Report</button>
-        </div>
-      </div>}
     </main>
   );
 }
