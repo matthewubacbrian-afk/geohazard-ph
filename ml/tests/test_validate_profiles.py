@@ -206,7 +206,7 @@ def test_label_stability_runs_seed_and_leave_one_out_comparisons():
     assert saved_labels == {"A": "Low", "B": "Moderate", "C": "Moderate", "D": "High"}
 
 
-def test_label_stability_refits_shared_window_rows():
+def test_label_stability_refits_shared_window_features():
     from ml.validate_profiles import _label_stability
 
     rows = [
@@ -215,14 +215,7 @@ def test_label_stability_refits_shared_window_rows():
         RegionFeatures("C", 30, 5.0, 7.0, 30.0, 3.0),
     ]
     saved_labels = {"A": "Low", "B": "Moderate", "C": "High"}
-    shared_rows = [
-        {"region_name": "A", "source": "phivolcs", "magnitude": 4.0,
-         "depth_km": 10.0, "latitude": 1.0, "longitude": 1.0},
-        {"region_name": "B", "source": "usgs", "magnitude": 5.0,
-         "depth_km": 20.0, "latitude": 2.0, "longitude": 2.0},
-    ]
-
-    stability = _label_stability(rows, saved_labels, shared_rows)
+    stability = _label_stability(rows, saved_labels, rows[:2])
 
     assert stability["shared_window_refit"]["unavailable_reason"] is None
     assert stability["shared_window_refit"]["included_regions"] == ["A", "B"]
@@ -339,6 +332,12 @@ def test_cli_writes_json_and_markdown_on_success(
     payload = json.loads((output_dir / "validation-report.json").read_text(encoding="utf-8"))
     markdown = (output_dir / "validation-report.md").read_text(encoding="utf-8")
     assert payload["review_state"] == "requires_domain_review"
+    sensitivity = payload["sparse_region_sensitivity"]
+    assert sensitivity["thresholds_are_policy"] is False
+    assert sensitivity["count_basis"] == "combined_sources_in_shared_window"
+    assert sensitivity["scenarios"][0]["minimum_shared_window_events"] == 0
+    assert "Sparse-region cutoff sensitivity" in markdown
+    assert "not a policy cutoff" in markdown.lower()
     assert payload["boundary_sha256"]
     assert payload["assignment_rule"]["max_offshore_km"] == 100.0
     assert "source_coverage" in payload

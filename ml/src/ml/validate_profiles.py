@@ -128,12 +128,11 @@ def _saved_features(frame: pd.DataFrame) -> list[RegionFeatures]:
 def _label_stability(
     saved_features: list[RegionFeatures],
     saved_labels: dict[str, str],
-    shared_rows: list[dict[str, object]],
+    shared_features: list[RegionFeatures],
 ) -> dict[str, object]:
     names = sorted(saved_labels)
     if {row.region_name for row in saved_features} != set(names):
         raise ValueError("Saved feature regions do not match saved labels.")
-    shared_features = list(build_region_features(shared_rows).values())
     shared_features.sort(key=lambda row: row.region_name)
     shared_refit: dict[str, object] = {
         "included_regions": [row.region_name for row in shared_features],
@@ -406,6 +405,8 @@ def build_validation_report(
             row for row in verified.assigned_rows
             if start <= _utc_timestamp(row["occurred_at"]) <= end
         ]
+    shared_features = list(build_region_features(shared_rows).values())
+    shared_features.sort(key=lambda row: row.region_name)
     saved_labels = {str(profile["region_name"]): str(profile["label"]) for profile in verified.profiles}
     return {
         "artifact_version": verified.metadata.get("model_version"),
@@ -418,7 +419,10 @@ def build_validation_report(
         },
         **coverage,
         "label_stability": _label_stability(
-            _saved_features(verified.features), saved_labels, shared_rows
+            _saved_features(verified.features), saved_labels, shared_features
+        ),
+        "sparse_region_sensitivity": _sparse_region_sensitivity(
+            coverage["regions"], saved_labels, shared_features
         ),
         "review_state": "requires_domain_review",
         "limitations": [
@@ -523,6 +527,40 @@ def _render_markdown(report: dict[str, object]) -> str:
         lines[-1] += f"unavailable ({shared_refit['unavailable_reason']})."
     else:
         lines[-1] += f"{shared_refit['change_count']} saved labels changed among included regions."
+    sensitivity = report["sparse_region_sensitivity"]
+    lines.extend([
+        "",
+        "## Sparse-region cutoff sensitivity",
+        "",
+        (
+            "These scenarios use data-derived count breakpoints for exploratory analysis; "
+            "they are not a policy cutoff and do not equalize source completeness."
+        ),
+        "",
+        (
+            "| Minimum shared-window events | Included regions | Excluded regions | "
+            "Changed labels | Fit status |"
+        ),
+        "| ---: | ---: | ---: | ---: | --- |",
+    ])
+    for scenario in sensitivity["scenarios"]:
+        unavailable = scenario["unavailable_reason"]
+        fit_status = "available" if unavailable is None else f"unavailable: {unavailable}"
+        changed = scenario["change_count"]
+        changed_text = str(changed) if changed is not None else "n/a"
+        lines.append(
+            f"| {scenario['minimum_shared_window_events']} | "
+            f"{len(scenario['included_regions'])} | {len(scenario['excluded_regions'])} | "
+            f"{changed_text} | {fit_status} |"
+        )
+    lines.append("")
+    for scenario in sensitivity["scenarios"]:
+        included = ", ".join(_markdown_cell(name) for name in scenario["included_regions"])
+        excluded = ", ".join(_markdown_cell(name) for name in scenario["excluded_regions"])
+        lines.append(
+            f"- Minimum {scenario['minimum_shared_window_events']}: "
+            f"included {included or 'none'}; excluded {excluded or 'none'}."
+        )
     lines.extend(["", "## Limitations", ""])
     lines.extend(f"- {item}" for item in report["limitations"])
     lines.append("")
