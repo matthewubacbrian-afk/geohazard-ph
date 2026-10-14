@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -37,6 +38,22 @@ def _config(tmp_path: Path) -> TrainingConfig:
         data_root=tmp_path / "data",
         output_dir=tmp_path / "out",
     )
+
+
+def test_training_config_accepts_full_model_commit_sha(tmp_path):
+    config = _config(tmp_path)
+
+    assert len(config.model_revision) == 40
+    assert all(character in "0123456789abcdef" for character in config.model_revision)
+
+
+@pytest.mark.parametrize(
+    "revision",
+    ["main", "v1.0", "d53b52a", "g" * 40, "d" * 39, "d" * 41],
+)
+def test_training_config_rejects_mutable_or_malformed_model_revisions(tmp_path, revision):
+    with pytest.raises(ValueError, match="40-character hexadecimal commit SHA"):
+        replace(_config(tmp_path), model_revision=revision)
 
 
 class _FakeModel:

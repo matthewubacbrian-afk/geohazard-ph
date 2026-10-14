@@ -44,8 +44,10 @@ class TrainingConfig:
     def __post_init__(self) -> None:
         if not isinstance(self.model_id, str) or not self.model_id.strip():
             raise ValueError("model_id must be nonempty")
-        if not isinstance(self.model_revision, str) or not self.model_revision.strip():
-            raise ValueError("model_revision must be pinned")
+        if not isinstance(self.model_revision, str) or len(self.model_revision) != 40:
+            raise ValueError("model_revision must be a 40-character hexadecimal commit SHA")
+        if any(character not in "0123456789abcdefABCDEF" for character in self.model_revision):
+            raise ValueError("model_revision must be a 40-character hexadecimal commit SHA")
         if not isinstance(self.seed, int) or isinstance(self.seed, bool):
             raise TypeError("seed must be an integer")
         if not isinstance(self.epochs, int) or isinstance(self.epochs, bool) or self.epochs < 1:
