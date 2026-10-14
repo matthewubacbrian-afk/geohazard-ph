@@ -19,7 +19,7 @@ The indexed-mask IDs are fixed and reserved as follows:
 | `0` | `open_ground` | Visible floor or ground surface that appears unobstructed in the image. This is a visual surface label, not a safety or accessibility claim. |
 | `1` | `obstacle` | Visible object, debris, or obstruction occupying or crossing a ground area. |
 | `2` | `glass_facade` | Visible exterior glass or window-pane surfaces on a building. |
-| `3` | `overhead_lines` | Visible overhead electrical or utility wires/cables. |
+| `3` | `overhead_lines` | Visible overhead wires or cables only; their type is not inferred. |
 | `4` | `visible_building_damage` | Directly visible physical damage to a building surface, using the boundaries below. |
 | `5` | `background` | Every visible, labelable pixel that is outside the five target classes. This is a mask annotation value, never a displayed or predicted class. |
 | `255` | `ignore` | Ambiguous, hidden, too small, or otherwise not reliably annotatable pixels. Exclude these pixels from supervised loss and agreement denominators. |
@@ -98,7 +98,7 @@ This label means only that glass is visible in the frame. Never label or infer
 reinforced/weak construction, glass fragility, falling-glass risk, or a safe
 distance from the building.
 
-### `overhead_lines` (3)
+### `overhead_lines` (3): visible overhead wires or cables only
 
 Include visible overhead wires or cables whose line-like physical structure can
 be followed in the image. Trace the visible wire/cable pixels at native
@@ -108,8 +108,10 @@ antenna elements, building edges, cables on the ground, and indistinguishable
 background lines. If wires cross and cannot be separated, mark the crossing
 `ignore`.
 
-This label does not identify voltage, whether a line is energized, whether it is
-damaged, or whether it presents electrical danger.
+The model does not identify whether a wire or cable is electrical, utility,
+communications, or another type. It also does not identify voltage, whether it
+is energized/live, whether it is damaged, or whether it presents electrical
+danger.
 
 ### `visible_building_damage` (4)
 
@@ -169,13 +171,18 @@ guide and schema version. They must not see each other's masks before both are
 submitted. Record annotator IDs, guide version, image/source IDs, completion
 date, and tool/version; do not put private image paths or pixels in reports.
 
-For each class, report pixel intersection-over-union and class-wise agreement
-on the union of pixels either annotator assigned to that class, along with
-confusion counts and ignored-pixel coverage. Also report disagreement examples
-by category: boundary placement, class identity, visibility/occlusion, omitted
-small/thin object, or guide ambiguity. Exclude ignore pixels from these
-calculations and report their share separately. Do not collapse classes into a
-single headline score that can conceal poor agreement for a sparse class.
+Define jointly labelable pixels as pixels where neither annotator's mask is
+`ignore`. Compute the pixel agreement rate, per-class intersection-over-union,
+and confusion counts only on these jointly labelable pixels. Separately report
+the one-sided-ignore disagreement count and fraction of all image pixels
+(exactly one mask is `ignore`), the both-ignore coverage count and fraction of
+all image pixels (both masks are `ignore`), and jointly labelable count and
+fraction of all image pixels. Also report disagreement examples by category:
+boundary placement, class
+identity, visibility/occlusion, omitted small/thin object, or guide ambiguity.
+Do not silently remove one-sided-ignore pixels from the review; report them as
+annotation disagreement. Do not collapse classes into a single headline score
+that can conceal poor agreement for a sparse class.
 
 An adjudicator reviews disagreements against the image and this guide, records
 the resolution and rationale, and updates the guide when a recurring ambiguity
