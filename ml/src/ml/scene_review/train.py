@@ -359,6 +359,7 @@ def _runtime_versions() -> dict[str, str | None]:
         "scipy",
         "torch",
         "torchvision",
+        "timm",
         "transformers",
     ):
         try:

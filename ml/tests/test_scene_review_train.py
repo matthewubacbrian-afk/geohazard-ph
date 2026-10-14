@@ -88,7 +88,11 @@ def test_train_loads_pinned_model_locally_and_never_reads_test_samples(tmp_path,
     from ml.scene_review import train
 
     monkeypatch.setattr(train, "_code_revision", lambda: "a" * 40)
-    monkeypatch.setattr(train, "_runtime_versions", lambda: {"numpy": "2.0"})
+    monkeypatch.setattr(
+        train,
+        "_runtime_versions",
+        lambda: {"numpy": "2.0", "timm": "1.0.30"},
+    )
     monkeypatch.setattr(train, "_manifest_sha256", lambda manifest: "b" * 64)
 
     monkeypatch.setattr(
@@ -191,7 +195,7 @@ def test_train_loads_pinned_model_locally_and_never_reads_test_samples(tmp_path,
     metadata = model.training_metadata
     assert metadata["code_revision"] == "a" * 40
     assert isinstance(metadata["code_worktree_dirty"], bool)
-    assert metadata["runtime_versions"] == {"numpy": "2.0"}
+    assert metadata["runtime_versions"] == {"numpy": "2.0", "timm": "1.0.30"}
     assert metadata["epochs"] == 3
     assert metadata["batch_size"] == 2
     assert metadata["learning_rate"] == 1e-5
