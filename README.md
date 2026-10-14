@@ -265,6 +265,19 @@ versions. Offline runs record `null` because no Kaggle version is resolved.
 For both modes, `metadata.json` also records each input CSV's source, filename,
 size in bytes, and SHA-256 digest under `input_files` so the exact input bytes
 can be identified without storing local absolute paths.
+Training assigns epicenters to the 17 regions in the pinned web boundary asset.
+Offshore epicenters within 100 km of a region boundary go to the nearest region;
+more distant events are excluded. `metadata.json.region_assignment` records
+the boundary SHA-256, distance limit, and assigned/excluded counts by source
+after deduplication. `source_reports` records parsed/rejected rows before
+deduplication. Training fails if either source has no parsed or assigned events.
+
+An offline run on saved PHIVOLCS and USGS snapshots on 2026-10-14 produced 17
+profiles whose names matched the web regions and passed backend schema parsing.
+The generated bundle is local and ignored by Git. Its Kaggle dataset versions
+remain unknown; the input-file hashes identify the exact saved snapshots.
+Classifier accuracy in this bundle is measured on its training regions and is
+not an independent validation of model quality.
 
 The generated labels are descriptive statistical profiles based on historical records. They are not earthquake predictions.
 
@@ -340,7 +353,9 @@ Train risk-profile models:
 
 ```powershell
 .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1
-.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline
+.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline `
+  -PhivolcsCsv 'ml\data\raw\phivolcs.csv' `
+  -UsgsCsv 'ml\data\raw\usgs.csv'
 ```
 
 Run the full local verification set:

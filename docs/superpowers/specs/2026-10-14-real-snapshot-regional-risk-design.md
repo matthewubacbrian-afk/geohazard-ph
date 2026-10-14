@@ -70,7 +70,7 @@ Implement the parser regression first, then geographic assignment, then training
 - `ml/pyproject.toml` — Shapely dependency.
 - `ml/tests/fixtures/phivolcs_kaggle_sample.csv` — small observed-header input.
 - `ml/tests/test_clean_merge.py`, `ml/tests/test_regions.py`, `ml/tests/test_train.py` — regression coverage.
-- `README.md`, `docs/data-sources.md`, `docs/project-status.md`, `docs/glossary.md` — operator guidance and current status.
+- `README.md`, `docs/data-sources.md`, `docs/project-status.md`, `docs/glossary.md`, `docs/runbook.md` — operator guidance and current status.
 - `docs/superpowers/plans/2026-10-14-real-snapshot-regional-risk.md` — execution plan.
 
 ## Testing Strategy

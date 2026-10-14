@@ -91,6 +91,7 @@ def test_assign_regions_uses_100_km_limit(tmp_path):
 - Modify: `docs/data-sources.md`
 - Modify: `docs/project-status.md`
 - Modify: `docs/glossary.md`
+- Modify: `docs/runbook.md`
 - Local ignored output: `ml/model_artifacts/<version>/`
 
 - [ ] **Step 1: Run offline training with absolute paths to the two saved raw CSVs** from the primary checkout, using `ml.train --offline --phivolcs-csv ... --usgs-csv ... --artifact-version v1 --artifact-dir model_artifacts` from the worktree's `ml/` directory. Use the branch code and the ML virtual environment. Do not copy raw CSVs into Git.
