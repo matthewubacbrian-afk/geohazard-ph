@@ -31,10 +31,12 @@ def load_boundaries(path: Path | str) -> list[dict[str, object]]:
         geometry = feature.get("geometry")
         properties = feature.get("properties", {})
         name = properties.get("region_name") or properties.get("shapeName")
-        if name and geometry:
-            polygon = shape(geometry)
-            if not polygon.is_empty and polygon.geom_type in {"Polygon", "MultiPolygon"}:
-                boundaries.append({"name": str(name).strip(), "geom": polygon})
+        if not name or not str(name).strip() or not geometry:
+            raise ValueError("Region boundary feature is missing a name or geometry.")
+        polygon = shape(geometry)
+        if polygon.is_empty or polygon.geom_type not in {"Polygon", "MultiPolygon"}:
+            raise ValueError("Region boundary feature must be a nonempty polygon.")
+        boundaries.append({"name": str(name).strip(), "geom": polygon})
     if not boundaries:
         raise ValueError("Region boundary file has no named polygons.")
     return boundaries

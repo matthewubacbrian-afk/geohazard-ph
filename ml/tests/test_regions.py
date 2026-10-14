@@ -78,6 +78,16 @@ def test_assign_regions_rejects_empty_boundary_file(tmp_path):
         assign_regions([{"source": "usgs", "latitude": 0, "longitude": 0}], regions_path=path)
 
 
+def test_assign_regions_rejects_partly_malformed_boundary_file(tmp_path):
+    path = _write_square_regions(tmp_path)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["features"][1]["properties"] = {}
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="boundary"):
+        assign_regions([{"source": "usgs", "latitude": 0.5, "longitude": 0.5}], regions_path=path)
+
+
 def test_assign_regions_finds_pinned_asset_from_any_working_directory(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
 
