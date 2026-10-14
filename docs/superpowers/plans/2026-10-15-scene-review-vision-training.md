@@ -117,13 +117,24 @@ class SceneImageRecord:
     image_quality: str
     source_image_id: str
     source_page_url: str
+    original_image_source: str
+    original_image_creator: str
     image_license_name: str
     image_terms_evidence_url: str
+    image_retrieval_evidence_url: str
+    image_release_or_retrieval_id: str
     image_rights_evidence_scope: str
     image_rights_evidence_reference: str
     image_rights_review_status: str
+    image_rights_reviewer: str
+    image_rights_decision_date: str
+    image_rights_decision_reason: str
     image_permitted_uses: tuple[str, ...]
+    image_derived_weight_status: str
+    image_derived_weight_restrictions: str
     image_attribution: str
+    annotation_record_id: str
+    annotation_provenance: str
 
 @dataclass(frozen=True)
 class SceneDatasetManifest:
@@ -133,9 +144,17 @@ class SceneDatasetManifest:
     terms_evidence_url: str
     license_name: str
     retrieved_at: str
+    retrieval_evidence_url: str
+    immutable_release_or_retrieval_id: str
     rights_review_status: str
+    rights_reviewer: str
+    rights_decision_date: str
+    rights_decision_reason: str
     permitted_uses: tuple[str, ...]
+    derived_weight_status: str
+    derived_weight_restrictions: str
     attribution: str
+    annotation_provenance: str
     label_schema_version: int
     supported_labels: tuple[str, ...]
     records: tuple[SceneImageRecord, ...]
@@ -144,9 +163,9 @@ def load_manifest(path: Path) -> SceneDatasetManifest: ...
 def validate_dataset(manifest: SceneDatasetManifest, data_root: Path) -> DatasetValidationReport: ...
 ```
 
-`label_schema_version` must be `2` (`scene-review-v2`). Dataset-level and per-image rights statuses are exactly `approved`, `pending_review`, or `excluded`. Both dataset-level permissions and every included record's `image_permitted_uses` must include `training`, `evaluation`, and `derived_weight_redistribution`. Every record must identify its original source image and page, license/terms evidence URL, evidence scope/reference, and attribution. A shared grant URL is valid only when its written terms expressly cover the specific image and the record cites that coverage; generic dataset-card or repository terms do not qualify. Validation fails closed for any missing, pending, excluded, or insufficient image-level evidence. Keep detailed rights fields in the local manifest/access-controlled local data root; CLI output is count-only. `DatasetValidationReport` contains `image_count`, canonical target/background/ignore pixel counts, unsupported-pixel counts by canonical class for the declared run subset, run-mask ignore sample counts, pilot/split exclusion counts and rates, `scene_type_counts`, and `warnings`, with no paths or per-image identifiers. `validate_dataset` also checks safe relative paths, file existence, SHA-256 values, JPEG/PNG readability, equal image/mask dimensions, valid canonical mask IDs, unique image IDs, and nonempty scene groups. Background ID `5` is valid; unsupported target IDs remain valid in canonical masks and are remapped to ignore for the run. It never returns image contents or absolute paths.
+`label_schema_version` must be `2` (`scene-review-v2`). The source inventory in `docs/data-sources.md` is the candidate/review ledger; pending and excluded candidates stay there and must not be copied into a training manifest. A training manifest contains only approved dataset/image records, and validation explicitly rejects any non-approved status rather than silently filtering records. At dataset and image level, retain the reviewer, decision date, decision reason, terms evidence, exact immutable release/retrieval identifier and retrieval evidence URL, image/source and creator provenance, annotation provenance, attribution, permitted uses, derived-weight permission status, and explicit derived-weight restrictions. The dataset record also carries its annotation provenance and all source inventory fields; each `SceneImageRecord` carries source-image/page identifiers, original source/creator, image terms and retrieval evidence, rights decision fields, allowed uses, weight status/restrictions, attribution, and annotation record/provenance. Rights statuses are exactly `approved`, `pending_review`, or `excluded`; non-approved inventory entries require a decision reason. Both dataset-level permissions and every included record's `image_permitted_uses` must include `training`, `evaluation`, and `derived_weight_redistribution`; each dataset/image `derived_weight_status` must affirm redistribution and `derived_weight_restrictions` must state applicable conditions (use `none documented` only when the evidence supports no restrictions). Validation fails closed for missing, unresolved, or insufficient evidence. A shared grant URL is acceptable only if its written terms expressly cover the specific image; `image_rights_evidence_reference` must identify the image by stable source ID/page or expressly covered subset and point to the exact clause/scope, and that same evidence must support the per-image reviewer decision and all three uses. Generic dataset-card or repository terms do not qualify. Keep detailed rights fields in the local manifest/access-controlled local data root; CLI output is count-only. `DatasetValidationReport` contains `image_count`, canonical target/background/ignore pixel counts, unsupported-pixel counts by canonical class for the declared run subset, run-mask ignore sample counts, pilot/split exclusion counts and rates, `scene_type_counts`, and `warnings`, with no paths or per-image identifiers. `validate_dataset` also checks safe relative paths, file existence, SHA-256 values, JPEG/PNG readability, equal image/mask dimensions, valid canonical mask IDs, unique image IDs, and nonempty scene groups. Background ID `5` is valid; unsupported target IDs remain valid in canonical masks and are remapped to ignore for the run. It never returns image contents or absolute paths.
 
-- [ ] **Step 1: Write failing tests** for valid manifests, dataset-level and per-image pending/excluded rights, missing image-level source/evidence/attribution, missing permission purposes, a shared grant that does not expressly cover the image, absolute/traversal paths, missing files, hash mismatch, invalid image/mask, dimension mismatch, duplicate IDs, unsupported-pixel remapping/counts, exclusion-rate reporting, and insufficient or unrepresentative retained data.
+- [ ] **Step 1: Write failing tests** for an approved-only valid manifest; rejection of pending/excluded dataset or image records; missing reviewer, decision date/reason, release/retrieval evidence, image/creator or annotation provenance, attribution, derived-weight status/restrictions, and permission purposes; a shared grant that does not expressly cover the image; absolute/traversal paths; missing files; hash mismatch; invalid image/mask; dimension mismatch; duplicate IDs; unsupported-pixel remapping/counts; exclusion-rate reporting; and insufficient or unrepresentative retained data.
 - [ ] **Step 2: Run** `pytest tests/test_scene_review_manifest.py -v`; confirm expected failures.
 - [ ] **Step 3: Implement** dataclasses, JSON parsing, strict validation, file hashing, and a count-only report. Do not add network access.
 - [ ] **Step 4: Run** `pytest tests/test_scene_review_manifest.py -v` and `ruff check src/ml/scene_review/manifest.py tests/test_scene_review_manifest.py`.

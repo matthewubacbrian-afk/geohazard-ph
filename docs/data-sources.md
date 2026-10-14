@@ -111,6 +111,18 @@ leads above have not passed this gate. No real-scene training or real-scene
 evaluation is authorized by this inventory; pipeline-mechanics work may use
 synthetic fixtures only.
 
+This table is the candidate and review ledger, not a training manifest. Only
+records already marked approved, with the complete reviewer/decision, release
+and retrieval evidence, original-image and annotation provenance, attribution,
+allowed-use, and derived-weight restriction fields copied into the local
+manifest may enter a run. Pending and excluded candidates remain in this ledger
+and are rejected if represented in a training manifest. For a shared grant,
+retain the grant URL plus the exact clause and coverage reference linking it to
+each image's stable source identifier; the reviewer decision must cite that
+same image-specific coverage and permission for training, evaluation, and
+derived-weight redistribution. No source status above is changed by this
+manifest policy.
+
 ## Volcanoes
 
 - Smithsonian Global Volcanism Program: public volcano reference data.
