@@ -1,11 +1,10 @@
 .page {
   min-height: 100vh;
-  padding: var(--space-6, 2rem);
   color: var(--text);
   background: var(--surface);
 }
 
-.content { max-width: 1440px; margin: 0 auto; }
+.content { max-width: 1440px; margin: 0 auto; padding: var(--space-6, 2rem); }
 .heading { display: flex; align-items: flex-start; gap: var(--space-6); margin-bottom: var(--space-6); }
 .backButton { display: inline-flex; align-items: center; gap: .55rem; flex: 0 0 auto; padding: .65rem .85rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-control); background: var(--surface-raised); color: var(--text); font: 600 var(--text-sm)/1.2 var(--font-sans); cursor: pointer; }
 .backButton span { color: var(--accent); font-size: 1.25rem; }
@@ -82,7 +81,7 @@
 }
 
 @media (max-width: 700px) {
-  .page { padding: var(--space-4); }
+  .content { padding: var(--space-4); }
   .heading { flex-direction: column; gap: var(--space-4); }
   .safetyNotes, .workspace { grid-template-columns: 1fr; }
   .viewfinder { min-height: 62vw; max-height: 68vh; }

@@ -1,14 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { analyzeScene as requestSceneAnalysis } from '../api/sceneAnalysis';
 import { API_BASE_URL } from '../api/client';
+import TopNav from '../components/layout/TopNav';
 import type { SceneAnalysisRequest, SceneAnalysisResponse, SceneCapture } from '../types/sceneAnalysis';
+import type { View } from '../types/views';
 import styles from './SceneAnalysis.module.css';
 
 type SceneAnalysisProps = {
   onExit: () => void;
+  onNavigate?: (view: View) => void;
+  onSettings?: () => void;
   analyze?: (request: SceneAnalysisRequest, signal: AbortSignal) => Promise<SceneAnalysisResponse>;
   initialCapture?: SceneCapture;
 };
+
+const navItems = ['Dashboard', 'Scene Review', 'How It Works', 'About', 'Data Sources', 'Historical'];
 
 const DISCLAIMER = 'Visual cue demonstrator only. This is not a safety assessment or a production-ready emergency decision tool. It does not give emergency instructions, identify official shelters, or predict earthquakes. Verify conditions and follow official emergency guidance.';
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -18,6 +24,8 @@ const SIZE_REDUCTION_STEPS = [1, 0.8, 0.64, 0.512];
 
 export default function SceneAnalysis({
   onExit,
+  onNavigate,
+  onSettings,
   analyze = (request, signal) => requestSceneAnalysis(API_BASE_URL, request, signal),
   initialCapture,
 }: SceneAnalysisProps) {
@@ -246,6 +254,13 @@ export default function SceneAnalysis({
 
   return (
     <main className={styles.page}>
+      <TopNav
+        items={navItems}
+        activeItem="Scene Review"
+        theme="dashboard"
+        onNavigate={onNavigate}
+        onSettings={onSettings}
+      />
       <div className={styles.content}>
         <header className={styles.heading}>
           <button type="button" className={styles.backButton} aria-label="Back" onClick={onExit}><span aria-hidden="true">←</span> Dashboard</button>

@@ -34,7 +34,7 @@ function AppRoutes() {
         <Route path="/about" element={<About {...pageProps} />} />
         <Route path="/data-sources" element={<DataSources {...pageProps} />} />
         <Route path="/historical" element={<HistoricalBrowser {...pageProps} />} />
-        <Route path="/scene-analysis" element={<SceneAnalysis onExit={() => navigate("/dashboard")} />} />
+        <Route path="/scene-analysis" element={<SceneAnalysis {...pageProps} onExit={() => navigate("/dashboard")} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
