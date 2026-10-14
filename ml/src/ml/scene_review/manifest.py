@@ -328,17 +328,14 @@ def _validate_record_rights(record: SceneImageRecord, manifest: SceneDatasetMani
     )
     if record.image_rights_evidence_scope not in {"image_specific", "shared_grant"}:
         raise ValueError("image_rights_evidence_scope must be image_specific or shared_grant")
-    if (
-        record.source_image_id not in record.image_rights_evidence_reference
-        and record.source_page_url not in record.image_rights_evidence_reference
-    ):
-        raise ValueError("image rights evidence reference must identify/cover the source image")
-    if (
-        record.image_rights_evidence_scope == "shared_grant"
-        and record.source_image_id not in record.image_rights_evidence_reference
-        and record.source_page_url not in record.image_rights_evidence_reference
-    ):
-        raise ValueError("shared grant must expressly cover this image by source ID or page URL")
+    evidence_covers_image = (
+        record.source_image_id in record.image_rights_evidence_reference
+        or record.source_page_url in record.image_rights_evidence_reference
+    )
+    if not evidence_covers_image:
+        if record.image_rights_evidence_scope == "shared_grant":
+            raise ValueError("shared grant must expressly cover this image by source ID or page URL")
+        raise ValueError("image-specific rights evidence must identify the source image")
     if record.image_retention_limits is None:
         if (
             record.image_terms_evidence_url != manifest.terms_evidence_url

@@ -425,7 +425,7 @@ def test_shared_grant_requires_record_specific_coverage_and_retention_override(t
     item["image_rights_evidence_scope"] = "shared_grant"
     item["image_rights_evidence_reference"] = "section 4 generally permits research"
     add_hashes(item, image_path, mask_path)
-    with pytest.raises(ValueError, match="cover|source-123"):
+    with pytest.raises(ValueError, match="shared grant must expressly cover"):
         validate_dataset(load_manifest(save_manifest(tmp_path, data)), root)
     item["image_rights_evidence_reference"] = (
         "source-123 clause 4 expressly covers training, evaluation, and weights"
