@@ -155,6 +155,13 @@ Route-level `HTTPException` uses the envelope when rendered through a handler or
 
 ## 9. Secrets And Sensitive Data
 
+The scene-analysis endpoint handles user JPEG bytes and base64 request bodies as
+private image data. Do not include request bodies, image bytes, base64, decoded
+pixels, or image-derived metadata in application logs, tracing attributes, or
+error responses. Return only the stable typed error envelope. The endpoint keeps
+the image in memory for the request and does not write it to disk, cache, or a
+database.
+
 - Never log credentials, tokens, session keys, `Authorization` headers, `.env` contents, or Kaggle secrets — in any stack.
 - Never include secret-bearing file paths or raw source payloads in error responses.
 - If a dependency or service echoes secrets in exceptions, sanitize before logging or surfacing.

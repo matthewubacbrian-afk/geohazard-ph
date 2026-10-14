@@ -146,3 +146,21 @@ When a spec or plan introduces a new concept:
 - PHIVOLCS volcano overlays: source-rendered base-surge, lava, pyroclastic-density-current
   and lahar reference images used when local `VolcanoZone` vectors are absent.
   These are remotely rendered hazard maps, not imported polygons or live alert levels.
+
+## 7. Camera scene analysis
+
+| Term | Canonical field / meaning |
+| --- | --- |
+| scene analysis | `SceneAnalysis`, endpoint `/scene-analyses`; transient visual review of one user-captured image, with no server-side image/history persistence. |
+| candidate region | `candidate_regions[]`; image-space connected floor/ground component ranked for visual review, not a verified safe place. |
+| polygon | `polygon`; closed list of normalized `{x, y}` image points from top-left origin, each coordinate in `[0, 1]`; not GeoJSON or map coordinates. |
+| visual cue | `visual_cues[]`; recognized model class and model confidence shown for review, not an inferred hazard verdict. |
+| ranking score | `ranking_score`; deterministic weighted visual-review ordering value in `[0, 1]`, never a safety probability or confidence. |
+| model version | `model_version`; model ID and immutable model-artifact revision that produced scene-analysis cues. |
+| image_base64 | `image_base64`; standard base64 JPEG request field without a data URL prefix; transient input, never persisted or logged. |
+| mime_type | `mime_type`; scene-analysis input media type, fixed to `image/jpeg`. |
+| accept_quality_warning | `accept_quality_warning`; explicit per-request boolean that lets the user continue after a likely-blur warning; defaults to `false` and does not affect model ranking. |
+| sharpness score | variance of the four-neighbor grayscale Laplacian after reducing the longest image edge to 512 pixels; a provisional blur cue, not a general image-quality or obstruction score. |
+| scene image quality warning | API error `scene_image_quality_warning`; advisory result for a low provisional sharpness score, with retake and explicit continue actions. |
+| result_status | `result_status`; `candidates_found` when candidate regions exist, otherwise `no_clear_candidate`. |
+| scene-analysis limitations | `limitations`; fixed caveats that visual cues do not determine safety, image conditions can hide cues, and one image cannot verify structural integrity, earthquake resistance, ground conditions, falling-glass or electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions. |
