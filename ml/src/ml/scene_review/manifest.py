@@ -99,8 +99,18 @@ class SampleExclusionSummary:
 
 
 @dataclass(frozen=True)
+class GroupExclusionSummary:
+    total_group_count: int
+    retained_group_count: int
+    excluded_group_count: int
+    minimum_retained_samples_per_group: int
+    maximum_retained_samples_per_group: int
+
+
+@dataclass(frozen=True)
 class SplitExclusionSummary(SampleExclusionSummary):
     scene_type_summaries: dict[str, SampleExclusionSummary]
+    group_summaries: GroupExclusionSummary
 
 
 @dataclass(frozen=True)
@@ -111,6 +121,9 @@ class SufficiencyPolicy:
     minimum_retained_samples_by_split: Mapping[str, int]
     required_scene_types_by_split: Mapping[str, tuple[str, ...]]
     minimum_retained_samples_by_scene_type: Mapping[str, int]
+    minimum_retained_groups_by_split: Mapping[str, int]
+    minimum_retained_samples_per_group_by_split: Mapping[str, int]
+    required_group_ids_by_split: Mapping[str, tuple[str, ...]]
 
 
 @dataclass(frozen=True)
@@ -399,6 +412,14 @@ def _validate_sufficiency_policy(policy: SufficiencyPolicy) -> None:
         raise ValueError("sufficiency policy must declare minimums for train, validation, and test")
     if set(policy.required_scene_types_by_split) != SPLIT_NAMES:
         raise ValueError("sufficiency policy must declare scene coverage for every split")
+    if set(policy.minimum_retained_groups_by_split) != SPLIT_NAMES:
+        raise ValueError("sufficiency policy must declare group minimums for every split")
+    if set(policy.minimum_retained_samples_per_group_by_split) != SPLIT_NAMES:
+        raise ValueError(
+            "sufficiency policy must declare per-group sample minimums for every split"
+        )
+    if set(policy.required_group_ids_by_split) != SPLIT_NAMES:
+        raise ValueError("sufficiency policy must declare required group coverage for every split")
     for count in policy.minimum_retained_samples_by_split.values():
         if not isinstance(count, int) or isinstance(count, bool) or count < 1:
             raise ValueError("split minimum retained sample counts must be positive integers")
@@ -416,6 +437,17 @@ def _validate_sufficiency_policy(policy: SufficiencyPolicy) -> None:
     for count in policy.minimum_retained_samples_by_scene_type.values():
         if not isinstance(count, int) or isinstance(count, bool) or count < 1:
             raise ValueError("scene type minimum retained sample counts must be positive integers")
+    for count in policy.minimum_retained_groups_by_split.values():
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ValueError("split minimum retained group counts must be positive integers")
+    for count in policy.minimum_retained_samples_per_group_by_split.values():
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ValueError("per-group minimum retained sample counts must be positive integers")
+    for group_ids in policy.required_group_ids_by_split.values():
+        if not isinstance(group_ids, tuple) or not all(
+            isinstance(group_id, str) and group_id.strip() for group_id in group_ids
+        ):
+            raise ValueError("required group IDs must be tuples of nonempty text")
 
 
 def _summary(total: int, excluded: int) -> SampleExclusionSummary:
@@ -428,7 +460,9 @@ def _summary(total: int, excluded: int) -> SampleExclusionSummary:
 
 
 def _sufficiency_failures(
-    summaries: Mapping[str, SplitExclusionSummary], policy: SufficiencyPolicy
+    summaries: Mapping[str, SplitExclusionSummary],
+    policy: SufficiencyPolicy,
+    retained_group_ids_by_split: Mapping[str, set[str]],
 ) -> tuple[str, ...]:
     reasons: list[str] = []
     for split in sorted(SPLIT_NAMES):
@@ -437,6 +471,20 @@ def _sufficiency_failures(
             reasons.append(f"{split} exclusion rate exceeds declared maximum")
         if summary.retained_sample_count < policy.minimum_retained_samples_by_split[split]:
             reasons.append(f"{split} minimum retained sample count not met")
+        groups = summary.group_summaries
+        if groups.retained_group_count < policy.minimum_retained_groups_by_split[split]:
+            reasons.append(f"{split} minimum retained group count not met")
+        if groups.total_group_count and (
+            groups.minimum_retained_samples_per_group
+            < policy.minimum_retained_samples_per_group_by_split[split]
+        ):
+            reasons.append(f"{split} per-group retained sample minimum not met")
+        required_groups = set(policy.required_group_ids_by_split[split])
+        # Group identifiers are used locally for this decision and never included in output.
+        if required_groups and not required_groups.issubset(
+            retained_group_ids_by_split.get(split, set())
+        ):
+            reasons.append(f"{split} required group coverage not met")
         retained_scene_types = {
             scene_type
             for scene_type, scene_summary in summary.scene_type_summaries.items()
@@ -502,6 +550,9 @@ def validate_dataset(
     split_exclusions: Counter[str] = Counter()
     split_scene_totals: dict[str, Counter[str]] = {}
     split_scene_exclusions: dict[str, Counter[str]] = {}
+    split_group_retained: dict[str, Counter[str]] = {}
+    split_group_totals: dict[str, Counter[str]] = {}
+    group_splits: dict[str, str] = {}
     ignore_pixel_count = 0
     ignore_sample_count = 0
 
@@ -536,8 +587,14 @@ def validate_dataset(
         ignore_pixel_count += run_ignore_count
         ignore_sample_count += int(run_ignore_count > 0)
         split = split_assignments[record.image_id]
+        previous_split = group_splits.setdefault(record.group_id, split)
+        if previous_split != split:
+            raise ValueError("scene group records must remain in a single data split")
         split_totals[split] += 1
         split_scene_totals.setdefault(split, Counter())[record.scene_type] += 1
+        split_group_totals.setdefault(split, Counter())[record.group_id] += 1
+        if run_ignore_count == 0:
+            split_group_retained.setdefault(split, Counter())[record.group_id] += 1
         if run_ignore_count > 0:
             split_exclusions[split] += 1
             split_scene_exclusions.setdefault(split, Counter())[record.scene_type] += 1
@@ -554,9 +611,20 @@ def validate_dataset(
             )
             for scene_type in sorted(SCENE_TYPES)
         }
+        group_counts = split_group_totals.get(split, Counter())
+        retained_by_group = split_group_retained.get(split, Counter())
+        retained_group_values = [retained_by_group[group_id] for group_id in group_counts]
+        group_summaries = GroupExclusionSummary(
+            total_group_count=len(group_counts),
+            retained_group_count=sum(count > 0 for count in retained_group_values),
+            excluded_group_count=sum(count == 0 for count in retained_group_values),
+            minimum_retained_samples_per_group=min(retained_group_values, default=0),
+            maximum_retained_samples_per_group=max(retained_group_values, default=0),
+        )
         split_summaries[split] = SplitExclusionSummary(
             **_summary(total_count, excluded_count).__dict__,
             scene_type_summaries=scene_summaries,
+            group_summaries=group_summaries,
         )
     gate_reasons: tuple[str, ...] = ()
     gate_passed: bool | None = None
@@ -564,9 +632,19 @@ def validate_dataset(
         for split in sorted(SPLIT_NAMES):
             split_summaries.setdefault(
                 split,
-                SplitExclusionSummary(**_summary(0, 0).__dict__, scene_type_summaries={}),
+                SplitExclusionSummary(
+                    **_summary(0, 0).__dict__,
+                    scene_type_summaries={},
+                    group_summaries=GroupExclusionSummary(0, 0, 0, 0, 0),
+                ),
             )
-        gate_reasons = _sufficiency_failures(split_summaries, sufficiency_policy)
+        retained_group_ids = {
+            split: {group_id for group_id, count in counts.items() if count > 0}
+            for split, counts in split_group_retained.items()
+        }
+        gate_reasons = _sufficiency_failures(
+            split_summaries, sufficiency_policy, retained_group_ids
+        )
         gate_passed = not gate_reasons
     return DatasetValidationReport(
         image_count=len(manifest.records),
@@ -580,5 +658,9 @@ def validate_dataset(
         split_summaries=split_summaries,
         sufficiency_gate_passed=gate_passed,
         sufficiency_gate_reasons=gate_reasons,
-        warnings=(),
+        warnings=(
+            ("sufficiency gate undeclared; this count report does not authorize training",)
+            if sufficiency_policy is None
+            else ()
+        ),
     )

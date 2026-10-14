@@ -145,6 +145,9 @@ def sufficiency_policy(
             "test": ("mixed",),
         },
         minimum_retained_samples_by_scene_type=minimum_retained_samples_by_scene_type or {},
+        minimum_retained_groups_by_split={"train": 1, "validation": 1, "test": 1},
+        minimum_retained_samples_per_group_by_split={"train": 1, "validation": 1, "test": 1},
+        required_group_ids_by_split={"train": (), "validation": (), "test": ()},
     )
 
 
@@ -186,6 +189,7 @@ def test_valid_manifest_reports_counts_only_and_uses_declared_subset(tmp_path):
         report.split_summaries["unsplit"].scene_type_summaries["outdoor"].retained_sample_count == 1
     )
     assert report.sufficiency_gate_passed is None
+    assert any("gate undeclared" in warning for warning in report.warnings)
     assert not hasattr(report, "paths") and not hasattr(report, "records")
 
 
@@ -215,6 +219,10 @@ def test_reports_split_and_scene_type_exclusion_counts_and_passes_declared_gate(
     assert report.sufficiency_gate_reasons == ()
     assert report.split_summaries["train"].retained_sample_count == 1
     assert report.split_summaries["train"].scene_type_summaries["indoor"].retained_sample_count == 1
+    assert report.split_summaries["train"].group_summaries.total_group_count == 1
+    assert report.split_summaries["train"].group_summaries.retained_group_count == 1
+    assert report.split_summaries["train"].group_summaries.minimum_retained_samples_per_group == 1
+    assert report.split_summaries["train"].group_summaries.maximum_retained_samples_per_group == 1
     assert "private-location" not in repr(report)
     assert "local-0" not in repr(report)
     assert "source-123" not in repr(report)
@@ -294,6 +302,45 @@ def test_gate_cannot_run_without_complete_declared_splits_or_policy(tmp_path):
 
     report = validate_dataset(manifest_data, root)
     assert report.sufficiency_gate_passed is None
+
+
+def test_group_exclusion_stats_and_required_group_gate_do_not_expose_group_ids(tmp_path):
+    root, manifest_data = multi_dataset(
+        tmp_path,
+        [(0, 1), (0, BACKGROUND_ID), (0, BACKGROUND_ID)],
+        ["indoor", "outdoor", "mixed"],
+        supported_labels=("open_ground",),
+    )
+    policy = sufficiency_policy()
+    policy = SufficiencyPolicy(
+        **{
+            **policy.__dict__,
+            "required_group_ids_by_split": {
+                "train": ("private-location-0",),
+                "validation": (),
+                "test": (),
+            },
+        }
+    )
+    splits = {"local-0": "train", "local-1": "validation", "local-2": "test"}
+
+    report = validate_dataset(
+        manifest_data,
+        root,
+        split_by_image_id=splits,
+        sufficiency_policy=policy,
+    )
+
+    train_groups = report.split_summaries["train"].group_summaries
+    assert train_groups.total_group_count == 1
+    assert train_groups.retained_group_count == 0
+    assert train_groups.excluded_group_count == 1
+    assert train_groups.minimum_retained_samples_per_group == 0
+    assert train_groups.maximum_retained_samples_per_group == 0
+    assert report.sufficiency_gate_passed is False
+    assert any("required group coverage" in reason for reason in report.sufficiency_gate_reasons)
+    assert "private-location-0" not in repr(report)
+    assert "local-0" not in repr(report)
 
 
 def test_rejects_nonapproved_dataset_or_image_records(tmp_path):
