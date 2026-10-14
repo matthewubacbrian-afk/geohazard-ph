@@ -87,6 +87,10 @@ def test_train_requires_a_passing_declared_gate_before_loading_model(tmp_path, m
 def test_train_loads_pinned_model_locally_and_never_reads_test_samples(tmp_path, monkeypatch):
     from ml.scene_review import train
 
+    monkeypatch.setattr(train, "_code_revision", lambda: "a" * 40)
+    monkeypatch.setattr(train, "_runtime_versions", lambda: {"numpy": "2.0"})
+    monkeypatch.setattr(train, "_manifest_sha256", lambda manifest: "b" * 64)
+
     monkeypatch.setattr(
         train,
         "validate_dataset",
@@ -184,6 +188,23 @@ def test_train_loads_pinned_model_locally_and_never_reads_test_samples(tmp_path,
         ]
         == {}
     )
+    metadata = model.training_metadata
+    assert metadata["code_revision"] == "a" * 40
+    assert isinstance(metadata["code_worktree_dirty"], bool)
+    assert metadata["runtime_versions"] == {"numpy": "2.0"}
+    assert metadata["epochs"] == 3
+    assert metadata["batch_size"] == 2
+    assert metadata["learning_rate"] == 1e-5
+    assert metadata["manifest_sha256"] == "b" * 64
+    assert metadata["image_preprocessing"] == {
+        "mode": "deterministic_processor_preprocessing",
+        "random_augmentation": False,
+        "processor_revision": "d53b52a799403a8867920f82c869e40732b47037",
+        "processor_class": "builtins.object",
+        "processor_config_sha256": None,
+    }
+    assert len(metadata["manifest_sha256"]) == 64
+    assert str(tmp_path) not in repr(metadata)
 
 
 def test_loss_training_indices_exclude_any_sample_containing_ignore():
@@ -196,6 +217,30 @@ def test_loss_training_indices_exclude_any_sample_containing_ignore():
     ]
 
     assert _eligible_indices(samples) == [0, 2]
+
+
+def test_manifest_digest_is_canonical_and_does_not_return_manifest_contents():
+    from ml.scene_review.train import _manifest_sha256
+
+    first = SimpleNamespace(
+        dataset_id="private-dataset",
+        records=[SimpleNamespace(image_id="private-image", image_path="local/private.jpg")],
+    )
+    reordered = SimpleNamespace(
+        records=[SimpleNamespace(image_path="local/private.jpg", image_id="private-image")],
+        dataset_id="private-dataset",
+    )
+    changed = SimpleNamespace(
+        dataset_id="private-dataset",
+        records=[SimpleNamespace(image_id="private-image", image_path="local/other.jpg")],
+    )
+
+    digest = _manifest_sha256(first)
+    assert len(digest) == 64
+    assert digest == _manifest_sha256(reordered)
+    assert digest != _manifest_sha256(changed)
+    assert "private-image" not in digest
+    assert "local/private.jpg" not in digest
 
 
 def test_missing_local_model_cache_stops_before_processor_or_trainer(tmp_path, monkeypatch):
@@ -223,4 +268,66 @@ def test_missing_local_model_cache_stops_before_processor_or_trainer(tmp_path, m
             trainer_factory=lambda **kwargs: calls.append("trainer"),
             dataset_factory=lambda **kwargs: object(),
         )
-    assert calls == []\n
+    assert calls == []
+
+
+def test_default_huggingface_loaders_receive_model_id_as_local_pretrained_path(monkeypatch):
+    import sys
+
+    from ml.scene_review import train
+
+    calls = []
+    config_calls = []
+
+    class FakePretrainedClass:
+        @classmethod
+        def from_pretrained(cls, pretrained_model_name_or_path, **kwargs):
+            calls.append((cls.__name__, pretrained_model_name_or_path, kwargs))
+            return cls()
+
+    fake_transformers = SimpleNamespace(
+        DetrForSegmentation=type("DetrForSegmentation", (FakePretrainedClass,), {}),
+        DetrImageProcessor=type("DetrImageProcessor", (FakePretrainedClass,), {}),
+        DetrConfig=type(
+            "DetrConfig",
+            (),
+            {
+                "from_pretrained": classmethod(
+                    lambda cls, path, **kwargs: config_calls.append((path, kwargs))
+                    or SimpleNamespace(
+                        id2label={index: f"class_{index}" for index in range(250)},
+                        label2id={},
+                        num_labels=250,
+                    )
+                )
+            },
+        ),
+    )
+    monkeypatch.setitem(sys.modules, "transformers", fake_transformers)
+
+    common = {
+        "model_id": "facebook/detr-resnet-50-panoptic",
+        "revision": "d53b52a799403a8867920f82c869e40732b47037",
+        "cache_dir": Path("local-cache"),
+        "local_files_only": True,
+    }
+    train._load_processor(**common)
+    train._load_model(
+        **common,
+        num_labels=2,
+        id2label={0: "open_ground", 1: "debris"},
+        label2id={"open_ground": 0, "debris": 1},
+        ignore_mismatched_sizes=True,
+    )
+
+    assert [call[1] for call in calls] == [
+        "facebook/detr-resnet-50-panoptic",
+        "facebook/detr-resnet-50-panoptic",
+    ]
+    assert all(call[2]["local_files_only"] is True for call in calls)
+    assert config_calls[0][0] == "facebook/detr-resnet-50-panoptic"
+    loaded_model_kwargs = calls[1][2]
+    assert loaded_model_kwargs["config"].id2label == {0: "open_ground", 1: "debris"}
+    assert loaded_model_kwargs["config"].label2id == {"open_ground": 0, "debris": 1}
+    assert len(loaded_model_kwargs["config"].id2label) == 2
+    assert "num_labels" not in loaded_model_kwargs

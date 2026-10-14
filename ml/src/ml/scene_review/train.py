@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
+import importlib.metadata
+import json
+import platform
 import random
+import subprocess
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from pathlib import Path
 from typing import Any
 
@@ -133,6 +138,7 @@ def train_model(
         cache_dir=model_cache,
         local_files_only=True,
     )
+    preprocessing_metadata = _image_preprocessing_metadata(processor, config.model_revision)
     train_dataset = make_dataset(
         manifest=manifest,
         data_root=config.data_root,
@@ -205,8 +211,16 @@ def train_model(
     metadata = {
         "model_id": config.model_id,
         "model_revision": config.model_revision,
+        "code_revision": _code_revision(),
+        "code_worktree_dirty": _code_worktree_dirty(),
+        "runtime_versions": _runtime_versions(),
+        "manifest_sha256": _manifest_sha256(manifest),
         "seed": config.seed,
+        "epochs": config.epochs,
+        "batch_size": config.batch_size,
+        "learning_rate": config.learning_rate,
         "supported_labels": list(config.supported_labels),
+        "image_preprocessing": preprocessing_metadata,
         "split_counts": split_metadata,
         "unsupported_pixel_counts_by_canonical_label": dict(report.unsupported_pixel_counts),
         "sufficiency_gate_passed": report.sufficiency_gate_passed,
@@ -241,10 +255,23 @@ def _seed_everything(seed: int) -> None:
 
 def _load_model(**kwargs: object) -> object:
     try:
-        from transformers import DetrForSegmentation
+        from transformers import DetrConfig, DetrForSegmentation
     except ImportError as exc:
         raise RuntimeError("install the scene-review optional dependency extra") from exc
-    return DetrForSegmentation.from_pretrained(**kwargs)
+    options = dict(kwargs)
+    model_id = options.pop("model_id")
+    id2label = options.pop("id2label")
+    label2id = options.pop("label2id")
+    options.pop("num_labels")
+    config = DetrConfig.from_pretrained(
+        model_id,
+        revision=options["revision"],
+        cache_dir=options["cache_dir"],
+        local_files_only=True,
+    )
+    config.id2label = id2label
+    config.label2id = label2id
+    return DetrForSegmentation.from_pretrained(model_id, config=config, **options)
 
 
 def _load_processor(**kwargs: object) -> object:
@@ -252,7 +279,9 @@ def _load_processor(**kwargs: object) -> object:
         from transformers import DetrImageProcessor
     except ImportError as exc:
         raise RuntimeError("install the scene-review optional dependency extra") from exc
-    return DetrImageProcessor.from_pretrained(**kwargs)
+    options = dict(kwargs)
+    model_id = options.pop("model_id")
+    return DetrImageProcessor.from_pretrained(model_id, **options)
 
 
 def _save_model(model: object, path: Path) -> None:
@@ -261,6 +290,103 @@ def _save_model(model: object, path: Path) -> None:
     if not callable(save_pretrained):
         raise TypeError("model must support save_pretrained for checkpoint selection")
     save_pretrained(path)
+
+
+def _manifest_sha256(manifest: SceneDatasetManifest) -> str:
+    """Hash a canonical manifest representation without exposing its private fields."""
+    canonical = json.dumps(
+        _canonical_value(manifest), sort_keys=True, separators=(",", ":"), ensure_ascii=True
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _canonical_value(value: object) -> object:
+    if is_dataclass(value) and not isinstance(value, type):
+        return _canonical_value(asdict(value))
+    if isinstance(value, Mapping):
+        return {str(key): _canonical_value(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_canonical_value(item) for item in value]
+    if isinstance(value, Path):
+        return value.as_posix()
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    attributes = getattr(value, "__dict__", None)
+    if isinstance(attributes, dict):
+        return _canonical_value(attributes)
+    raise TypeError("manifest contains a value that cannot be canonically serialized")
+
+
+def _code_revision() -> str | None:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(_repository_root()), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    revision = completed.stdout.strip()
+    return revision if len(revision) == 40 else None
+
+
+def _code_worktree_dirty() -> bool | None:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(_repository_root()), "status", "--porcelain"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return bool(completed.stdout.strip())
+
+
+def _repository_root() -> Path:
+    return Path(__file__).resolve().parents[4]
+
+
+def _runtime_versions() -> dict[str, str | None]:
+    versions: dict[str, str | None] = {"python": platform.python_version()}
+    for package in (
+        "geohazard-ml",
+        "numpy",
+        "Pillow",
+        "scipy",
+        "torch",
+        "torchvision",
+        "transformers",
+    ):
+        try:
+            versions[package] = importlib.metadata.version(package)
+        except importlib.metadata.PackageNotFoundError:
+            versions[package] = None
+    return versions
+
+
+def _image_preprocessing_metadata(processor: object, revision: str) -> dict[str, object]:
+    processor_type = type(processor)
+    to_dict = getattr(processor, "to_dict", None)
+    config_hash = None
+    if callable(to_dict):
+        processor_config = json.dumps(
+            _canonical_value(to_dict()),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+        )
+        config_hash = hashlib.sha256(processor_config.encode("utf-8")).hexdigest()
+    return {
+        "mode": "deterministic_processor_preprocessing",
+        "random_augmentation": False,
+        "processor_revision": revision,
+        "processor_class": f"{processor_type.__module__}.{processor_type.__qualname__}",
+        "processor_config_sha256": config_hash,
+    }
 
 
 def _eligible_indices(dataset: object) -> list[int]:
