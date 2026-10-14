@@ -57,6 +57,19 @@ def test_assign_regions_chooses_nearest_region_and_includes_boundary(tmp_path):
     assert [row["region_name"] for row in result.rows] == ["First Region", "Second Region"]
 
 
+def test_assign_regions_enforces_100_km_cutoff(tmp_path):
+    boundary = _write_square_regions(tmp_path)
+    events = [
+        {"source": "usgs", "latitude": 0.5, "longitude": -0.89},
+        {"source": "usgs", "latitude": 0.5, "longitude": -0.91},
+    ]
+
+    result = assign_regions(events, regions_path=boundary)
+
+    assert [row["longitude"] for row in result.rows] == [-0.89]
+    assert result.unassigned_by_source["usgs"] == 1
+
+
 def test_assign_regions_rejects_empty_boundary_file(tmp_path):
     path = tmp_path / "empty.json"
     path.write_text('{"type":"FeatureCollection","features":[]}', encoding="utf-8")
