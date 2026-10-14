@@ -32,11 +32,11 @@
 - Each section has blank decision, rationale, limitations, and follow-up fields. The sparse-region section lists no preferred cutoff.
 - Provides `not_reviewed`, `review_incomplete`, and `review_complete_hold_remains` closeout states; all remain unselected.
 
-- [ ] **Step 1: Create the worksheet with evidence and decisions left unresolved.**
+- [x] **Step 1: Create the worksheet with evidence and decisions left unresolved.**
 
 Include a short evidence summary that points to the detailed quality review for exact results. State that the worksheet is not a policy approval or a completed domain review. Keep the existing staging hold explicit.
 
-- [ ] **Step 2: Check worksheet sections and links.**
+- [x] **Step 2: Check worksheet sections and links.**
 
 Run:
 
@@ -46,7 +46,7 @@ rg -n "^#|\[[^]]+\]\([^)]*\)|Decision:|Rationale:|Limitations:|Follow-up:" docs/
 
 Expected: the document has all five named review areas, each has decision/rationale/limitations/follow-up fields, and every relative link resolves to a tracked file.
 
-- [ ] **Step 3: Commit the worksheet.**
+- [x] **Step 3: Commit the worksheet.**
 
 ```powershell
 git add docs/epic5-domain-review-decision-record.md
@@ -65,11 +65,11 @@ git commit -m "docs: add epic 5 domain review worksheet"
 - Next integration milestone links the decision record and describes review as pending.
 - CI evidence points to PR #30 and lists the completed backend, ML, web, mobile, and iOS simulator checks without implying product validation.
 
-- [ ] **Step 1: Update the Epic 5 status and next milestone.**
+- [x] **Step 1: Update the Epic 5 status and next milestone.**
 
 Add that PR #30 merged on 2026-10-14 and its required CI checks passed. Link the decision worksheet from Epic 5 evidence and the next milestone. State that stakeholder decisions and policy remain pending; retain the no-export-to-staging language.
 
-- [ ] **Step 2: Verify the status claims and hold language.**
+- [x] **Step 2: Verify the status claims and hold language.**
 
 Run:
 
@@ -79,7 +79,7 @@ rg -n "PR #30|backend|ML|web|mobile|iOS|domain review|quality hold|hold|cutoff" 
 
 Expected: CI is described only as code/build verification, the decision record is linked, and the Epic 5 export is still explicitly held.
 
-- [ ] **Step 3: Run documentation checks and commit.**
+- [x] **Step 3: Run documentation checks and commit.**
 
 ```powershell
 git diff --check
