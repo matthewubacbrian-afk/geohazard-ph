@@ -128,12 +128,11 @@ def _saved_features(frame: pd.DataFrame) -> list[RegionFeatures]:
 def _label_stability(
     saved_features: list[RegionFeatures],
     saved_labels: dict[str, str],
-    shared_rows: list[dict[str, object]],
+    shared_features: list[RegionFeatures],
 ) -> dict[str, object]:
     names = sorted(saved_labels)
     if {row.region_name for row in saved_features} != set(names):
         raise ValueError("Saved feature regions do not match saved labels.")
-    shared_features = list(build_region_features(shared_rows).values())
     shared_features.sort(key=lambda row: row.region_name)
     shared_refit: dict[str, object] = {
         "included_regions": [row.region_name for row in shared_features],
@@ -216,6 +215,110 @@ def _label_stability(
             "change_count_by_region": leave_changes,
             "fits": leave_fits,
         },
+    }
+
+
+def _sparse_region_sensitivity(
+    region_coverage: list[dict[str, object]],
+    saved_labels: dict[str, str],
+    shared_features: list[RegionFeatures],
+) -> dict[str, object]:
+    names = sorted(saved_labels)
+    coverage_by_name: dict[str, int] = {}
+    for region in region_coverage:
+        name = region.get("region_name")
+        if not isinstance(name, str) or name not in saved_labels:
+            raise ValueError("Coverage includes a region absent from saved labels.")
+        if name in coverage_by_name:
+            raise ValueError(f"Coverage repeats region: {name}")
+
+        source_counts = region.get("shared_window_count_by_source")
+        if not isinstance(source_counts, dict):
+            raise ValueError(  # noqa: TRY004
+                f"Coverage counts are missing for region: {name}"
+            )
+        values = [source_counts.get(source) for source in ("phivolcs", "usgs")]
+        if any(
+            isinstance(value, bool) or not isinstance(value, int) or value < 0
+            for value in values
+        ):
+            raise ValueError(f"Coverage counts are invalid for region: {name}")
+        coverage_by_name[name] = sum(values)
+
+    features_by_name: dict[str, RegionFeatures] = {}
+    for feature in shared_features:
+        name = feature.region_name
+        if name not in saved_labels or name in features_by_name:
+            raise ValueError(f"Shared-window features have an invalid region: {name}")
+        features_by_name[name] = feature
+
+    counts = {name: coverage_by_name.get(name, 0) for name in names}
+    for name, feature in features_by_name.items():
+        if feature.event_count != counts[name]:
+            raise ValueError(f"Shared-window count does not match features for region: {name}")
+    if any(count > 0 and name not in features_by_name for name, count in counts.items()):
+        raise ValueError("Positive shared-window count has no feature row.")
+
+    thresholds = [
+        0,
+        *sorted(
+            {
+                counts[name] + 1
+                for name in features_by_name
+                if counts[name] > 0
+            }
+        ),
+    ]
+    scenarios: list[dict[str, object]] = []
+    for threshold in thresholds:
+        included = sorted(
+            name for name in names
+            if name in features_by_name and counts[name] >= threshold
+        )
+        excluded = sorted(set(names).difference(included))
+        reasons = {
+            name: (
+                "no_shared_window_observations"
+                if name not in features_by_name
+                else "below_minimum_event_count"
+            )
+            for name in excluded
+        }
+        labels = None
+        changed = None
+        change_count = None
+        unavailable_reason = "insufficient_regions"
+        if len(included) >= 2:
+            rows = [features_by_name[name] for name in included]
+            labels = fit_kmeans(
+                rows,
+                k_values=REFIT_K_CANDIDATES,
+                random_state=REFIT_RANDOM_STATE,
+            ).risk_labels
+            labels = dict(sorted(labels.items()))
+            changed = sorted(name for name in included if labels[name] != saved_labels[name])
+            change_count = len(changed)
+            unavailable_reason = None
+        scenarios.append({
+            "minimum_shared_window_events": threshold,
+            "included_regions": included,
+            "excluded_regions": excluded,
+            "exclusion_reason_by_region": reasons,
+            "labels": labels,
+            "changed_regions": changed,
+            "change_count": change_count,
+            "unavailable_reason": unavailable_reason,
+        })
+
+    return {
+        "count_basis": "combined_sources_in_shared_window",
+        "thresholds_are_policy": False,
+        "comparison_parameters": {
+            "k_candidates": list(REFIT_K_CANDIDATES),
+            "random_state": REFIT_RANDOM_STATE,
+            "parameter_match_verified": False,
+        },
+        "scenarios": scenarios,
     }
 
 
@@ -311,6 +414,8 @@ def build_validation_report(
             row for row in verified.assigned_rows
             if start <= _utc_timestamp(row["occurred_at"]) <= end
         ]
+    shared_features = list(build_region_features(shared_rows).values())
+    shared_features.sort(key=lambda row: row.region_name)
     saved_labels = {str(profile["region_name"]): str(profile["label"]) for profile in verified.profiles}
     return {
         "artifact_version": verified.metadata.get("model_version"),
@@ -323,7 +428,10 @@ def build_validation_report(
         },
         **coverage,
         "label_stability": _label_stability(
-            _saved_features(verified.features), saved_labels, shared_rows
+            _saved_features(verified.features), saved_labels, shared_features
+        ),
+        "sparse_region_sensitivity": _sparse_region_sensitivity(
+            coverage["regions"], saved_labels, shared_features
         ),
         "review_state": "requires_domain_review",
         "limitations": [
@@ -428,6 +536,40 @@ def _render_markdown(report: dict[str, object]) -> str:
         lines[-1] += f"unavailable ({shared_refit['unavailable_reason']})."
     else:
         lines[-1] += f"{shared_refit['change_count']} saved labels changed among included regions."
+    sensitivity = report["sparse_region_sensitivity"]
+    lines.extend([
+        "",
+        "## Sparse-region cutoff sensitivity",
+        "",
+        (
+            "These scenarios use data-derived count breakpoints for exploratory analysis; "
+            "they are not a policy cutoff and do not equalize source completeness."
+        ),
+        "",
+        (
+            "| Minimum shared-window events | Included regions | Excluded regions | "
+            "Changed labels | Fit status |"
+        ),
+        "| ---: | ---: | ---: | ---: | --- |",
+    ])
+    for scenario in sensitivity["scenarios"]:
+        unavailable = scenario["unavailable_reason"]
+        fit_status = "available" if unavailable is None else f"unavailable: {unavailable}"
+        changed = scenario["change_count"]
+        changed_text = str(changed) if changed is not None else "n/a"
+        lines.append(
+            f"| {scenario['minimum_shared_window_events']} | "
+            f"{len(scenario['included_regions'])} | {len(scenario['excluded_regions'])} | "
+            f"{changed_text} | {fit_status} |"
+        )
+    lines.append("")
+    for scenario in sensitivity["scenarios"]:
+        included = ", ".join(_markdown_cell(name) for name in scenario["included_regions"])
+        excluded = ", ".join(_markdown_cell(name) for name in scenario["excluded_regions"])
+        lines.append(
+            f"- Minimum {scenario['minimum_shared_window_events']}: "
+            f"included {included or 'none'}; excluded {excluded or 'none'}."
+        )
     lines.extend(["", "## Limitations", ""])
     lines.extend(f"- {item}" for item in report["limitations"])
     lines.append("")

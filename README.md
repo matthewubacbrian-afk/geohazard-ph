@@ -301,8 +301,10 @@ Set-Location ..
 The command checks saved source and boundary hashes, replays parser and region
 assignment counts, and writes `validation-report.json` and
 `validation-report.md`. It shows per-region source coverage, the shared source
-date window, and label sensitivity to seeds and omitted regions. A successful
-report still requires domain review; it does not release the held export.
+date window, label sensitivity to seeds and omitted regions, and data-derived
+shared-window event-count cutoff scenarios. These cutoffs are exploratory and
+do not recommend a sparse-region policy. A successful report still requires
+domain review; it does not release the held export.
 
 The generated labels are descriptive statistical profiles based on historical records. They are not earthquake predictions.
 
