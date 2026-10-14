@@ -5,6 +5,7 @@
   --field-sage: #A5AF79;
   --field-ochre: #827148;
   --field-terracotta: #E8A07C;
+  --field-pine: #243A35;
   --cream-0: #f5eddd;
   --cream-50: #fff8ec;
   --cream-100: #fffcf5;
@@ -27,6 +28,11 @@
   --surface-overlay: rgba(255, 248, 236, 0.97);
   --surface-overlay-solid: var(--surface-raised);
   --surface-container-lowest: var(--surface-card);
+  --surface-brand: var(--field-pine);
+  --text-on-brand: var(--cream-100);
+  --text-muted-on-brand: #d8dfd4;
+  --border-on-brand: rgba(255, 252, 245, 0.35);
+  --status-live-on-brand: #a5af79;
   --text: #302a20;
   --text-muted: #5c5142;
   --text-faint: #685c4b;

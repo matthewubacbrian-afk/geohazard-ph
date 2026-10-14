@@ -9,7 +9,7 @@ export default function RealtimeStatus({ connected, lastUpdated }: Props) {
         <strong>{connected ? 'LIVE' : 'Reconnecting — periodic refresh active'}</strong>
         {lastUpdated && <time dateTime={lastUpdated}>Last update {new Date(lastUpdated).toLocaleTimeString()}</time>}
       </div>
-      <p className={styles.advisory}>GeoHazard PH is not an official PHIVOLCS/NDRRMC advisory</p>
+      <p className={styles.advisory}>Earthquake and volcano activity</p>
     </div>
   );
 }

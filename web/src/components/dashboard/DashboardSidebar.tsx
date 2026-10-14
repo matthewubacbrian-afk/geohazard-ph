@@ -1,8 +1,10 @@
-import { useState } from 'react';
 import Icon, { type IconName } from '../common/Icon';
 import styles from './DashboardSidebar.module.css';
 import { BASEMAPS, BASEMAP_IDS, type BasemapId } from '../map/basemaps';
 import type { RiskBucket } from '../../lib/risk';
+import type { HazardEvent } from '../../types/hazard';
+import { getDatePresetRange, type DashboardDatePreset } from '../../lib/dashboardFilterPresets';
+import EventFilterBar from '../events/EventFilterBar';
 
 export type DashboardView = 'map' | 'filters' | 'history' | 'risk' | 'volcanoes';
 
@@ -33,6 +35,26 @@ const EVENT_CATEGORIES: { key: RiskBucket; label: string }[] = [
   { key: 'baseline', label: 'Baseline events' },
 ];
 
+const HAZARD_TYPES: { key: HazardEvent['hazard_type']; label: string }[] = [
+  { key: 'earthquake', label: 'Earthquake' },
+  { key: 'volcanic', label: 'Volcano activity' },
+  { key: 'landslide', label: 'Other hazards' },
+];
+
+const DATE_PRESETS: { key: DashboardDatePreset; label: string }[] = [
+  { key: '1d', label: '1D' },
+  { key: '7d', label: '7D' },
+  { key: '30d', label: '30D' },
+  { key: '90d', label: '90D' },
+];
+
+const MAGNITUDE_PRESETS = [
+  { value: 1, label: 'All' },
+  { value: 2.5, label: '≥ 2.5' },
+  { value: 4, label: '≥ 4.0' },
+  { value: 5, label: '≥ 5.0' },
+];
+
 type DashboardSidebarProps = {
   basemap: BasemapId;
   onBasemapChange: (basemap: BasemapId) => void;
@@ -48,6 +70,13 @@ type DashboardSidebarProps = {
   onEndDateChange: (date: string) => void;
   minMagnitude: number;
   onMinMagnitudeChange: (magnitude: number) => void;
+  activeHazardTypes: HazardEvent['hazard_type'][];
+  onToggleHazardType: (type: HazardEvent['hazard_type']) => void;
+  onDatePresetChange: (preset: DashboardDatePreset) => void;
+  source: string;
+  onSourceChange: (source: string) => void;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 };
 
 export default function DashboardSidebar({
@@ -65,19 +94,37 @@ export default function DashboardSidebar({
   onEndDateChange,
   minMagnitude,
   onMinMagnitudeChange,
+  activeHazardTypes,
+  onToggleHazardType,
+  onDatePresetChange,
+  source,
+  onSourceChange,
+  collapsed,
+  onToggleCollapsed,
 }: DashboardSidebarProps) {
-  const [layersOpen, setLayersOpen] = useState(false);
-
+  if (collapsed) {
+    return <aside className={`${styles.sidebar} ${styles.collapsed}`} aria-label="Risk controls panel">
+      <button type="button" className={styles.railToggle} aria-label="Expand controls" onClick={onToggleCollapsed}>
+        <Icon name="layers" />
+      </button>
+      <div className={styles.railViews}>{VIEWS.map((view) => <button key={view.key} type="button"
+        className={`${styles.railButton} ${activeView === view.key ? styles.railActive : ''}`}
+        aria-label={`Open ${view.label}`} title={view.label} onClick={() => { onViewChange(view.key); onToggleCollapsed(); }}>
+        <Icon name={view.icon} />
+      </button>)}</div>
+    </aside>;
+  }
   return (
     <aside className={styles.sidebar} aria-label="Risk controls panel">
       <div className={styles.header}>
         <h2 className={styles.title}>Controls</h2>
         <p className={styles.subtitle}>LGU Assessment Tools</p>
+        <button type="button" className={styles.collapseButton} aria-label="Collapse controls" onClick={onToggleCollapsed}>‹</button>
       </div>
 
       <div className={styles.body}>
         <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Views</h3>
+          <h3 className={styles.sectionTitle}>Map view</h3>
           <div className={styles.tabList}>
             {VIEWS.map((view) => (
               <button
@@ -96,50 +143,24 @@ export default function DashboardSidebar({
 
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>Map layers</h3>
-          <div className={styles.dropdown}>
-            <button
-              type="button"
-              className={styles.dropdownTrigger}
-              aria-expanded={layersOpen}
-              aria-label={`Map Layers: ${BASEMAPS[basemap].label}`}
-              onClick={() => setLayersOpen((open) => !open)}
-            >
-              <Icon name="layers" className={styles.icon} />
-              <span>{BASEMAPS[basemap].label}</span>
-              <span className={styles.caret} aria-hidden="true">
-                ▾
-              </span>
-            </button>
-            {layersOpen && (
-              <ul className={styles.dropdownMenu} role="menu">
-                {BASEMAP_IDS.map((id) => (
-                  <li key={id}>
-                    <button
-                      type="button"
-                      className={`${styles.dropdownItem} ${
-                        id === basemap ? styles.dropdownItemActive : ''
-                      }`}
-                      role="menuitem"
-                      aria-pressed={id === basemap}
-                      onClick={() => {
-                        onBasemapChange(id);
-                        setLayersOpen(false);
-                      }}
-                    >
-                      <span>{BASEMAPS[id].label}</span>
-                      {id === basemap && (
-                        <span className={styles.check} aria-hidden="true">
-                          ✓
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div className={styles.basemapGroup}>
+            <span className={styles.subheading}>Basemap</span>
+            <div className={styles.basemapOptions} role="group" aria-label="Basemap">
+              {BASEMAP_IDS.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`${styles.basemapOption} ${id === basemap ? styles.basemapActive : ''}`}
+                  aria-pressed={id === basemap}
+                  onClick={() => onBasemapChange(id)}
+                >
+                  {BASEMAPS[id].label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className={styles.layerList}>
+          <div className={styles.layerList} role="group" aria-label="Map layers">
             {LAYERS.map((layer) => (
               <label
                 key={layer.key}
@@ -166,23 +187,24 @@ export default function DashboardSidebar({
         </div>
 
         <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Event feed categories</h3>
-          <div className={styles.checklist}>
-            {EVENT_CATEGORIES.map((level) => (
-              <label key={level.key} className={styles.checkItem}>
-                <input
-                  type="checkbox"
-                  checked={activeEventCategories.includes(level.key)}
-                  onChange={() => onToggleEventCategory(level.key)}
-                />
-                <span>{level.label}</span>
-              </label>
-            ))}
+          <h3 className={styles.sectionTitle}>Time window</h3>
+          <div className={styles.datePresets} role="group" aria-label="Date window presets">
+            {DATE_PRESETS.map(({ key, label }) => {
+              const range = getDatePresetRange(key);
+              const selected = startDate === range.startDate && endDate === range.endDate;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={`${styles.preset} ${selected ? styles.presetActive : ''}`}
+                  aria-pressed={selected}
+                  onClick={() => onDatePresetChange(key)}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
-        </div>
-
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Date range</h3>
           <div className={styles.dateGrid}>
             <input
               type="date"
@@ -202,10 +224,48 @@ export default function DashboardSidebar({
         </div>
 
         <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>
-            <span>Magnitude</span>
-            <span className={styles.sectionValue}>{minMagnitude.toFixed(1)} - 9.0</span>
-          </h3>
+          <h3 className={styles.sectionTitle}>Event filters</h3>
+          <EventFilterBar source={source} onChange={onSourceChange} />
+          <h4 className={styles.subheading}>Magnitude (M)</h4>
+          <div className={styles.magnitudePresets} role="group" aria-label="Magnitude presets">
+            {MAGNITUDE_PRESETS.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                className={`${styles.magnitudePreset} ${minMagnitude === value ? styles.presetActive : ''}`}
+                aria-pressed={minMagnitude === value}
+                onClick={() => onMinMagnitudeChange(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <h4 className={styles.subheading}>Event type</h4>
+          <div className={styles.checklist}>
+            {HAZARD_TYPES.map(({ key, label }) => (
+              <label key={key} className={styles.checkItem}>
+                <input
+                  type="checkbox"
+                  checked={activeHazardTypes.includes(key)}
+                  onChange={() => onToggleHazardType(key)}
+                />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+          <h4 className={styles.subheading}>Risk category</h4>
+          <div className={styles.checklist}>
+            {EVENT_CATEGORIES.map((level) => (
+              <label key={level.key} className={styles.checkItem}>
+                <input
+                  type="checkbox"
+                  checked={activeEventCategories.includes(level.key)}
+                  onChange={() => onToggleEventCategory(level.key)}
+                />
+                <span>{level.label}</span>
+              </label>
+            ))}
+          </div>
           <input
             type="range"
             aria-label="Minimum magnitude"
@@ -216,6 +276,7 @@ export default function DashboardSidebar({
             onChange={(event) => onMinMagnitudeChange(Number(event.target.value))}
             className={styles.range}
           />
+          <span className={styles.sectionValue}>{minMagnitude.toFixed(1)} minimum</span>
           <div className={styles.scale}>
             <span>M1</span>
             <span>M5</span>

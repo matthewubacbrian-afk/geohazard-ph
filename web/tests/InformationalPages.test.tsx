@@ -9,6 +9,7 @@ describe('informational pages', () => {
   it('explains the project and the limits of risk profiles', () => {
     render(<About />);
 
+    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toHaveAttribute('data-theme', 'dashboard');
     expect(screen.getByRole('heading', { name: 'About GeoHazard' })).toBeTruthy();
     expect(screen.getByText(/Risk profiles are descriptive statistics, not earthquake predictions\./)).toBeTruthy();
     expect(screen.getByText('GeoHazard PH is not an official PHIVOLCS/NDRRMC advisory.')).toBeTruthy();
@@ -30,6 +31,7 @@ describe('informational pages', () => {
   it('identifies current sources and attribution', () => {
     render(<DataSources />);
 
+    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toHaveAttribute('data-theme', 'dashboard');
     expect(screen.getByRole('heading', { name: 'Data Sources' })).toBeTruthy();
     expect(screen.getByText(/USGS Earthquake Catalog/i)).toBeTruthy();
     expect(screen.getAllByText(/PHIVOLCS/i).length).toBeGreaterThan(0);
@@ -38,6 +40,7 @@ describe('informational pages', () => {
   it('describes the historical browser as a future feature', () => {
     render(<HistoricalBrowser />);
 
+    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toHaveAttribute('data-theme', 'dashboard');
     expect(screen.getByRole('heading', { name: 'Historical Event Browser' })).toBeTruthy();
     expect(screen.getByText(/future feature/i)).toBeTruthy();
     expect(screen.getByRole('link', { name: /open live dashboard/i })).toHaveAttribute(

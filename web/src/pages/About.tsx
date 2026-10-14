@@ -12,7 +12,7 @@ type AboutProps = {
 export default function About({ onNavigate, onSettings }: AboutProps) {
   return (
     <main className={styles.page}>
-      <TopNav items={navItems} activeItem="About" onNavigate={onNavigate} onSettings={onSettings} />
+      <TopNav items={navItems} activeItem="About" theme="dashboard" onNavigate={onNavigate} onSettings={onSettings} />
       <div className={styles.content}>
         <header className={styles.intro}>
           <p className={styles.eyebrow}>About the project</p>

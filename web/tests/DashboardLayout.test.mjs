@@ -14,10 +14,16 @@ const sidebarStyles = readFileSync(
 );
 
 describe('dashboard desktop scrolling layout', () => {
-  it('keeps the sidebar inside the viewport so its controls can scroll', () => {
-    expect(dashboardStyles).toMatch(/\.main\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)/s);
+  it('stacks the activity panel below the map at tablet widths and keeps controls scrollable', () => {
+    expect(dashboardStyles).toMatch(/grid-template-rows:\s*minmax\(520px,\s*1fr\)\s+minmax\(320px,/s);
     expect(sidebarStyles).toMatch(/\.body\s*\{[^}]*overflow-y:\s*auto/s);
     expect(sidebarStyles).toMatch(/\.sidebar\s*\{[^}]*min-height:\s*0/s);
     expect(sidebarStyles).toMatch(/\.body\s*\{[^}]*min-height:\s*0/s);
+  });
+
+  it('keeps each collapsed rail narrow at tablet widths', () => {
+    expect(dashboardStyles).toMatch(/\.main\.controlsCollapsed\s*\{[^}]*grid-template-columns:\s*56px/s);
+    expect(dashboardStyles).toMatch(/\.main\.activityCollapsed\s*\{[^}]*grid-template-columns:[^}]*56px/s);
+    expect(dashboardStyles).toMatch(/\.main\.controlsCollapsed\.activityCollapsed\s*\{[^}]*56px\s+minmax\(0,\s*1fr\)\s+56px/s);
   });
 });

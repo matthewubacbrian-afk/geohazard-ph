@@ -26,6 +26,10 @@ function Status() {
   const state = useRealtimeAlerts();
   return <div>{state.connected ? 'LIVE' : 'Reconnecting'}</div>;
 }
+function StatusWithChange({ onEventChange }: { onEventChange: (value: EventChange) => void }) {
+  const state = useRealtimeAlerts(onEventChange);
+  return <div>{state.connected ? 'LIVE' : 'Reconnecting'}</div>;
+}
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers(); Socket.instances = []; });
 
 describe('realtime events', () => {
@@ -55,6 +59,22 @@ describe('realtime events', () => {
     expect(Socket.instances[1].close).toHaveBeenCalled();
     act(() => vi.advanceTimersByTime(60000));
     expect(Socket.instances).toHaveLength(2);
+  });
+  it('forwards validated websocket events to the notification state without changing cache updates', async () => {
+    vi.stubGlobal('WebSocket', Socket);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    client.setQueryData(['events'], [event]);
+    const onEventChange = vi.fn();
+    render(
+      <QueryClientProvider client={client}>
+        <StatusWithChange onEventChange={onEventChange} />
+      </QueryClientProvider>,
+    );
+    const socket = Socket.instances[0];
+    await act(async () => socket.onmessage?.({ data: JSON.stringify({ ...event, magnitude: 5.1 }) }));
+
+    expect(onEventChange).toHaveBeenCalledWith({ ...event, magnitude: 5.1 });
+    expect(client.getQueryData<EventChange[]>(['events'])?.[0].magnitude).toBe(5.1);
   });
   it('updates every cached since query and removes events revised before its boundary', async () => {
     vi.stubGlobal('WebSocket', Socket);
