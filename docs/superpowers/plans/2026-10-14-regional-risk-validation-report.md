@@ -184,7 +184,8 @@ $artifactPath = Join-Path $primaryCheckout 'ml\model_artifacts\snapshots\2026-10
 $phivolcsPath = Join-Path $primaryCheckout 'ml\data\raw\bwandowando_philippine-earthquakes-from-phivolcs\phivolcs_earthquake_data.csv'
 $usgsPath = Join-Path $primaryCheckout 'ml\data\raw\bwandowando_philippine-earthquakes-1900-2025-from-usgs\Philippine_Earthquakes_USGS.csv'
 $reportPath = Join-Path $primaryCheckout 'ml\model_artifacts\validation\2026-10-14\v1'
-python -m ml.validate_profiles --artifact-dir $artifactPath --phivolcs-csv $phivolcsPath --usgs-csv $usgsPath --output-dir $reportPath
+$env:PYTHONPATH = 'src'
+py -3.11 -m ml.validate_profiles --artifact-dir $artifactPath --phivolcs-csv $phivolcsPath --usgs-csv $usgsPath --output-dir $reportPath
 ```
 
 - [ ] **Step 3: Inspect JSON and Markdown.** Confirm input and boundary hashes, source and assignment totals, all 17 regions, NCR counts, shared-window dates and counts, 20 seed fits, and 17 leave-one-out fits. Confirm `requires_domain_review`, no raw rows or local paths, and no modifications to the held `risk_profiles.json` or model files. Record observed values accurately in the quality review and status register. Keep the export held.

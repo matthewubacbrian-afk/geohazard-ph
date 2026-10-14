@@ -15,6 +15,32 @@
 - `event_density` is an event-count divided by a latitude/longitude span product. It is a coordinate-spread proxy, not events per square kilometer, and the clustering severity order also uses raw event counts. Neither feature adjusts for source coverage, observation period, exposure, or population.
 - The saved CSVs have no verified Kaggle version identifiers. Metadata records their exact hashes, and offline dataset versions correctly remain `null`.
 
+## Reproducible validation report
+
+The offline `ml.validate_profiles` command re-read the held bundle and both saved
+CSVs, matched their SHA-256 values and the pinned regional boundary SHA-256,
+and reproduced parser and assignment totals. It wrote ignored local
+`validation-report.json` and `validation-report.md` under
+`ml/model_artifacts/validation/2026-10-14/v1`. All 17 region names are present.
+The report state is `requires_domain_review`.
+
+- Assigned PHIVOLCS events span 2015-12-31 16:40 UTC to 2026-10-07 10:26 UTC;
+  assigned USGS events span 1905-06-01 02:23 UTC to 2026-10-02 23:10 UTC.
+- Their inclusive shared observation window is 2015-12-31 16:40 UTC to
+  2026-10-02 23:10 UTC. Within it, 134,053 PHIVOLCS and 6,929 USGS assigned
+  events remain. Matching dates does not equalize reporting thresholds or
+  catalog completeness.
+- NCR contributes two PHIVOLCS and one USGS event in that shared window.
+  A refit on all represented regions in the shared window changes 11 of the
+  17 saved labels. This is a sensitivity comparison, not a corrected label set.
+- Of 20 seed fits (0-19) on saved regional features, seed 12 changes ARMM and
+  Calabarzon; the other seeds reproduce the saved categories. Seventeen
+  leave-one-region-out fits were recorded. Omitting NCR changes labels for
+  14 of the remaining 16 regions.
+
+The report makes the sparse-region and catalog-coverage issues reproducible.
+It does not establish reliable categories or calibrated classifier confidence.
+
 ## Release decision
 
 The artifact is reproducible and structurally valid, but its labels and displayed confidence are not sufficiently supported for publication as regional risk guidance. Do not transfer `risk_profiles.json` to a staging host or configure the staging API to serve it. The project can prepare code and container images independently of this export.

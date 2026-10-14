@@ -284,7 +284,8 @@ report from `ml/` with the exact saved CSVs and an ignored output directory:
 
 ```powershell
 Set-Location ml
-python -m ml.validate_profiles `
+$env:PYTHONPATH = 'src'
+py -3.11 -m ml.validate_profiles `
   --artifact-dir 'model_artifacts\snapshots\2026-10-14\v1' `
   --phivolcs-csv 'data\raw\bwandowando_philippine-earthquakes-from-phivolcs\phivolcs_earthquake_data.csv' `
   --usgs-csv 'data\raw\bwandowando_philippine-earthquakes-1900-2025-from-usgs\Philippine_Earthquakes_USGS.csv' `
