@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from ml.scene_review.manifest import SufficiencyPolicy
+from ml.scene_review.manifest import SufficiencyPolicy, split_assignments_fingerprint
 from ml.scene_review.splits import DatasetSplits
 from ml.scene_review.train import TrainingConfig, train_model
 
@@ -217,6 +217,9 @@ def test_train_loads_pinned_model_locally_and_never_reads_test_samples(tmp_path,
     assert metadata["batch_size"] == 2
     assert metadata["learning_rate"] == 1e-5
     assert metadata["manifest_sha256"] == "b" * 64
+    assert metadata["split_assignments_sha256"] == split_assignments_fingerprint(
+        DatasetSplits(("a", "b"), ("c",), ("d",))
+    )
     assert metadata["image_preprocessing"] == {
         "mode": "deterministic_processor_preprocessing",
         "random_augmentation": False,
@@ -238,6 +241,60 @@ def test_loss_training_indices_exclude_any_sample_containing_ignore():
     ]
 
     assert _eligible_indices(samples) == [0, 2]
+
+
+def test_best_checkpoint_saves_matching_processor_configuration(tmp_path, monkeypatch):
+    from ml.scene_review import train
+
+    monkeypatch.setattr(
+        train,
+        "validate_dataset",
+        lambda *args, **kwargs: SimpleNamespace(
+            sufficiency_gate_passed=True,
+            split_summaries={
+                name: SimpleNamespace(
+                    total_sample_count=1,
+                    excluded_sample_count=0,
+                    retained_sample_count=1,
+                    exclusion_rate=0.0,
+                    scene_type_summaries={"outdoor": SimpleNamespace(retained_sample_count=1)},
+                )
+                for name in ("train", "validation", "test")
+            },
+            unsupported_pixel_counts={},
+            unsupported_pixel_counts_by_split={"train": {}, "validation": {}, "test": {}},
+            run_mask_ignore_sample_count=0,
+            loss_eligible_sample_count=3,
+            loss_excluded_sample_count=0,
+            exclusion_rate=0.0,
+        ),
+    )
+
+    manifest = _manifest("abcd")
+    splits = DatasetSplits(("a", "b"), ("c",), ("d",))
+
+    class Processor:
+        def save_pretrained(self, path):
+            Path(path, "preprocessor_config.json").write_text(
+                '{"image_processor_type":"DetrImageProcessor"}', encoding="utf-8"
+            )
+
+    class Trainer:
+        def fit(self, train_dataset, validation_dataset, *, epochs, output_dir, on_validation_epoch_end):
+            on_validation_epoch_end(1, 0.25)
+
+    result = train_model(
+        manifest,
+        splits,
+        _config(tmp_path),
+        model_cache=tmp_path / "cache",
+        model_loader=lambda **kwargs: _FakeModel(),
+        image_processor_factory=lambda **kwargs: Processor(),
+        trainer_factory=lambda **kwargs: Trainer(),
+        dataset_factory=lambda **kwargs: (),
+    )
+
+    assert (result.checkpoint_path / "preprocessor_config.json").is_file()
 
 
 def test_manifest_digest_is_canonical_and_does_not_return_manifest_contents():

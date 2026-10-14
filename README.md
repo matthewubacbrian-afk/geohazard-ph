@@ -308,6 +308,52 @@ domain review; it does not release the held export.
 
 The generated labels are descriptive statistical profiles based on historical records. They are not earthquake predictions.
 
+## Scene Review Vision Training
+
+The optional Scene Review pipeline validates locally held, rights-approved
+image/mask records, creates source-group splits, trains from a local model cache,
+evaluates an explicitly held-out split, and exports an immutable version under
+`ml/model_artifacts/scene_review/<version>/`. Install its optional dependencies
+from `ml/`:
+
+```powershell
+Set-Location ml
+python -m pip install -e '.[scene-review]'
+```
+
+Use `scene-review --help` for command details. Training and evaluation require
+predeclared sufficiency-policy and metric-threshold JSON files; no thresholds
+are supplied by default. Training uses local model files only and requires the
+pinned checkpoint already present in the supplied `--model-cache`:
+
+```powershell
+scene-review validate --manifest data/manifest.json --data-root data
+scene-review split --manifest data/manifest.json --data-root data --seed 42 --output data/splits.json
+scene-review train --manifest data/manifest.json --data-root data --splits data/splits.json `
+  --sufficiency-policy data/sufficiency-policy.json --model-cache model-cache `
+  --output-dir model_artifacts/scene_review/runs/run-1
+scene-review evaluate --manifest data/manifest.json --data-root data --splits data/splits.json `
+  --sufficiency-policy data/sufficiency-policy.json `
+  --checkpoint model_artifacts/scene_review/runs/run-1/checkpoint-epoch-1 `
+  --thresholds data/evaluation-thresholds.json --output data/evaluation.json
+scene-review export --checkpoint model_artifacts/scene_review/runs/run-1/checkpoint-epoch-1 `
+  --evaluation data/evaluation.json `
+  --metadata model_artifacts/scene_review/runs/run-1/training_metadata.json --version v1
+Set-Location ..
+```
+
+Only manifest records whose image-level rights evidence permits training,
+evaluation, and derived-weight redistribution can pass validation. The CLI
+prints aggregate counts, not per-image identifiers, source URLs, attribution,
+or local paths. Training and evaluation must pass their declared gates, and
+export requires training from a clean, committed code revision. Exports contain
+model weights, model/processor configuration, and scrubbed provenance; version
+directories cannot be overwritten. As of
+2026-10-15, no candidate image source is approved and no evaluation thresholds
+have been declared, so real-scene training and model-quality evaluation remain
+pending. Synthetic pipeline tests verify mechanics only and do not establish
+scene recognition.
+
 ## Test And Build
 
 Run ML tests:

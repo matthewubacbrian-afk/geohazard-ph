@@ -389,24 +389,24 @@ Compute IoU, precision, and recall at pixel level for each supported target clas
 ```text
 scene-review validate --manifest PATH --data-root PATH
 scene-review split --manifest PATH --data-root PATH --seed 42 --output PATH
-scene-review train --manifest PATH --data-root PATH --splits PATH --model-cache PATH --output-dir PATH
-scene-review evaluate --manifest PATH --data-root PATH --splits PATH --checkpoint PATH --thresholds PATH --output PATH
-scene-review export --checkpoint PATH --evaluation PATH --metadata PATH --version VERSION --output-root PATH
+scene-review train --manifest PATH --data-root PATH --splits PATH --sufficiency-policy PATH --model-cache PATH --output-dir PATH
+scene-review evaluate --manifest PATH --data-root PATH --splits PATH --sufficiency-policy PATH --checkpoint PATH --thresholds PATH --output PATH
+scene-review export --checkpoint PATH --evaluation PATH --metadata PATH --version VERSION
 ```
 
-Register `scene-review = "ml.scene_review.cli:main"` under `[project.scripts]` in `ml/pyproject.toml`; these commands run after installing the project with the `scene-review` optional extra.
+Register `scene-review = "ml.scene_review.cli:main"` under `[project.scripts]` in `ml/pyproject.toml`; include Pillow in the `scene-review` optional extra because indexed-image validation imports it. These commands run after installing the project with that extra. Training and evaluation require a caller-provided sufficiency-policy file so no acceptance thresholds are invented. The CLI export destination is fixed to `ml/model_artifacts/scene_review/<version>/`; the export function accepts a temporary root for isolated tests. Each selected checkpoint stores the matching processor configuration with its model weights.
 
-Artifact export writes only under `ml/model_artifacts/scene_review/<version>/`, refuses overwrite, verifies passing evaluation and complete provenance, records model/dataset/code hashes, supported labels, labels, thresholds, metrics, runtime versions, per-split unsupported-pixel counts by canonical class, total/ignore-containing/loss-eligible/loss-excluded counts and exclusion rates for training and validation, test total/ignore-containing/evaluated counts, and limitations, and never copies raw images, per-image rights records, or absolute local paths. Detailed per-image rights metadata remains in the local manifest/access-controlled data root; CLI success/error reports expose aggregate counts only, never per-image IDs, URLs, attribution, or paths.
+Artifact export writes only under `ml/model_artifacts/scene_review/<version>/`, refuses overwrite, and requires training from a clean code revision plus passing sufficiency and evaluation gates. It records model/dataset/code hashes, supported labels, thresholds, metrics, runtime versions, per-split unsupported-pixel counts by canonical class, total/ignore-containing/loss-eligible/loss-excluded counts and exclusion rates for training and validation, test total/ignore-containing/evaluated counts, and limitations. It never copies raw images, per-image rights records, or absolute local paths. Detailed per-image rights metadata remains in the local manifest/access-controlled data root; CLI success/error reports expose aggregate counts only, never per-image IDs, URLs, attribution, or paths.
 
-- [ ] **Step 1: Write failing tests** for each CLI command, nonzero errors, refusal on pending rights or failed thresholds, immutable version path, metadata completeness, and absence of image/path content.
-- [ ] **Step 2: Run** `pytest tests/test_scene_review_artifacts.py tests/test_scene_review_cli.py -v`; confirm expected failures.
-- [ ] **Step 3: Implement** export validation, command argument parsing, and artifact metadata serialization.
-- [ ] **Step 4: Run** all focused tests; then `pytest -v` and `ruff check .` from `ml/`.
-- [ ] **Step 5: Run** the synthetic end-to-end pipeline test; verify it writes only under pytest `tmp_path` and uses a fake model with no network access.
+- [x] **Step 1: Write failing tests** for CLI commands, generic nonzero errors, pending-rights refusal, failed thresholds, immutable version path, metadata completeness, and absence of image/path content.
+- [x] **Step 2: Run** artifact, CLI, and pipeline tests; confirm expected failures before implementation.
+- [x] **Step 3: Implement** export validation, command argument parsing, and artifact metadata serialization.
+- [x] **Step 4: Run** focused tests and changed-file Ruff; the full `pytest -v` suite passed (168 tests). Full `ruff check .` still reports 11 existing findings in unrelated regional-risk files; changed files pass Ruff.
+- [x] **Step 5: Run** the synthetic end-to-end pipeline test; it writes only under pytest `tmp_path` and uses injected fake model/processor/trainer components without network access.
 - [ ] **Step 6: For an approved real dataset only,** run the held-out evaluation from Task 7, then load the exported artifact with network access disabled and record one-image CPU latency and peak resident memory on the target backend environment.
-- [ ] **Step 7: Run** `python scripts\verify_structure.py` and `git diff --check` from the repository root.
-- [ ] **Step 8: Update project status** with only verified outcomes. If rights/data gates are not met, state that training is pending approved labeled data and report only pipeline-mechanics checks; do not mark model recognition validated.
-- [ ] **Step 9: Commit** as `feat: export reviewed scene review model artifacts`.
+- [x] **Step 7: Run** repository structure verification and `git diff --check`.
+- [x] **Step 8: Update project status** with the verified pipeline mechanics and the unresolved rights/threshold gates; do not claim model recognition.
+- [x] **Step 9: Commit** as `feat: export reviewed scene review model artifacts`.
 
 ## Completion Gate
 

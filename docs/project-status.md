@@ -3,7 +3,7 @@
 This is the authoritative current status register. It separates implemented code
 from data preparation, live deployment verification, and deferred product work.
 Status is based on the repository and its recorded history, reviewed on
-2026-10-14.
+2026-10-15.
 
 | Epic or workstream | Current status | Evidence and remaining work |
 | --- | --- | --- |
@@ -15,6 +15,29 @@ Status is based on the repository and its recorded history, reviewed on
 | Epic 6: Landslide and InSAR stretch work | Deferred | No product-ready landslide or InSAR feature is claimed. Source validation, licensing, ingestion, and user-facing work remain future scope. See [data sources](data-sources.md#static-layers). |
 | Epic 7: Camera scene review | Implemented on feature branch; image-quality calibration, deployment, and camera-device checks pending | Shared transient analysis API plus web and mobile camera review flows are implemented. Both clients display the same persistent visual cue demonstrator warning, including that results are not a safety assessment or production-ready emergency decision tool and do not give emergency instructions, identify official shelters, or predict earthquakes. API result limitations enumerate what a single image cannot verify, including structure, ground, glass/electrical hazards, egress, accessibility, routes, unseen areas, and changing conditions. A local Windows run loaded the pinned model and returned HTTP 200 for one synthetic image (`no_clear_candidate`, zero polygons, two model cues); this verifies model loading and the response path, not scene-recognition accuracy. Blur-threshold calibration and real-scene evaluation remain pending. The full backend suite passed (148 tests, including PostGIS and Redis integration), web tests passed (133) with production build, and mobile tests passed (46) with strict TypeScript checking. API, Vite, PostGIS, and Redis are running locally in an isolated Compose project. A browser check of `/dashboard` rendered 2,779 earthquake events after refresh; regional activity showed 2,753 events. Enabling Fault lines displayed 155 GEM reference features, and Volcano bulletins showed five PHIVOLCS entries retrieved on 2026-10-13. The local polling worker is running: its latest cycle fetched and processed 29 USGS events and 2,750 PHIVOLCS events. An earlier one-shot PHIVOLCS request failed Windows certificate-chain validation, but the continuous worker subsequently completed successfully. The checksum-verified pinned GEM source imported 155 local fault features into this isolated database; volcano-zone data remains unavailable pending reuse permission, and the alert-subscription API currently has no subscriptions. Android/iOS camera hardware checks and deployed Linux/ARM64 model packaging/resource fit remain unverified. The default API image omits the large model runtime and weights and can return typed 503 until deployment packaging is measured and provisioned. See the [Epic 7 plan](superpowers/plans/2026-10-13-epic7-scene-analysis.md), [image-quality follow-up plan](superpowers/plans/2026-10-13-epic7-image-quality.md), [model preflight and dataset limits](data-sources.md#scene-analysis-model-preflight), [runbook](runbook.md#epic-7-scene-review), and [camera smoke checklist](mobile-runtime-smoke-test.md). |
 | Oracle Always Free staging | Release images and bundle published; deployment unverified | The [2026-10-14 staging release run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/38516440460) passed verification, published AMD64 and ARM64 API and web images for commit `5ada21049808c51f080da1e0080d3ee7577ec32b`, verified both image architectures, and uploaded `staging-release-5ada21049808c51f080da1e0080d3ee7577ec32b`. The [Oracle runbook](runbook.md#oracle-cloud-infrastructure-always-free-a1) documents operator setup and deployment. The user confirmed there is no OCI VM or DNS yet. The current model export is on quality hold and must not be transferred. Host setup, a reviewed export, and deployed-state verification remain. |
+
+## Scene Review vision-training readiness — 2026-10-15
+
+The isolated `feat/scene-review-vision-training` branch now contains a local
+rights-aware validation, source-group split, training, evaluation, and immutable
+artifact-export pipeline. The `scene-review` CLI is registered in the ML
+optional extra and requires an explicit sufficiency-policy file for training
+and evaluation. Synthetic fixtures exercise training orchestration, held-out
+evaluation, and export under pytest temporary directories using a fake model;
+these tests verify pipeline mechanics only. The ML suite passed 168 tests;
+changed Scene Review files passed Ruff. The full ML Ruff run still reports 11
+unrelated existing findings in regional-risk code. Editable installation of
+the optional extra and the installed CLI help were checked in a pre-provisioned
+Python 3.11 CPU environment without package downloads. No model was trained or
+exported from real scenes. No candidate image source is
+approved for training: EIDSeg source-image rights remain unresolved and its
+labels do not include open ground, while no project-owned or consented image
+collection is present. No feature-owner evaluation thresholds have been
+declared. Real-scene training, held-out evaluation, model-recognition claims,
+and production artifact export therefore remain pending. See the
+[vision-training plan](superpowers/plans/2026-10-15-scene-review-vision-training.md),
+[rights and annotation guide](superpowers/scene-review-annotation-guide.md), and
+[source inventory](data-sources.md#scene-review-image-datasets-rights-review).
 
 ## Next integration milestone
 

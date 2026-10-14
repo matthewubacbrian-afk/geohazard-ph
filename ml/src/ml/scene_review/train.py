@@ -20,6 +20,7 @@ from ml.scene_review.manifest import (
     DatasetValidationReport,
     SceneDatasetManifest,
     SufficiencyPolicy,
+    split_assignments_fingerprint,
     validate_dataset,
 )
 from ml.scene_review.splits import DatasetSplits, validate_splits
@@ -172,6 +173,9 @@ def train_model(
             best_epoch = epoch
             checkpoint_path = config.output_dir / f"checkpoint-epoch-{epoch}"
             _save_model(model, checkpoint_path)
+            save_processor = getattr(processor, "save_pretrained", None)
+            if callable(save_processor):
+                save_processor(checkpoint_path)
 
     trainer.fit(
         train_dataset,
@@ -215,8 +219,21 @@ def train_model(
         "model_revision": config.model_revision,
         "code_revision": _code_revision(),
         "code_worktree_dirty": _code_worktree_dirty(),
+        "best_epoch": best_epoch,
+        "best_validation_loss": best_validation_loss,
         "runtime_versions": _runtime_versions(),
         "manifest_sha256": _manifest_sha256(manifest),
+        "split_assignments_sha256": split_assignments_fingerprint(
+            {
+                image_id: split_name
+                for split_name, ids in (
+                    ("train", splits.train_ids),
+                    ("validation", splits.validation_ids),
+                    ("test", splits.test_ids),
+                )
+                for image_id in ids
+            }
+        ),
         "seed": config.seed,
         "epochs": config.epochs,
         "batch_size": config.batch_size,
