@@ -7,7 +7,7 @@ import json
 import re
 from collections import Counter
 from collections.abc import Mapping
-from dataclasses import dataclass, fields
+from dataclasses import asdict, dataclass, fields, is_dataclass
 from datetime import date, datetime
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
@@ -141,6 +141,50 @@ class DatasetValidationReport:
     sufficiency_gate_passed: bool | None
     sufficiency_gate_reasons: tuple[str, ...]
     warnings: tuple[str, ...]
+    manifest_sha256: str
+    split_assignments_sha256: str
+
+
+def _canonical_value(value: object) -> object:
+    if is_dataclass(value) and not isinstance(value, type):
+        return _canonical_value(asdict(value))
+    if isinstance(value, Mapping):
+        return {str(key): _canonical_value(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_canonical_value(item) for item in value]
+    if isinstance(value, Path):
+        return value.as_posix()
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    attributes = getattr(value, "__dict__", None)
+    if isinstance(attributes, dict):
+        return _canonical_value(attributes)
+    raise TypeError("value cannot be canonically serialized")
+
+
+def _fingerprint(value: object) -> str:
+    canonical = json.dumps(
+        _canonical_value(value), sort_keys=True, separators=(",", ":"), ensure_ascii=True
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def manifest_fingerprint(manifest: object) -> str:
+    """Return a stable hash for a manifest without exposing its private fields."""
+    return _fingerprint(manifest)
+
+
+def split_assignments_fingerprint(splits: object) -> str:
+    """Return a stable hash of the exact train/validation/test ID assignment."""
+    if isinstance(splits, Mapping):
+        assignments = dict(splits)
+    else:
+        assignments = {
+            image_id: split_name
+            for split_name in SPLIT_NAMES
+            for image_id in getattr(splits, f"{split_name}_ids")
+        }
+    return _fingerprint(assignments)
 
 
 def _mapping_to_dataclass(data: Any, cls: type, *, optional_fields: set[str] | None = None):
@@ -661,6 +705,8 @@ def validate_dataset(
         split_summaries=split_summaries,
         sufficiency_gate_passed=gate_passed,
         sufficiency_gate_reasons=gate_reasons,
+        manifest_sha256=manifest_fingerprint(manifest),
+        split_assignments_sha256=split_assignments_fingerprint(split_assignments),
         warnings=(
             ("sufficiency gate undeclared; this count report does not authorize training",)
             if sufficiency_policy is None

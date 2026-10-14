@@ -9,7 +9,11 @@ from ml.scene_review.evaluate import (
     compare_to_baseline,
     evaluate_model,
 )
-from ml.scene_review.manifest import DatasetValidationReport
+from ml.scene_review.manifest import (
+    DatasetValidationReport,
+    manifest_fingerprint,
+    split_assignments_fingerprint,
+)
 from ml.scene_review.splits import DatasetSplits
 
 LABELS = ("open_ground", "obstacle")
@@ -84,7 +88,7 @@ class _Model:
         return prediction
 
 
-def _passing_gate():
+def _passing_gate(dataset, splits):
     return DatasetValidationReport(
         image_count=3,
         pixel_counts={},
@@ -99,20 +103,23 @@ def _passing_gate():
         sufficiency_gate_passed=True,
         sufficiency_gate_reasons=(),
         warnings=(),
+        manifest_sha256=manifest_fingerprint(dataset.manifest),
+        split_assignments_sha256=split_assignments_fingerprint(splits),
     )
 
 
 def _evaluate(model, dataset, thresholds, *, sufficiency_report=None, splits=None):
+    splits = splits or DatasetSplits(
+        ("train-only",),
+        ("validation-only",),
+        tuple(record.image_id for record in dataset._records),
+    )
     return evaluate_model(
         model,
         dataset,
         thresholds,
-        splits=splits or DatasetSplits(
-            ("train-only",),
-            ("validation-only",),
-            tuple(record.image_id for record in dataset._records),
-        ),
-        sufficiency_report=sufficiency_report or _passing_gate(),
+        splits=splits,
+        sufficiency_report=sufficiency_report or _passing_gate(dataset, splits),
     )
 
 
@@ -186,7 +193,8 @@ def test_evaluation_requires_test_split_passing_gate_and_predeclared_thresholds(
             dataset,
             _thresholds(),
             sufficiency_report=replace(
-                _passing_gate(), sufficiency_gate_passed=False
+                _passing_gate(dataset, DatasetSplits(("train-only",), ("validation-only",), ("0",))),
+                sufficiency_gate_passed=False
             ),
         )
     with pytest.raises(ValueError, match="thresholds must be declared"):
@@ -194,6 +202,35 @@ def test_evaluation_requires_test_split_passing_gate_and_predeclared_thresholds(
             model,
             dataset,
             _thresholds(minimum_iou_by_label={}),
+        )
+
+
+def test_gate_is_bound_to_exact_manifest_even_when_counts_match():
+    truth = np.array([[0, 1]], dtype=np.uint8)
+    dataset = _Dataset([truth])
+    splits = DatasetSplits(("train-only",), ("validation-only",), ("0",))
+    stale_gate = _passing_gate(dataset, splits)
+    changed_records = list(dataset.manifest.records)
+    changed_records[0] = _record(
+        "train-only", group_id="changed-group", image_sha256="1" * 64
+    )
+    dataset.manifest.records = tuple(changed_records)
+
+    with pytest.raises(ValueError, match="same manifest and split assignment"):
+        _evaluate(_Model([truth]), dataset, _thresholds(), splits=splits, sufficiency_report=stale_gate)
+
+
+def test_gate_is_bound_to_exact_split_assignment_even_when_counts_match():
+    truth = np.array([[0, 1]], dtype=np.uint8)
+    dataset = _Dataset([truth])
+    original_splits = DatasetSplits(("train-only",), ("validation-only",), ("0",))
+    stale_gate = _passing_gate(dataset, original_splits)
+    changed_splits = DatasetSplits(("validation-only",), ("train-only",), ("0",))
+
+    with pytest.raises(ValueError, match="same manifest and split assignment"):
+        _evaluate(
+            _Model([truth]), dataset, _thresholds(),
+            splits=changed_splits, sufficiency_report=stale_gate,
         )
 
 

@@ -14,7 +14,12 @@ import numpy as np
 from scipy import ndimage
 
 from ml.scene_review.labels import BACKGROUND_ID, IGNORE_ID, LABEL_IDS
-from ml.scene_review.manifest import SCENE_TYPES, DatasetValidationReport
+from ml.scene_review.manifest import (
+    SCENE_TYPES,
+    DatasetValidationReport,
+    manifest_fingerprint,
+    split_assignments_fingerprint,
+)
 from ml.scene_review.splits import DatasetSplits, validate_splits
 
 _SLICE_CATEGORIES = {
@@ -222,8 +227,11 @@ def evaluate_model(
         sufficiency_report.image_count != len(manifest_records)
         or test_summary is None
         or getattr(test_summary, "total_sample_count", None) != len(test_ids)
+        or sufficiency_report.manifest_sha256 != manifest_fingerprint(manifest)
+        or sufficiency_report.split_assignments_sha256
+        != split_assignments_fingerprint(splits)
     ):
-        raise ValueError("sufficiency report must cover the same manifest and test split")
+        raise ValueError("sufficiency report must cover the same manifest and split assignment")
     test_split_sha256 = hashlib.sha256(
         json.dumps(
             sorted(
