@@ -22,7 +22,10 @@ The ML risk profiling pipeline uses two Kaggle datasets:
 - `bwandowando/philippine-earthquakes-from-phivolcs` — PHIVOLCS earthquake records, CC0: Public Domain
 - `bwandowando/philippine-earthquakes-1900-2025-from-usgs` — USGS earthquake records for the Philippines, Apache 2.0
 
-Access requires a Kaggle account and API key (`KAGGLE_USERNAME` and `KAGGLE_KEY` environment variables, or `~/.kaggle/kaggle.json`).
+Access requires a Kaggle account and API key. The ML downloader reads
+`KAGGLE_USERNAME` and `KAGGLE_KEY` from the repository-root `.env` when non-empty
+process environment values are not set; existing shell values take precedence.
+Kaggle's `~/.kaggle/kaggle.json` configuration file remains supported.
 
 By default, each training run uses `kagglehub.dataset_download` to resolve the latest
 version of each dataset with `force_download=True`. The download replaces the raw

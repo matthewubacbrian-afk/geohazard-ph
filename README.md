@@ -211,7 +211,9 @@ The ML module trains descriptive regional seismic risk profiles from two Kaggle 
 - `bwandowando/philippine-earthquakes-from-phivolcs`
 - `bwandowando/philippine-earthquakes-1900-2025-from-usgs`
 
-Set Kaggle credentials in `.env` or in your shell:
+Set Kaggle credentials in the repository-root `.env` or in your shell. The ML
+downloader reads these two entries from `.env`; non-empty shell variables take
+precedence. Kaggle's `~/.kaggle/kaggle.json` configuration file is also supported:
 
 ```env
 KAGGLE_USERNAME=
