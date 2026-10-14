@@ -12,8 +12,8 @@ in the [project status register](project-status.md).
 - Organization or discipline: _________________________
 - Review date: ________________________________________
 - Other participants: __________________________________
-- Review state (select one at closeout):
-  - [ ] `not_reviewed`
+- Review state (default to `not_reviewed`; update only after a review):
+  - [x] `not_reviewed` (default)
   - [ ] `review_incomplete`
   - [ ] `review_complete_hold_remains`
 - Evidence versions and hashes reviewed: _______________

@@ -30,7 +30,7 @@
 - Provides blank metadata fields for reviewer/role, review date, and evidence reviewed.
 - Provides five decision sections: offshore assignment, sparse-region inclusion, source coverage/window, feature/category meaning, and validation criteria for lifting the hold.
 - Each section has blank decision, rationale, limitations, and follow-up fields. The sparse-region section lists no preferred cutoff.
-- Provides `not_reviewed`, `review_incomplete`, and `review_complete_hold_remains` closeout states; all remain unselected.
+- Provides `not_reviewed` as the selected default closeout state, plus `review_incomplete` and `review_complete_hold_remains` for use only after an actual review.
 
 - [x] **Step 1: Create the worksheet with evidence and decisions left unresolved.**
 

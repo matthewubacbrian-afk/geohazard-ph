@@ -72,7 +72,8 @@ lift the export hold. Each section provides fields for decision, rationale,
 confidence/limitations, and follow-up owner/action. The sparse-region section
 will list no preferred threshold; all options remain undecided until reviewed.
 
-The closeout section will record one of `not_reviewed`, `review_incomplete`, or
+The closeout section will default to `not_reviewed`; after an actual review, the
+reviewer can select `review_incomplete` or
 `review_complete_hold_remains`, and identify any separately approved outcome.
 There will be no field or wording that implies a completed review by default.
 The export disposition will remain “held” unless a future, distinct review
@@ -110,8 +111,8 @@ project status still states that the export is held, and run `git diff --check`.
   limitations, and follow-up action.
 - [ ] No cutoff, assignment rule, label, or export approval is selected by
   default.
-- [ ] The closeout state is explicitly unreviewed and export hold remains
-  explicit in both the worksheet and status register.
+- [ ] The closeout state defaults to explicitly unreviewed and the export hold
+  remains explicit in both the worksheet and status register.
 - [ ] Project status records PR #30 CI completion and links the worksheet as the
   next review step.
 - [ ] Markdown link/heading checks and `git diff --check` pass.
