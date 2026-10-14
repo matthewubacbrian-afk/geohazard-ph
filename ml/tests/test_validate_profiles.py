@@ -276,6 +276,9 @@ def test_sparse_region_sensitivity_treats_missing_coverage_as_zero():
     )
 
     first = result["scenarios"][0]
+    assert [item["minimum_shared_window_events"] for item in result["scenarios"]] == [0, 2]
+    included_sets = [tuple(item["included_regions"]) for item in result["scenarios"]]
+    assert len(included_sets) == len(set(included_sets))
     assert first["excluded_regions"] == ["No events"]
     assert first["exclusion_reason_by_region"] == {
         "No events": "no_shared_window_observations"

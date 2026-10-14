@@ -76,8 +76,11 @@ After provenance verification and coverage calculation, the validator will
 build the same regional feature rows already used for the shared-window refit.
 It will sum each region's PHIVOLCS and USGS counts in that window. It will
 derive a deterministic sequence of minimum-count thresholds: `0`, followed by
-`count + 1` for each distinct observed region count. Each threshold therefore
-represents one unique included-region set as the minimum count increases.
+`count + 1` for each distinct positive count among regions with shared-window
+feature rows. Zero-count regions have no feature row and cannot create a
+membership transition, so they add no redundant breakpoint. Each threshold
+therefore represents one unique included-region set as the minimum count
+increases.
 
 For each threshold, include a region only if it has a shared-window feature row
 and its combined count is at least the threshold. Record excluded region names
@@ -167,9 +170,11 @@ checks pass. The quality hold remains in force.
 ## Testing Strategy
 
 Use tiny ML fixtures with controlled source rows and saved labels. Assert that
-thresholds are sorted, unique, and equal to zero plus each distinct combined
-shared-window count plus one. Assert a region exactly at a threshold is
-included, and a region just below it is excluded. Verify PHIVOLCS and USGS
+thresholds are sorted and unique, starting at zero and followed by each
+distinct positive feature-backed combined shared-window count plus one. Assert
+a zero-count region without features adds no redundant threshold. Assert a
+region exactly at a threshold is included, and a region just below it is
+excluded. Verify PHIVOLCS and USGS
 counts are summed only within the shared window, an absent coverage entry is
 treated as zero, malformed coverage fails before writing, all exclusions have
 a reason, and changed-label counts compare only included regions. Verify no

@@ -259,7 +259,16 @@ def _sparse_region_sensitivity(
     if any(count > 0 and name not in features_by_name for name, count in counts.items()):
         raise ValueError("Positive shared-window count has no feature row.")
 
-    thresholds = [0, *sorted({count + 1 for count in counts.values()})]
+    thresholds = [
+        0,
+        *sorted(
+            {
+                counts[name] + 1
+                for name in features_by_name
+                if counts[name] > 0
+            }
+        ),
+    ]
     scenarios: list[dict[str, object]] = []
     for threshold in thresholds:
         included = sorted(

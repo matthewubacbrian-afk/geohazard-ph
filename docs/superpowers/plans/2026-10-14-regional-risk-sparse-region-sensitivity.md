@@ -167,7 +167,12 @@ def _sparse_region_sensitivity(
     if any(count > 0 and name not in features_by_name for name, count in counts.items()):
         raise ValueError("Positive shared-window count has no feature row.")
 
-    thresholds = [0, *sorted({count + 1 for count in counts.values()})]
+    thresholds = [
+        0,
+        *sorted(
+            {counts[name] + 1 for name in features_by_name if counts[name] > 0}
+        ),
+    ]
     scenarios: list[dict[str, object]] = []
     for threshold in thresholds:
         included = sorted(
@@ -221,8 +226,10 @@ def _sparse_region_sensitivity(
     }
 ```
 
-The threshold list is `0` plus `count + 1` for every distinct combined count.
-Each scenario therefore records one data-derived inclusion transition.
+The threshold list is `0` plus `count + 1` for each distinct positive combined
+count among regions with shared-window feature rows. Zero-count regions have no
+feature row and cannot create a membership transition, so they add no redundant
+breakpoint. Each scenario records one unique data-derived inclusion transition.
 
 - [ ] **Step 4: Run the focused test and confirm it passes.**
 
