@@ -159,12 +159,13 @@ When a spec or plan introduces a new concept:
 | open_ground | Training annotation label for floor or ground pixels that appear visually unobstructed in the image; does not establish accessibility, stability, or safety. |
 | obstacle | Training annotation label for a visible object, debris, or obstruction occupying or crossing a candidate ground area. |
 | background | Indexed-mask ID `5` for visible, labelable pixels outside target classes; annotation value only, omitted from DETR targets, never an inference/display class. |
-| ignore | Indexed-mask ID `255` for ambiguous, occluded, or unlabelable pixels. Since stock DETR mask loss cannot ignore selected pixels, any sample containing ignore pixels is excluded from training and validation loss; evaluation masks those pixels out. |
+| ignore | Run-mask ID `255` for ambiguous, occluded, unlabelable pixels, and canonical target pixels unsupported by the current run. Unsupported target pixels map to ignore, never background; any sample containing run-mask ignore pixels is excluded from training/validation loss, and evaluation masks those pixels out. |
+| unsupported target pixels | Canonical target-class pixels whose class is absent from a run's supported-label subset; map to `ignore` in the run-specific mask and count by canonical class. Their containing samples are loss-excluded; stop if the remaining data falls below declared minimums. |
 | scene mask IDs | `0=open_ground`, `1=obstacle`, `2=glass_facade`, `3=overhead_lines`, `4=visible_building_damage`, `5=background`, `255=ignore`. Only IDs `0`–`4` are model target classes. |
 | polygon | `polygon`; closed list of normalized `{x, y}` image points from top-left origin, each coordinate in `[0, 1]`; not GeoJSON or map coordinates. |
 | visual cue | `visual_cues[]`; recognized model class and model confidence shown for review, not an inferred hazard verdict. |
 | visible hazard cue | A visible class such as glass façade, overhead utility lines, debris, or explicitly annotated building damage; describes image evidence and does not claim an active or imminent hazard. |
-| scene annotation | Image-space masks labeling visible classes with an annotation-schema version; non-target visible pixels use `background`, and ambiguous pixels use `ignore` under the sample-exclusion loss rule. |
+| scene annotation | Canonical image-space masks label visible target classes; non-target pixels use `background`, ambiguous pixels use `ignore`, and run-specific masks remap unsupported target classes to `ignore`, never background. Any run-mask ignore pixel excludes the full sample from training/validation loss; evaluation masks those pixels. |
 | scene dataset manifest | Versioned record of image source, reuse terms, hashes, annotation schema, and source/location-based split assignment used to reproduce an offline training or evaluation run. |
 | ranking score | `ranking_score`; deterministic weighted visual-review ordering value in `[0, 1]`, never a safety probability or confidence. |
 | model version | `model_version`; model ID and immutable model-artifact revision that produced scene-analysis cues. |

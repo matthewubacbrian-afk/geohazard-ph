@@ -24,11 +24,13 @@ The indexed-mask IDs are fixed and reserved as follows:
 | `5` | `background` | Every visible, labelable pixel that is outside the five target classes. This is a mask annotation value, never a displayed or predicted class. |
 | `255` | `ignore` | Ambiguous, hidden, too small, or otherwise not reliably annotatable pixels. Exclude these pixels from supervised loss and agreement denominators. |
 
-These are single-class indexed masks: each pixel has one ID. Do not invent
-additional IDs. `ignore` takes precedence where a boundary or identity is
-uncertain. A run may declare a supported subset of the five target classes,
-but unsupported classes must not be counted as successful predictions or
-silently converted to background. Background pixels do not create DETR
+These are canonical single-class indexed masks: each pixel has one ID. Do not
+invent additional IDs. `ignore` takes precedence where a boundary or identity
+is uncertain. A run may declare a supported subset of the five target classes.
+For that run, convert pixels labeled with any unsupported canonical target ID
+to `ignore` (`255`), never to `background` (`5`). Preserve and hash the
+canonical source mask; apply this conversion to the run-specific mask before
+target generation, loss, or evaluation. Background pixels do not create DETR
 segmentation targets; unmatched DETR queries represent background.
 
 ## General pixel rules
@@ -130,20 +132,25 @@ darkness, compression artifacts, ambiguous class identity, tiny details below
 stable annotation resolution, and any region covered by UI/text overlays.
 Assign every other visible, labelable pixel `background` (`5`). This value is
 used only in indexed masks and is omitted when constructing DETR targets; it
-must never appear as an inference class. Use `ignore` (`255`) only for
-ambiguous, occluded, or otherwise unlabelable pixels.
+must never appear as an inference class. In canonical annotation masks, use
+`ignore` (`255`) for ambiguous, occluded, or otherwise unlabelable pixels. In a
+run-specific mask, also replace every canonical target pixel whose class is
+unsupported by that run with `ignore`; never replace it with `background`.
 
 The first implementation uses the stock DETR mask loss, which treats pixels
 outside target masks as negatives and cannot safely apply an ignore mask at
-pixel level. Therefore, exclude an entire sample containing any `ignore` pixel
-from both training loss and validation loss. Record total samples, samples
-containing ignore pixels, loss-eligible samples, and samples excluded from loss
-for the training and validation splits in artifact metadata. Record total,
-ignore-containing, and evaluated sample counts for the test split. Evaluation
-metrics mask out `ignore` pixels. Stop training if these
-exclusions leave fewer samples than the declared minimum needed for training,
-validation, or required evaluation slices; do not silently drop samples or
-count ignored pixels as background.
+pixel level. Therefore, exclude an entire sample whose run-specific mask
+contains any `ignore` pixel, including pixels remapped from unsupported
+canonical classes, from both training loss and validation loss. Record
+unsupported-pixel counts by canonical class, total samples, samples containing
+run-specific ignore pixels, loss-eligible samples, and samples excluded from
+loss for the training and validation splits in artifact metadata. Record those
+pixel/sample counts plus total and evaluated sample counts for the test split.
+Evaluation metrics mask out run-specific `ignore` pixels, including pixels
+remapped from unsupported classes. Stop training if the remapped pixels and
+resulting sample exclusions leave fewer examples than the declared minimum
+needed for training, validation, or required evaluation slices; do not
+silently drop samples or count unsupported pixels as background.
 
 Include suitable rights-approved indoor and outdoor scenes with varied surface
 types, viewpoints, lighting, occlusion, image quality, and ordinary as well as
