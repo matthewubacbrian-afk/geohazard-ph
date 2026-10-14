@@ -256,6 +256,8 @@ def test_cli_writes_json_and_markdown_on_success(
     assert "Bicol Region" in markdown
     assert "Regional observation spans" in markdown
     assert "Seed" in markdown
+    assert "(seeds 0-19)" in markdown
+    assert "n/a" in markdown
     assert str(tmp_path) not in (output_dir / "validation-report.json").read_text(encoding="utf-8")
     assert str(tmp_path) not in markdown
 

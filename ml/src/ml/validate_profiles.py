@@ -342,8 +342,8 @@ def _render_markdown(report: dict[str, object]) -> str:
         details = source_coverage[source]
         lines.append(
             f"| {source.upper()} | {details['assigned_count']} | "
-            f"{details['first_occurred_at'] or '—'} | "
-            f"{details['last_occurred_at'] or '—'} |"
+            f"{details['first_occurred_at'] or 'n/a'} | "
+            f"{details['last_occurred_at'] or 'n/a'} |"
         )
     lines.extend(["", "## Shared observation window", ""])
     if shared_window["available"]:
@@ -374,8 +374,8 @@ def _render_markdown(report: dict[str, object]) -> str:
     for region in regions:
         first = region["first_occurred_at_by_source"]
         last = region["last_occurred_at_by_source"]
-        phivolcs_span = f"{first['phivolcs']} to {last['phivolcs']}" if first["phivolcs"] else "—"
-        usgs_span = f"{first['usgs']} to {last['usgs']}" if first["usgs"] else "—"
+        phivolcs_span = f"{first['phivolcs']} to {last['phivolcs']}" if first["phivolcs"] else "n/a"
+        usgs_span = f"{first['usgs']} to {last['usgs']}" if first["usgs"] else "n/a"
         lines.append(
             f"| {_markdown_cell(region['region_name'])} | {phivolcs_span} | {usgs_span} |"
         )
@@ -385,7 +385,7 @@ def _render_markdown(report: dict[str, object]) -> str:
         "",
         (
             f"Seed sweep: {stability['seed_sweep']['fit_count']} fits "
-            "(seeds 0–19). Leave-one-region-out: "
+            "(seeds 0-19). Leave-one-region-out: "
             f"{stability['leave_one_region_out']['fit_count']} fits."
         ),
         "",
