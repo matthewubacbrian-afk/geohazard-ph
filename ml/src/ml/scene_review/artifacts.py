@@ -19,6 +19,9 @@ _ARTIFACT_SCHEMA_VERSION = 1
 _TRAINING_FIELDS = (
     "model_id",
     "model_revision",
+    "schema_version",
+    "label_schema_version",
+    "checkpoint_sha256",
     "code_revision",
     "code_worktree_dirty",
     "best_epoch",
@@ -110,6 +113,20 @@ def export_artifact(
         raise ValueError("training metadata does not record a passing sufficiency gate")
     _validate_training_metadata(training_metadata)
     evaluation = _evaluation_metadata(evaluation_report)
+    expected_evaluation_identity = {
+        "model_id": training_metadata["model_id"],
+        "model_revision": training_metadata["model_revision"],
+        "checkpoint_sha256": training_metadata["checkpoint_sha256"],
+        "manifest_sha256": training_metadata["manifest_sha256"],
+        "split_assignments_sha256": training_metadata["split_assignments_sha256"],
+        "schema_version": training_metadata["schema_version"],
+        "label_schema_version": training_metadata["label_schema_version"],
+        "supported_labels": training_metadata["supported_labels"],
+    }
+    if any(evaluation[key] != value for key, value in expected_evaluation_identity.items()):
+        raise ValueError("evaluation provenance must match training")
+    if checkpoint_directory_sha256(checkpoint_path) != training_metadata["checkpoint_sha256"]:
+        raise ValueError("evaluation provenance must match training checkpoint")
     labels = set(training_metadata["supported_labels"])
     for key in ("per_label_iou", "per_label_precision", "per_label_recall"):
         if not isinstance(evaluation[key], Mapping) or set(evaluation[key]) != labels:
@@ -207,9 +224,20 @@ def _json_value(value: object) -> object:
 
 
 def _validate_training_metadata(metadata: Mapping[str, Any]) -> None:
-    for key in ("manifest_sha256", "split_assignments_sha256"):
+    for key in (
+        "manifest_sha256", "split_assignments_sha256", "checkpoint_sha256"
+    ):
         if not _is_sha256(metadata[key]):
             raise ValueError("training metadata is missing complete training provenance")
+    if (
+        not isinstance(metadata["schema_version"], int)
+        or isinstance(metadata["schema_version"], bool)
+        or metadata["schema_version"] != 1
+        or not isinstance(metadata["label_schema_version"], int)
+        or isinstance(metadata["label_schema_version"], bool)
+        or metadata["label_schema_version"] != 2
+    ):
+        raise ValueError("training metadata has an unsupported scene mask schema")
     for key in ("model_revision", "code_revision"):
         value = metadata[key]
         if not isinstance(value, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", value):
@@ -289,6 +317,14 @@ def _evaluation_metadata(report: object) -> dict[str, object]:
         for key in (
             "passed_thresholds",
             "test_split_sha256",
+            "model_id",
+            "model_revision",
+            "checkpoint_sha256",
+            "manifest_sha256",
+            "split_assignments_sha256",
+            "schema_version",
+            "label_schema_version",
+            "supported_labels",
             "per_label_iou",
             "per_label_precision",
             "per_label_recall",
@@ -303,6 +339,26 @@ def _evaluation_metadata(report: object) -> dict[str, object]:
         )
     }
     if not _is_sha256(evaluation["test_split_sha256"]):
+        raise ValueError("evaluation report is missing complete provenance or metrics")
+    for field in (
+        "checkpoint_sha256", "manifest_sha256", "split_assignments_sha256"
+    ):
+        if not _is_sha256(evaluation[field]):
+            raise ValueError("evaluation report is missing complete provenance or metrics")
+    if (
+        not isinstance(evaluation["model_id"], str)
+        or not evaluation["model_id"]
+        or not isinstance(evaluation["model_revision"], str)
+        or not re.fullmatch(r"[0-9a-fA-F]{40}", evaluation["model_revision"])
+        or not isinstance(evaluation["schema_version"], int)
+        or isinstance(evaluation["schema_version"], bool)
+        or not isinstance(evaluation["label_schema_version"], int)
+        or isinstance(evaluation["label_schema_version"], bool)
+        or not isinstance(evaluation["supported_labels"], list)
+        or not evaluation["supported_labels"]
+        or not all(label in LABEL_IDS for label in evaluation["supported_labels"])
+        or len(set(evaluation["supported_labels"])) != len(evaluation["supported_labels"])
+    ):
         raise ValueError("evaluation report is missing complete provenance or metrics")
     if evaluation["passed_thresholds"] is not True:
         raise ValueError("artifact export requires passing evaluation thresholds")
@@ -476,6 +532,13 @@ def _directory_sha256(path: Path) -> str:
             while chunk := source.read(1024 * 1024):
                 digest.update(chunk)
     return digest.hexdigest()
+
+
+def checkpoint_directory_sha256(path: Path) -> str:
+    """Hash checkpoint file names and bytes without including its local path."""
+    if not isinstance(path, Path) or not path.is_dir():
+        raise ValueError("checkpoint must be an existing model directory")
+    return _directory_sha256(path)
 
 
 def _is_sha256(value: object) -> bool:

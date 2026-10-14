@@ -24,7 +24,10 @@ artifact-export pipeline. The `scene-review` CLI is registered in the ML
 optional extra and requires an explicit sufficiency-policy file for training
 and evaluation. Synthetic fixtures exercise training orchestration, held-out
 evaluation, and export under pytest temporary directories using a fake model;
-these tests verify pipeline mechanics only. The ML suite passed 168 tests;
+these tests verify pipeline mechanics only. Evaluation and export bind passing
+reports to the trained model ID/revision, exact checkpoint bytes, manifest
+fingerprint, full split assignment, schema, and supported labels; those checks
+do not establish real-scene recognition. The ML suite passed 187 tests;
 changed Scene Review files passed Ruff. The full ML Ruff run still reports 11
 unrelated existing findings in regional-risk code. Editable installation of
 the optional extra and the installed CLI help were checked in a pre-provisioned

@@ -335,6 +335,7 @@ scene-review train --manifest data/manifest.json --data-root data --splits data/
 scene-review evaluate --manifest data/manifest.json --data-root data --splits data/splits.json `
   --sufficiency-policy data/sufficiency-policy.json `
   --checkpoint model_artifacts/scene_review/runs/run-1/checkpoint-epoch-1 `
+  --training-metadata model_artifacts/scene_review/runs/run-1/training_metadata.json `
   --thresholds data/evaluation-thresholds.json --output data/evaluation.json
 scene-review export --checkpoint model_artifacts/scene_review/runs/run-1/checkpoint-epoch-1 `
   --evaluation data/evaluation.json `

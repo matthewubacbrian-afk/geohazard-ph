@@ -1,9 +1,12 @@
 from dataclasses import replace
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
+from ml.scene_review.artifacts import checkpoint_directory_sha256
 from ml.scene_review.evaluate import (
     EvaluationThresholds,
     compare_to_baseline,
@@ -54,7 +57,9 @@ def _record(image_id, **overrides):
 
 class _Dataset:
     def __init__(self, masks, *, records=None, unsupported=None):
-        self.manifest = SimpleNamespace(supported_labels=LABELS)
+        self.manifest = SimpleNamespace(
+            supported_labels=LABELS, schema_version=1, label_schema_version=2
+        )
         self._records = tuple(records or [_record(str(index)) for index in range(len(masks))])
         self._manifest_records = (
             _record("train-only", group_id="train-group", image_sha256="1" * 64),
@@ -109,19 +114,54 @@ def _passing_gate(dataset, splits):
     )
 
 
-def _evaluate(model, dataset, thresholds, *, sufficiency_report=None, splits=None):
+def _evaluate(
+    model,
+    dataset,
+    thresholds,
+    *,
+    sufficiency_report=None,
+    splits=None,
+    training_metadata_overrides=None,
+):
     splits = splits or DatasetSplits(
         ("train-only",),
         ("validation-only",),
         tuple(record.image_id for record in dataset._records),
     )
-    return evaluate_model(
-        model,
-        dataset,
-        thresholds,
-        splits=splits,
-        sufficiency_report=sufficiency_report or _passing_gate(dataset, splits),
-    )
+    with TemporaryDirectory() as temporary:
+        checkpoint = Path(temporary)
+        (checkpoint / "config.json").write_text("{}", encoding="utf-8")
+        (checkpoint / "model.safetensors").write_bytes(b"fixture")
+        training_metadata = {
+            "model_id": "test/model",
+            "model_revision": "a" * 40,
+            "checkpoint_sha256": checkpoint_directory_sha256(checkpoint),
+            "manifest_sha256": manifest_fingerprint(dataset.manifest),
+            "split_assignments_sha256": split_assignments_fingerprint(splits),
+            "schema_version": 1,
+            "label_schema_version": 2,
+            "supported_labels": list(LABELS),
+        }
+        model.config = SimpleNamespace(
+            scene_review_provenance={
+                key: training_metadata[key]
+                for key in (
+                    "model_id", "model_revision", "manifest_sha256",
+                    "split_assignments_sha256", "schema_version",
+                    "label_schema_version", "supported_labels",
+                )
+            }
+        )
+        training_metadata.update(training_metadata_overrides or {})
+        return evaluate_model(
+            model,
+            dataset,
+            thresholds,
+            splits=splits,
+            sufficiency_report=sufficiency_report or _passing_gate(dataset, splits),
+            training_metadata=training_metadata,
+            checkpoint_path=checkpoint,
+        )
 
 
 def test_evaluation_masks_ignore_pixels_and_reports_pixel_metrics_and_components():
@@ -145,6 +185,12 @@ def test_evaluation_masks_ignore_pixels_and_reports_pixel_metrics_and_components
     }
     assert report.false_visual_cue_rate == 0.0
     assert report.open_ground_component_coverage == 1.0
+    assert report.manifest_sha256 == manifest_fingerprint(dataset.manifest)
+    assert report.split_assignments_sha256 == split_assignments_fingerprint(
+        DatasetSplits(("train-only",), ("validation-only",), ("0",))
+    )
+    assert report.supported_labels == LABELS
+    assert "private-group" not in repr(report)
     assert report.sample_counts["total"] == 1
     assert report.sample_counts["ignore_containing"] == 1
     assert report.sample_counts["evaluated"] == 1
@@ -203,6 +249,31 @@ def test_evaluation_requires_test_split_passing_gate_and_predeclared_thresholds(
             model,
             dataset,
             _thresholds(minimum_iou_by_label={}),
+        )
+
+
+@pytest.mark.parametrize(
+    "identity_override",
+    [
+        {"model_id": "another/model"},
+        {"model_revision": "b" * 40},
+        {"checkpoint_sha256": "0" * 64},
+        {"manifest_sha256": "0" * 64},
+        {"split_assignments_sha256": "0" * 64},
+        {"supported_labels": ["open_ground"]},
+        {"schema_version": 2},
+        {"label_schema_version": 3},
+    ],
+)
+def test_evaluation_rejects_training_provenance_mismatch(identity_override):
+    truth = np.array([[0, 1]], dtype=np.uint8)
+    dataset = _Dataset([truth])
+    with pytest.raises(ValueError, match="training provenance"):
+        _evaluate(
+            _Model([truth]),
+            dataset,
+            _thresholds(),
+            training_metadata_overrides=identity_override,
         )
 
 

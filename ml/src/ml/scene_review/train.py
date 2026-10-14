@@ -15,6 +15,7 @@ from typing import Any
 
 import numpy as np
 
+from ml.scene_review.artifacts import checkpoint_directory_sha256
 from ml.scene_review.dataset import SceneReviewDataset
 from ml.scene_review.manifest import (
     DatasetValidationReport,
@@ -162,6 +163,25 @@ def train_model(
     best_epoch = 0
     best_validation_loss = float("inf")
     checkpoint_path: Path | None = None
+    checkpoint_provenance = {
+        "model_id": config.model_id,
+        "model_revision": config.model_revision,
+        "manifest_sha256": _manifest_sha256(manifest),
+        "split_assignments_sha256": split_assignments_fingerprint(
+            {
+                image_id: split_name
+                for split_name, ids in (
+                    ("train", splits.train_ids),
+                    ("validation", splits.validation_ids),
+                    ("test", splits.test_ids),
+                )
+                for image_id in ids
+            }
+        ),
+        "schema_version": manifest.schema_version,
+        "label_schema_version": manifest.label_schema_version,
+        "supported_labels": list(config.supported_labels),
+    }
 
     def consider_checkpoint(epoch: int, validation_loss: float) -> None:
         nonlocal best_epoch, best_validation_loss, checkpoint_path
@@ -172,6 +192,10 @@ def train_model(
             best_validation_loss = validation_loss
             best_epoch = epoch
             checkpoint_path = config.output_dir / f"checkpoint-epoch-{epoch}"
+            model_config = getattr(model, "config", None)
+            if model_config is None:
+                raise TypeError("trained model must expose a serializable config")
+            model_config.scene_review_provenance = checkpoint_provenance
             _save_model(model, checkpoint_path)
             save_processor = getattr(processor, "save_pretrained", None)
             if callable(save_processor):
@@ -217,6 +241,9 @@ def train_model(
     metadata = {
         "model_id": config.model_id,
         "model_revision": config.model_revision,
+        "schema_version": manifest.schema_version,
+        "label_schema_version": manifest.label_schema_version,
+        "checkpoint_sha256": checkpoint_directory_sha256(checkpoint_path),
         "code_revision": _code_revision(),
         "code_worktree_dirty": _code_worktree_dirty(),
         "best_epoch": best_epoch,

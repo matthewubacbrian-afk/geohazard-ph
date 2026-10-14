@@ -60,6 +60,10 @@ def _parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--splits", type=Path, required=True)
     evaluate.add_argument("--sufficiency-policy", type=Path, required=True)
     evaluate.add_argument("--checkpoint", type=Path, required=True)
+    evaluate.add_argument(
+        "--training-metadata", type=Path, required=True,
+        help="metadata file produced by the matching training run",
+    )
     evaluate.add_argument("--thresholds", type=Path, required=True)
     evaluate.add_argument("--output", type=Path, required=True)
     export = commands.add_parser("export", help="write an immutable reviewed model artifact")
@@ -170,12 +174,19 @@ def _run_evaluate(args: argparse.Namespace) -> int:
     if gate.sufficiency_gate_passed is not True:
         raise ValueError("sufficiency gate failed")
     thresholds = _read_evaluation_thresholds(args.thresholds)
+    training_metadata = _read_json_object(args.training_metadata)
     model, processor = _make_evaluation_inputs(args.checkpoint)
     dataset = SceneReviewDataset(
         manifest, args.data_root, splits.test_ids, image_processor=processor
     )
     report = evaluate_model(
-        model, dataset, thresholds, splits=splits, sufficiency_report=gate
+        model,
+        dataset,
+        thresholds,
+        splits=splits,
+        sufficiency_report=gate,
+        training_metadata=training_metadata,
+        checkpoint_path=args.checkpoint,
     )
     output = _json_value(report)
     _write_new_file(args.output, json.dumps(output, sort_keys=True, indent=2) + "\n")

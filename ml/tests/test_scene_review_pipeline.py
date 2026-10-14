@@ -1,6 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import torch
@@ -97,8 +98,17 @@ class _Processor:
 
 
 class _Model:
+    def __init__(self):
+        self.config = SimpleNamespace()
+
     def save_pretrained(self, path):
-        Path(path, "config.json").write_text('{"model_type":"detr"}', encoding="utf-8")
+        Path(path, "config.json").write_text(
+            json.dumps({
+                "model_type": "detr",
+                "scene_review_provenance": self.config.scene_review_provenance,
+            }),
+            encoding="utf-8",
+        )
         Path(path, "model.safetensors").write_bytes(b"synthetic-checkpoint")
 
     def predict_scene_mask(self, sample):
@@ -175,8 +185,21 @@ def test_synthetic_pipeline_trains_evaluates_and_exports_only_to_tmp_path(tmp_pa
         minimum_prediction_score=0.5,
         minimum_samples_per_slice=1,
     )
+    evaluation_model = _Model()
+    evaluation_model.config.scene_review_provenance = json.loads(
+        (result.checkpoint_path / "config.json").read_text(encoding="utf-8")
+    )["scene_review_provenance"]
+    assert evaluation_model.config.scene_review_provenance["model_id"] == (
+        result.training_metadata["model_id"]
+    )
     evaluation = evaluate_model(
-        _Model(), test_dataset, thresholds, splits=splits, sufficiency_report=gate
+        evaluation_model,
+        test_dataset,
+        thresholds,
+        splits=splits,
+        sufficiency_report=gate,
+        training_metadata=result.training_metadata,
+        checkpoint_path=result.checkpoint_path,
     )
     assert evaluation.passed_thresholds, evaluation.threshold_failures
     artifact_dir = export_artifact(

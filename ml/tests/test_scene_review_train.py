@@ -67,6 +67,8 @@ class _FakeModel:
 def _manifest(ids):
     return SimpleNamespace(
         supported_labels=("open_ground", "debris"),
+        schema_version=1,
+        label_schema_version=2,
         records=[
             SimpleNamespace(image_id=image_id, group_id=image_id, image_sha256=image_id)
             for image_id in ids
@@ -139,13 +141,16 @@ def test_train_loads_pinned_model_locally_and_never_reads_test_samples(tmp_path,
     )
     loader_args = []
     processor_args = []
+    loaded_models = []
     dataset_ids = []
     trainer_calls = []
     trainer_args = []
 
     def loader(**kwargs):
         loader_args.append(kwargs)
-        return _FakeModel()
+        model = _FakeModel()
+        loaded_models.append(model)
+        return model
 
     def processor_factory(**kwargs):
         processor_args.append(kwargs)
@@ -196,6 +201,14 @@ def test_train_loads_pinned_model_locally_and_never_reads_test_samples(tmp_path,
     assert model.trained_labels == ("open_ground", "debris")
     assert model.checkpoint_path.exists()
     assert (model.checkpoint_path / "model.marker").read_text(encoding="utf-8") == "fake"
+    from ml.scene_review.artifacts import checkpoint_directory_sha256
+
+    assert model.training_metadata["checkpoint_sha256"] == checkpoint_directory_sha256(
+        model.checkpoint_path
+    )
+    assert loaded_models[0].config.scene_review_provenance["model_revision"] == _config(
+        tmp_path
+    ).model_revision
     assert model.training_metadata["split_counts"]["test"] == {
         "total_sample_count": 1,
         "ignore_containing_sample_count": 0,

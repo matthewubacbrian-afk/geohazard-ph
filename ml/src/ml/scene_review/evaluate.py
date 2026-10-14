@@ -8,11 +8,13 @@ import math
 from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 from scipy import ndimage
 
+from ml.scene_review.artifacts import checkpoint_directory_sha256
 from ml.scene_review.labels import BACKGROUND_ID, IGNORE_ID, LABEL_IDS
 from ml.scene_review.manifest import (
     SCENE_TYPES,
@@ -58,6 +60,14 @@ class EvaluationReport:
     per_label_pixel_counts: Mapping[str, Mapping[str, int]]
     unsupported_pixel_counts: Mapping[str, int]
     test_split_sha256: str
+    model_id: str
+    model_revision: str
+    checkpoint_sha256: str
+    manifest_sha256: str
+    split_assignments_sha256: str
+    schema_version: int
+    label_schema_version: int
+    supported_labels: tuple[str, ...]
     passed_thresholds: bool
     threshold_failures: tuple[str, ...]
     thresholds: EvaluationThresholds
@@ -196,6 +206,8 @@ def evaluate_model(
     *,
     splits: DatasetSplits,
     sufficiency_report: DatasetValidationReport,
+    training_metadata: Mapping[str, Any],
+    checkpoint_path: Path,
 ) -> EvaluationReport:
     """Evaluate an explicitly held-out test dataset, masking ignore pixels."""
     if not isinstance(sufficiency_report, DatasetValidationReport):
@@ -216,6 +228,47 @@ def evaluate_model(
     if len(labels) != len(set(labels)) or not set(labels).issubset(LABEL_IDS):
         raise ValueError("evaluation dataset has an invalid supported-label set")
     _validate_thresholds(thresholds, labels)
+    if not isinstance(training_metadata, Mapping):
+        raise TypeError("evaluation requires the matching training metadata")
+    required_training_identity = {
+        "model_id", "model_revision", "checkpoint_sha256", "manifest_sha256",
+        "split_assignments_sha256", "schema_version", "label_schema_version",
+        "supported_labels",
+    }
+    if not required_training_identity.issubset(training_metadata):
+        raise ValueError("training metadata is missing evaluation provenance")
+    current_manifest_sha256 = manifest_fingerprint(manifest)
+    current_split_sha256 = split_assignments_fingerprint(splits)
+    current_checkpoint_sha256 = checkpoint_directory_sha256(checkpoint_path)
+    if (
+        training_metadata["manifest_sha256"] != current_manifest_sha256
+        or training_metadata["split_assignments_sha256"] != current_split_sha256
+        or training_metadata["schema_version"] != getattr(manifest, "schema_version", None)
+        or training_metadata["label_schema_version"]
+        != getattr(manifest, "label_schema_version", None)
+        or tuple(training_metadata["supported_labels"]) != labels
+        or training_metadata["checkpoint_sha256"] != current_checkpoint_sha256
+    ):
+        raise ValueError("evaluation inputs must match the training provenance")
+    if (
+        not isinstance(training_metadata["model_id"], str)
+        or not training_metadata["model_id"]
+        or not isinstance(training_metadata["model_revision"], str)
+        or not training_metadata["model_revision"]
+    ):
+        raise ValueError("training metadata has invalid model identity")
+    model_config = getattr(model, "config", None)
+    checkpoint_provenance = getattr(model_config, "scene_review_provenance", None)
+    expected_checkpoint_provenance = {
+        key: training_metadata[key]
+        for key in (
+            "model_id", "model_revision", "manifest_sha256",
+            "split_assignments_sha256", "schema_version", "label_schema_version",
+        )
+    }
+    expected_checkpoint_provenance["supported_labels"] = list(labels)
+    if checkpoint_provenance != expected_checkpoint_provenance:
+        raise ValueError("evaluation model must match the checkpoint training provenance")
     if len(dataset) == 0:
         raise ValueError("held-out test dataset must not be empty")
     records = _record_groups(dataset)
@@ -453,6 +506,14 @@ def evaluate_model(
         },
         unsupported_pixel_counts=dict(unsupported),
         test_split_sha256=test_split_sha256,
+        model_id=training_metadata["model_id"],
+        model_revision=training_metadata["model_revision"],
+        checkpoint_sha256=current_checkpoint_sha256,
+        manifest_sha256=current_manifest_sha256,
+        split_assignments_sha256=current_split_sha256,
+        schema_version=manifest.schema_version,
+        label_schema_version=manifest.label_schema_version,
+        supported_labels=labels,
         passed_thresholds=not failures,
         threshold_failures=tuple(failures),
         thresholds=thresholds,

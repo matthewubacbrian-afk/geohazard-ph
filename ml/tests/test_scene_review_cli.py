@@ -28,7 +28,12 @@ def _policy():
 
 def test_cli_commands_report_counts_and_keep_artifact_root_fixed(tmp_path, monkeypatch, capsys):
     records = tuple(SimpleNamespace(image_id=f"private-image-{i}") for i in range(3))
-    manifest = SimpleNamespace(records=records, supported_labels=("open_ground",))
+    manifest = SimpleNamespace(
+        records=records,
+        supported_labels=("open_ground",),
+        schema_version=1,
+        label_schema_version=2,
+    )
     monkeypatch.setattr(cli, "load_manifest", lambda path: manifest)
     monkeypatch.setattr(
         cli,
@@ -87,10 +92,13 @@ def test_cli_commands_report_counts_and_keep_artifact_root_fixed(tmp_path, monke
         lambda *args, **kwargs: _FakeEvaluation(True, {"evaluated": 3}),
     )
     evaluation_path = tmp_path / "evaluation.json"
+    training_metadata_path = tmp_path / "training-for-evaluation.json"
+    training_metadata_path.write_text("{}", encoding="utf-8")
     assert cli.main([
         "evaluate", "--manifest", "m.json", "--data-root", str(tmp_path),
         "--splits", str(splits_file), "--sufficiency-policy", "policy.json",
         "--checkpoint", str(tmp_path / "checkpoint"), "--thresholds", "thresholds.json",
+        "--training-metadata", str(training_metadata_path),
         "--output", str(evaluation_path),
     ]) == 0
     assert json.loads(evaluation_path.read_text(encoding="utf-8"))["passed_thresholds"]

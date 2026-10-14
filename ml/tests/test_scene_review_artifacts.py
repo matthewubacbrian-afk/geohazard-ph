@@ -2,13 +2,21 @@ import json
 
 import pytest
 
-from ml.scene_review.artifacts import export_artifact
+from ml.scene_review.artifacts import checkpoint_directory_sha256, export_artifact
 
 
 class _Evaluation:
     def __init__(self, passed_thresholds=True):
         self.passed_thresholds = passed_thresholds
         self.test_split_sha256 = "a" * 64
+        self.model_id = "model/name"
+        self.model_revision = "b" * 40
+        self.checkpoint_sha256 = "9" * 64
+        self.manifest_sha256 = "d" * 64
+        self.split_assignments_sha256 = "f" * 64
+        self.schema_version = 1
+        self.label_schema_version = 2
+        self.supported_labels = ("open_ground",)
         self.threshold_failures = ()
         self.unsupported_pixel_counts = {"glass_facade": 3}
         self.sample_counts = {
@@ -67,6 +75,8 @@ def _training_metadata():
     return {
         "model_id": "model/name",
         "model_revision": "b" * 40,
+        "schema_version": 1,
+        "label_schema_version": 2,
         "code_revision": "c" * 40,
         "code_worktree_dirty": False,
         "best_epoch": 2,
@@ -74,6 +84,7 @@ def _training_metadata():
         "runtime_versions": {"python": "3.11"},
         "manifest_sha256": "d" * 64,
         "split_assignments_sha256": "f" * 64,
+        "checkpoint_sha256": "9" * 64,
         "seed": 7,
         "epochs": 2,
         "batch_size": 1,
@@ -95,6 +106,12 @@ def _training_metadata():
     }
 
 
+def _bind_checkpoint(checkpoint, metadata, report):
+    digest = checkpoint_directory_sha256(checkpoint)
+    metadata["checkpoint_sha256"] = digest
+    report.checkpoint_sha256 = digest
+
+
 def test_export_writes_complete_immutable_aggregate_artifact(tmp_path):
     checkpoint = tmp_path / "checkpoint"
     checkpoint.mkdir()
@@ -103,11 +120,14 @@ def test_export_writes_complete_immutable_aggregate_artifact(tmp_path):
         '{"image_processor_type":"DetrImageProcessor"}', encoding="utf-8"
     )
     (checkpoint / "model.safetensors").write_bytes(b"synthetic weights")
+    training_metadata = _training_metadata()
+    evaluation_report = _Evaluation()
+    _bind_checkpoint(checkpoint, training_metadata, evaluation_report)
 
     artifact_dir = export_artifact(
         checkpoint_path=checkpoint,
-        evaluation_report=_Evaluation(),
-        training_metadata=_training_metadata(),
+        evaluation_report=evaluation_report,
+        training_metadata=training_metadata,
         sufficiency_gate_passed=True,
         version="v-test-1",
         output_root=tmp_path / "artifacts",
@@ -142,6 +162,7 @@ def test_export_rejects_failed_gate_evaluation_and_overwrite(tmp_path):
         "version": "v1",
         "output_root": tmp_path / "artifacts",
     }
+    _bind_checkpoint(checkpoint, args["training_metadata"], args["evaluation_report"])
 
     with pytest.raises(ValueError, match="sufficiency gate"):
         export_artifact(**{**args, "sufficiency_gate_passed": False})
@@ -150,6 +171,68 @@ def test_export_rejects_failed_gate_evaluation_and_overwrite(tmp_path):
     export_artifact(**args)
     with pytest.raises(FileExistsError, match="already exists"):
         export_artifact(**args)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("model_id", "another/model"),
+        ("model_revision", "a" * 40),
+        ("checkpoint_sha256", "8" * 64),
+        ("manifest_sha256", "7" * 64),
+        ("split_assignments_sha256", "6" * 64),
+        ("supported_labels", ("obstacle",)),
+        ("schema_version", 2),
+        ("label_schema_version", 3),
+    ],
+)
+def test_export_rejects_evaluation_provenance_mismatch(tmp_path, field, value):
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    (checkpoint / "config.json").write_text('{"model_type":"detr"}', encoding="utf-8")
+    (checkpoint / "preprocessor_config.json").write_text(
+        '{"image_processor_type":"DetrImageProcessor"}', encoding="utf-8"
+    )
+    (checkpoint / "model.safetensors").write_bytes(b"weights")
+    metadata = _training_metadata()
+    report = _Evaluation()
+    _bind_checkpoint(checkpoint, metadata, report)
+    setattr(report, field, value)
+
+    with pytest.raises(ValueError, match="evaluation provenance must match training"):
+        export_artifact(
+            checkpoint_path=checkpoint,
+            evaluation_report=report,
+            training_metadata=metadata,
+            sufficiency_gate_passed=True,
+            version="v-mismatch",
+            output_root=tmp_path / "artifacts",
+        )
+
+
+def test_export_rejects_checkpoint_changed_after_evaluation(tmp_path):
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    (checkpoint / "config.json").write_text('{"model_type":"detr"}', encoding="utf-8")
+    (checkpoint / "preprocessor_config.json").write_text(
+        '{"image_processor_type":"DetrImageProcessor"}', encoding="utf-8"
+    )
+    weights = checkpoint / "model.safetensors"
+    weights.write_bytes(b"evaluated weights")
+    metadata = _training_metadata()
+    report = _Evaluation()
+    _bind_checkpoint(checkpoint, metadata, report)
+    weights.write_bytes(b"different checkpoint")
+
+    with pytest.raises(ValueError, match="training checkpoint"):
+        export_artifact(
+            checkpoint_path=checkpoint,
+            evaluation_report=report,
+            training_metadata=metadata,
+            sufficiency_gate_passed=True,
+            version="v-checkpoint-changed",
+            output_root=tmp_path / "artifacts",
+        )
 
 
 def test_export_rejects_incomplete_provenance_and_local_or_rights_fields(tmp_path):

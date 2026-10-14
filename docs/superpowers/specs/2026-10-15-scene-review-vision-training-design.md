@@ -106,7 +106,7 @@ If suitable licensed images or enough labeled examples cannot be obtained, stop 
 
 ### Error handling
 
-Dataset validation fails closed for missing provenance, invalid masks, unknown labels, duplicate leakage across splits, or disallowed license status. Training fails with a clear diagnostic for missing data, incompatible masks, or invalid configuration. Evaluation must not silently omit a class or scene slice with insufficient samples; it reports the gap. Artifact export refuses to overwrite an existing version and includes a manifest checksum.
+Dataset validation fails closed for missing provenance, invalid masks, unknown labels, duplicate leakage across splits, or disallowed license status. Training fails with a clear diagnostic for missing data, incompatible masks, or invalid configuration. Evaluation must not silently omit a class or scene slice with insufficient samples; it reports the gap. Its provenance must bind the exact checkpoint hash, model ID/revision, manifest fingerprint, full split-assignment fingerprint, schema versions, and supported labels to the matching training metadata. The checkpoint configuration carries model ID/revision, data fingerprints, schema versions, and supported labels; the checkpoint hash is stored in training/evaluation metadata and verified against checkpoint bytes (it cannot be embedded in the bytes it hashes). Evaluation and export reject mismatches. Export recomputes the checkpoint hash and refuses to package an unrelated passing evaluation. Artifact export refuses to overwrite an existing version and includes these provenance checks and a manifest checksum.
 
 ### Privacy and safety copy
 
