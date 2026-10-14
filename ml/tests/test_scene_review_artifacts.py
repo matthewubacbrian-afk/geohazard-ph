@@ -389,9 +389,17 @@ def test_export_recomputes_optional_baseline_non_regression(tmp_path):
     metadata = _training_metadata()
     report = _Evaluation()
     _bind_checkpoint(checkpoint, metadata, report)
+    report.thresholds["maximum_metric_regression_by_label"] = {"open_ground": 0.1}
     report.baseline_comparison = {
+        "baseline_metrics": {
+            "per_label_iou": {"open_ground": 1.0},
+            "per_label_precision": {"open_ground": 8 / 9},
+            "per_label_recall": {"open_ground": 8 / 9},
+            "false_visual_cue_rate": 0.1,
+            "open_ground_component_coverage": 0.75,
+        },
         "per_label_metric_deltas": {
-            "open_ground": {"iou": -0.3, "precision": 0.0, "recall": 0.0}
+            "open_ground": {"iou": -0.2, "precision": 0.0, "recall": 0.0}
         },
         "false_visual_cue_rate_delta": 0.0,
         "open_ground_component_coverage_delta": 0.0,
@@ -412,8 +420,19 @@ def test_export_recomputes_optional_baseline_non_regression(tmp_path):
     passing_report = _Evaluation()
     _bind_checkpoint(checkpoint, metadata, passing_report)
     passing_report.baseline_comparison = {
+        "baseline_metrics": {
+            "per_label_iou": {"open_ground": 0.7},
+            "per_label_precision": {"open_ground": 0.8},
+            "per_label_recall": {"open_ground": 0.8},
+            "false_visual_cue_rate": 0.1,
+            "open_ground_component_coverage": 0.75,
+        },
         "per_label_metric_deltas": {
-            "open_ground": {"iou": 0.0, "precision": 0.0, "recall": 0.0}
+            "open_ground": {
+                "iou": 0.1,
+                "precision": 8 / 9 - 0.8,
+                "recall": 8 / 9 - 0.8,
+            }
         },
         "false_visual_cue_rate_delta": 0.0,
         "open_ground_component_coverage_delta": 0.0,
@@ -431,6 +450,45 @@ def test_export_recomputes_optional_baseline_non_regression(tmp_path):
     assert json.loads((artifact_dir / "metadata.json").read_text(encoding="utf-8"))[
         "evaluation"
     ]["baseline_comparison"]["passed_required_non_regression"]
+
+
+def test_export_recomputes_baseline_deltas_from_included_baseline_metrics(tmp_path):
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    (checkpoint / "config.json").write_text('{"model_type":"detr"}', encoding="utf-8")
+    (checkpoint / "preprocessor_config.json").write_text(
+        '{"image_processor_type":"DetrImageProcessor"}', encoding="utf-8"
+    )
+    (checkpoint / "model.safetensors").write_bytes(b"weights")
+    metadata = _training_metadata()
+    report = _Evaluation()
+    _bind_checkpoint(checkpoint, metadata, report)
+    report.baseline_comparison = {
+        "baseline_metrics": {
+            "per_label_iou": {"open_ground": 0.7},
+            "per_label_precision": {"open_ground": 0.8},
+            "per_label_recall": {"open_ground": 0.8},
+            "false_visual_cue_rate": 0.1,
+            "open_ground_component_coverage": 0.75,
+        },
+        "per_label_metric_deltas": {
+            "open_ground": {"iou": 0.0, "precision": 8 / 9 - 0.8, "recall": 8 / 9 - 0.8}
+        },
+        "false_visual_cue_rate_delta": 0.0,
+        "open_ground_component_coverage_delta": 0.0,
+        "passed_required_non_regression": True,
+        "failures": [],
+    }
+
+    with pytest.raises(ValueError, match="baseline comparison is inconsistent"):
+        export_artifact(
+            checkpoint_path=checkpoint,
+            evaluation_report=report,
+            training_metadata=metadata,
+            sufficiency_gate_passed=True,
+            version="v-tampered-baseline-delta",
+            output_root=tmp_path / "artifacts",
+        )
 
 
 def test_export_rejects_out_of_range_slice_metrics(tmp_path):

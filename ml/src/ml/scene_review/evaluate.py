@@ -76,6 +76,7 @@ class EvaluationReport:
 
 @dataclass(frozen=True)
 class BaselineComparison:
+    baseline_metrics: Mapping[str, Any]
     per_label_metric_deltas: Mapping[str, Mapping[str, float | None]]
     false_visual_cue_rate_delta: float | None
     open_ground_component_coverage_delta: float | None
@@ -635,6 +636,13 @@ def compare_to_baseline(
     ):
         failures.append("open-ground component coverage regressed beyond declared maximum")
     return BaselineComparison(
+        {
+            "per_label_iou": dict(baseline.per_label_iou),
+            "per_label_precision": dict(baseline.per_label_precision),
+            "per_label_recall": dict(baseline.per_label_recall),
+            "false_visual_cue_rate": baseline.false_visual_cue_rate,
+            "open_ground_component_coverage": baseline.open_ground_component_coverage,
+        },
         deltas,
         false_cue_delta,
         coverage_delta,

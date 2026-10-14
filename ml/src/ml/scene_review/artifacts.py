@@ -532,6 +532,7 @@ def _validate_baseline_comparison(
     if comparison is None:
         return
     if not isinstance(comparison, Mapping) or set(comparison) != {
+        "baseline_metrics",
         "per_label_metric_deltas",
         "false_visual_cue_rate_delta",
         "open_ground_component_coverage_delta",
@@ -541,21 +542,62 @@ def _validate_baseline_comparison(
         raise ValueError("baseline comparison is incomplete")
     limits = evaluation["thresholds"]
     failures = []
+    baseline = comparison["baseline_metrics"]
+    if not isinstance(baseline, Mapping) or set(baseline) != {
+        "per_label_iou",
+        "per_label_precision",
+        "per_label_recall",
+        "false_visual_cue_rate",
+        "open_ground_component_coverage",
+    }:
+        raise ValueError("baseline comparison is incomplete")
+    for field in ("per_label_iou", "per_label_precision", "per_label_recall"):
+        if not isinstance(baseline[field], Mapping) or set(baseline[field]) != labels:
+            raise ValueError("baseline comparison is incomplete")
+        for label in labels:
+            _require_rate(baseline[field][label])
+    baseline_cue = _require_rate(baseline["false_visual_cue_rate"])
+    baseline_coverage = _require_rate(baseline["open_ground_component_coverage"])
+
     per_label = comparison["per_label_metric_deltas"]
     if not isinstance(per_label, Mapping) or set(per_label) != labels:
         raise ValueError("baseline comparison is incomplete")
+    candidate_metrics = {
+        "iou": evaluation["per_label_iou"],
+        "precision": evaluation["per_label_precision"],
+        "recall": evaluation["per_label_recall"],
+    }
+    baseline_metrics = {
+        "iou": baseline["per_label_iou"],
+        "precision": baseline["per_label_precision"],
+        "recall": baseline["per_label_recall"],
+    }
     for label, metric_deltas in per_label.items():
         if not isinstance(metric_deltas, Mapping) or set(metric_deltas) != {
             "iou", "precision", "recall"
         }:
             raise ValueError("baseline comparison is incomplete")
         maximum_drop = limits["maximum_metric_regression_by_label"][label]
-        for delta in metric_deltas.values():
-            _require_delta(delta)
+        for metric_name, delta in metric_deltas.items():
+            delta = _require_delta(delta)
+            expected_delta = (
+                _require_rate(candidate_metrics[metric_name][label])
+                - _require_rate(baseline_metrics[metric_name][label])
+            )
+            if not math.isclose(delta, expected_delta, rel_tol=1e-8, abs_tol=1e-8):
+                raise ValueError("baseline comparison is inconsistent")
             if delta < -maximum_drop:
                 failures.append(label)
     false_delta = _require_delta(comparison["false_visual_cue_rate_delta"])
     coverage_delta = _require_delta(comparison["open_ground_component_coverage_delta"])
+    expected_false_delta = _require_rate(evaluation["false_visual_cue_rate"]) - baseline_cue
+    expected_coverage_delta = (
+        _require_rate(evaluation["open_ground_component_coverage"]) - baseline_coverage
+    )
+    if not math.isclose(false_delta, expected_false_delta, rel_tol=1e-8, abs_tol=1e-8):
+        raise ValueError("baseline comparison is inconsistent")
+    if not math.isclose(coverage_delta, expected_coverage_delta, rel_tol=1e-8, abs_tol=1e-8):
+        raise ValueError("baseline comparison is inconsistent")
     if false_delta > limits["maximum_false_cue_rate_regression"]:
         failures.append("false_visual_cue_rate")
     if coverage_delta < -limits["maximum_open_ground_component_coverage_regression"]:
