@@ -131,6 +131,7 @@ class DatasetValidationReport:
     image_count: int
     pixel_counts: dict[str, int]
     unsupported_pixel_counts: dict[str, int]
+    unsupported_pixel_counts_by_split: dict[str, dict[str, int]]
     run_mask_ignore_pixel_count: int
     run_mask_ignore_sample_count: int
     loss_eligible_sample_count: int
@@ -543,6 +544,7 @@ def validate_dataset(
     image_ids: set[str] = set()
     pixel_counts = {**{label: 0 for label in LABEL_IDS}, "background": 0, "ignore": 0}
     unsupported_counts: Counter[str] = Counter()
+    unsupported_counts_by_split: dict[str, Counter[str]] = {}
     split_totals: Counter[str] = Counter()
     split_exclusions: Counter[str] = Counter()
     split_scene_totals: dict[str, Counter[str]] = {}
@@ -578,12 +580,13 @@ def validate_dataset(
         pixel_counts["ignore"] += int(np.count_nonzero(canonical_mask == IGNORE_ID))
         _, remapped = mask_for_supported_labels(canonical_mask, set(manifest.supported_labels))
         unsupported_counts.update(remapped)
+        split = split_assignments[record.image_id]
+        unsupported_counts_by_split.setdefault(split, Counter()).update(remapped)
         run_ignore_count = int(np.count_nonzero(canonical_mask == IGNORE_ID)) + sum(
             remapped.values()
         )
         ignore_pixel_count += run_ignore_count
         ignore_sample_count += int(run_ignore_count > 0)
-        split = split_assignments[record.image_id]
         previous_split = group_splits.setdefault(record.group_id, split)
         if previous_split != split:
             raise ValueError("scene group records must remain in a single data split")
@@ -647,6 +650,9 @@ def validate_dataset(
         image_count=len(manifest.records),
         pixel_counts=pixel_counts,
         unsupported_pixel_counts=dict(unsupported_counts),
+        unsupported_pixel_counts_by_split={
+            split: dict(counts) for split, counts in unsupported_counts_by_split.items()
+        },
         run_mask_ignore_pixel_count=ignore_pixel_count,
         run_mask_ignore_sample_count=ignore_sample_count,
         loss_eligible_sample_count=eligible,

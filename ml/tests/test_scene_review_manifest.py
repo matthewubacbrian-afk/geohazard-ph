@@ -476,6 +476,7 @@ def test_remaps_unsupported_pixels_counts_them_and_reports_sample_exclusion(tmp_
     add_hashes(data["records"][0], image_path, mask_path)
     report = validate_dataset(load_manifest(save_manifest(tmp_path, data)), root)
     assert report.unsupported_pixel_counts == {"obstacle": 1}
+    assert report.unsupported_pixel_counts_by_split == {"unsplit": {"obstacle": 1}}
     assert report.run_mask_ignore_pixel_count == 1
     assert report.run_mask_ignore_sample_count == 1
     assert report.loss_eligible_sample_count == 0

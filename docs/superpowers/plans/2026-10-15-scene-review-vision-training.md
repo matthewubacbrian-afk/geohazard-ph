@@ -299,6 +299,7 @@ class TrainingConfig:
     learning_rate: float
     supported_labels: tuple[str, ...]
     sufficiency_policy: SufficiencyPolicy
+    data_root: Path
     output_dir: Path
 
 def train_model(
@@ -311,12 +312,21 @@ def train_model(
 
 Use `facebook/detr-resnet-50-panoptic` at revision `d53b52a799403a8867920f82c869e40732b47037` as initialization. Load local files only, replace the task classifier for the declared supported labels, set all random seeds, select checkpoints using validation loss, and never inspect test metrics during training. Before editing `pyproject.toml`, verify compatible CPU package versions for supported Python 3.11+ and the project’s Linux deployment target; add a `scene-review` optional dependency extra with explicit versions and documented install command, leaving base tabular installs unchanged.
 
-- [ ] **Step 1: Write failing tests** for config validation including required declared sufficiency thresholds, missing local checkpoint failure, refusal to train when the validation report has no declared/passing sufficiency gate, deterministic seed propagation, class-head mapping, validation-only checkpoint selection, and no test split use.
-- [ ] **Step 2: Run** `pytest tests/test_scene_review_train.py -v`; confirm expected failures without downloads.
-- [ ] **Step 3: Implement** training entry function and result metadata. Keep model loading injectable so unit tests use a fake model and trainer.
-- [ ] **Step 4: Run** unit tests and a small synthetic end-to-end train into `tmp_path`; label the output as pipeline-mechanics verification only.
-- [ ] **Step 5: Resolve and install** the optional dependency extra in an isolated environment; verify the pinned checkpoint loads from a local cache with network access disabled.
-- [ ] **Step 6: Run** ML package verification and inspect dependency changes for unintended updates to the base seismic environment.
+Install from the `ml/` directory with the CPU wheel index first, then install the project extra:
+
+```bash
+python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.12.0" "torchvision==0.27.0"
+python -m pip install ".[scene-review]"
+```
+
+The exact PyTorch pair has an [official CPU install command](https://pytorch.org/get-started/previous-versions/); PyPI publishes CPython 3.11 Linux `manylinux_2_28` x86-64 and ARM64 wheels for [PyTorch 2.12.0](https://pypi.org/project/torch/2.12.0/). The [Transformers installation guide](https://huggingface.co/docs/transformers/installation) supports Python 3.10+ and PyTorch 2.5+.
+
+- [x] **Step 1: Write failing tests** for config validation including required declared sufficiency thresholds, missing local checkpoint failure, refusal to train when the validation report has no declared/passing sufficiency gate, deterministic seed propagation, class-head mapping, validation-only checkpoint selection, and no test split use.
+- [x] **Step 2: Run** `pytest tests/test_scene_review_train.py -v`; confirm expected failures without downloads.
+- [x] **Step 3: Implement** training entry function and result metadata. Keep model loading injectable so unit tests use a fake model and trainer.
+- [x] **Step 4: Run** unit tests and a synthetic injected-runtime pipeline into `tmp_path`; label the output as pipeline-mechanics verification only.
+- [ ] **Step 5: Resolve and install** the optional dependency extra in an isolated environment; verify the pinned checkpoint loads from a local cache with network access disabled. The CPU wheel metadata was resolved with pip's dry-run on Windows, and Linux wheel availability was checked on PyPI; this worktree's Python has no PyTorch/Transformers or cached checkpoint, so the actual install and local model load remain unverified.
+- [x] **Step 6: Run** ML package verification and inspect dependency changes for unintended updates to the base seismic environment. The existing base dependencies are unchanged.
 - [ ] **Step 7: Commit** as `feat: fine tune scene review segmentation model`.
 
 ## Task 7: Evaluate held-out scenes and compare with the baseline
