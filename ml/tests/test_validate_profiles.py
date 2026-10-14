@@ -228,3 +228,52 @@ def test_label_stability_refits_shared_window_rows():
     assert stability["shared_window_refit"]["included_regions"] == ["A", "B"]
     assert set(stability["shared_window_refit"]["labels"]) == {"A", "B"}
     assert isinstance(stability["shared_window_refit"]["change_count"], int)
+
+
+def test_cli_writes_json_and_markdown_on_success(
+    saved_bundle: tuple[Path, Path, Path], tmp_path: Path
+):
+    from ml.validate_profiles import main
+
+    artifact_dir, phivolcs, usgs = saved_bundle
+    output_dir = tmp_path / "report"
+
+    assert main([
+        "--artifact-dir", str(artifact_dir),
+        "--phivolcs-csv", str(phivolcs),
+        "--usgs-csv", str(usgs),
+        "--output-dir", str(output_dir),
+    ]) == 0
+
+    payload = json.loads((output_dir / "validation-report.json").read_text(encoding="utf-8"))
+    markdown = (output_dir / "validation-report.md").read_text(encoding="utf-8")
+    assert payload["review_state"] == "requires_domain_review"
+    assert payload["boundary_sha256"]
+    assert payload["assignment_rule"]["max_offshore_km"] == 100.0
+    assert "source_coverage" in payload
+    assert "label_stability" in payload
+    assert "requires domain review" in markdown.lower()
+    assert "Bicol Region" in markdown
+    assert "Regional observation spans" in markdown
+    assert "Seed" in markdown
+    assert str(tmp_path) not in (output_dir / "validation-report.json").read_text(encoding="utf-8")
+    assert str(tmp_path) not in markdown
+
+
+def test_cli_does_not_create_output_when_inputs_fail(
+    saved_bundle: tuple[Path, Path, Path], tmp_path: Path, capsys
+):
+    from ml.validate_profiles import main
+
+    artifact_dir, phivolcs, usgs = saved_bundle
+    output_dir = tmp_path / "report"
+    usgs.write_text(usgs.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+
+    assert main([
+        "--artifact-dir", str(artifact_dir),
+        "--phivolcs-csv", str(phivolcs),
+        "--usgs-csv", str(usgs),
+        "--output-dir", str(output_dir),
+    ]) == 1
+    assert "input_files" in capsys.readouterr().err
+    assert not output_dir.exists()

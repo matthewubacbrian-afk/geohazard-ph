@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -207,7 +209,7 @@ def _read_json(path: Path, expected_type: type) -> object:
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ValueError(f"Invalid artifact JSON: {path}") from exc
     if not isinstance(value, expected_type):
-        raise ValueError(f"Unexpected artifact JSON shape: {path}")
+        raise ValueError(f"Unexpected artifact JSON shape: {path}")  # noqa: TRY004
     return value
 
 
@@ -242,7 +244,7 @@ def _load_verified_inputs(
 
     assignment_metadata = metadata.get("region_assignment")
     if not isinstance(assignment_metadata, dict):
-        raise ValueError("region_assignment metadata is missing or malformed.")
+        raise ValueError("region_assignment metadata is missing or malformed.")  # noqa: TRY004
     boundary_hash = hashlib.sha256(DEFAULT_REGIONS_PATH.read_bytes()).hexdigest()
     if assignment_metadata.get("boundary_sha256") != boundary_hash:
         raise ValueError("region_assignment.boundary_sha256 does not match the boundary asset.")
@@ -295,9 +297,140 @@ def build_validation_report(
     return {
         "artifact_version": verified.metadata.get("model_version"),
         "input_files": verified.metadata["input_files"],
+        "boundary_sha256": verified.metadata["region_assignment"]["boundary_sha256"],
+        "assignment_rule": {
+            "max_offshore_km": verified.metadata["region_assignment"]["max_offshore_km"],
+            "assigned_by_source": verified.metadata["region_assignment"]["assigned_by_source"],
+            "excluded_by_source": verified.metadata["region_assignment"]["excluded_by_source"],
+        },
         **coverage,
         "label_stability": _label_stability(
             _saved_features(verified.features), saved_labels, shared_rows
         ),
         "review_state": "requires_domain_review",
+        "limitations": [
+            "A shared date window does not equalize catalog completeness or magnitude thresholds.",
+            "Event density is a coordinate-spread proxy, not events per square kilometer.",
+            "Classifier accuracy and confidence are in-sample, not independent validation.",
+            "Sensitivity checks do not establish predictive accuracy or official hazard levels.",
+        ],
     }
+
+
+def _markdown_cell(value: object) -> str:
+    return str(value).replace("|", "\\|").replace("\n", " ")
+
+
+def _render_markdown(report: dict[str, object]) -> str:
+    source_coverage = report["source_coverage"]
+    shared_window = report["shared_window"]
+    regions = report["regions"]
+    stability = report["label_stability"]
+    lines = [
+        "# Regional Risk Profile Validation Report",
+        "",
+        f"Artifact version: `{_markdown_cell(report['artifact_version'])}`",
+        "",
+        "**Review state: requires domain review. The current export remains on hold.**",
+        "",
+        "## Source coverage",
+        "",
+        "| Source | Assigned events | First UTC event | Last UTC event |",
+        "| --- | ---: | --- | --- |",
+    ]
+    for source in ("phivolcs", "usgs"):
+        details = source_coverage[source]
+        lines.append(
+            f"| {source.upper()} | {details['assigned_count']} | "
+            f"{details['first_occurred_at'] or '—'} | "
+            f"{details['last_occurred_at'] or '—'} |"
+        )
+    lines.extend(["", "## Shared observation window", ""])
+    if shared_window["available"]:
+        lines.append(f"{shared_window['start']} through {shared_window['end']} (inclusive UTC).")
+    else:
+        lines.append(f"Unavailable: {shared_window['unavailable_reason']}.")
+    lines.extend([
+        "",
+        "## Regional coverage",
+        "",
+        "| Region | PHIVOLCS | USGS | PHIVOLCS in window | USGS in window |",
+        "| --- | ---: | ---: | ---: | ---: |",
+    ])
+    for region in regions:
+        assigned = region["assigned_by_source"]
+        in_window = region["shared_window_count_by_source"]
+        lines.append(
+            f"| {_markdown_cell(region['region_name'])} | {assigned['phivolcs']} | "
+            f"{assigned['usgs']} | {in_window['phivolcs']} | {in_window['usgs']} |"
+        )
+    lines.extend([
+        "",
+        "## Regional observation spans",
+        "",
+        "| Region | PHIVOLCS UTC span | USGS UTC span |",
+        "| --- | --- | --- |",
+    ])
+    for region in regions:
+        first = region["first_occurred_at_by_source"]
+        last = region["last_occurred_at_by_source"]
+        phivolcs_span = f"{first['phivolcs']} to {last['phivolcs']}" if first["phivolcs"] else "—"
+        usgs_span = f"{first['usgs']} to {last['usgs']}" if first["usgs"] else "—"
+        lines.append(
+            f"| {_markdown_cell(region['region_name'])} | {phivolcs_span} | {usgs_span} |"
+        )
+    lines.extend([
+        "",
+        "## Label stability",
+        "",
+        (
+            f"Seed sweep: {stability['seed_sweep']['fit_count']} fits "
+            "(seeds 0–19). Leave-one-region-out: "
+            f"{stability['leave_one_region_out']['fit_count']} fits."
+        ),
+        "",
+        "| Region | Saved label | Seed changes | Leave-one-out changes |",
+        "| --- | --- | ---: | ---: |",
+    ])
+    for name, label in stability["saved_labels"].items():
+        seed_count = stability["seed_sweep"]["change_count_by_region"][name]
+        leave_count = stability["leave_one_region_out"]["change_count_by_region"][name]
+        lines.append(f"| {_markdown_cell(name)} | {label} | {seed_count} | {leave_count} |")
+    shared_refit = stability["shared_window_refit"]
+    lines.extend(["", "Shared-window refit: "])
+    if shared_refit["unavailable_reason"]:
+        lines[-1] += f"unavailable ({shared_refit['unavailable_reason']})."
+    else:
+        lines[-1] += f"{shared_refit['change_count']} saved labels changed among included regions."
+    lines.extend(["", "## Limitations", ""])
+    lines.extend(f"- {item}" for item in report["limitations"])
+    lines.append("")
+    return "\n".join(lines)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Validate a held regional risk-profile bundle")
+    parser.add_argument("--artifact-dir", type=Path, required=True)
+    parser.add_argument("--phivolcs-csv", action="append", type=Path, required=True)
+    parser.add_argument("--usgs-csv", action="append", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    args = parser.parse_args(argv)
+    try:
+        report = build_validation_report(
+            args.artifact_dir, args.phivolcs_csv, args.usgs_csv
+        )
+        markdown = _render_markdown(report)
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        (args.output_dir / "validation-report.json").write_text(
+            json.dumps(report, indent=2), encoding="utf-8"
+        )
+        (args.output_dir / "validation-report.md").write_text(markdown, encoding="utf-8")
+        print(f"Validation report written to {args.output_dir}")
+        return 0
+    except (ValueError, OSError, KeyError, TypeError) as exc:
+        print(f"Validation failed: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

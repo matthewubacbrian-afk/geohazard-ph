@@ -279,6 +279,25 @@ remain unknown; the input-file hashes identify the exact saved snapshots.
 Classifier accuracy in this bundle is measured on its training regions and is
 not an independent validation of model quality.
 
+To inspect a held offline bundle without changing its labels, run the validation
+report from `ml/` with the exact saved CSVs and an ignored output directory:
+
+```powershell
+Set-Location ml
+python -m ml.validate_profiles `
+  --artifact-dir 'model_artifacts\snapshots\2026-10-14\v1' `
+  --phivolcs-csv 'data\raw\bwandowando_philippine-earthquakes-from-phivolcs\phivolcs_earthquake_data.csv' `
+  --usgs-csv 'data\raw\bwandowando_philippine-earthquakes-1900-2025-from-usgs\Philippine_Earthquakes_USGS.csv' `
+  --output-dir 'model_artifacts\validation\2026-10-14\v1'
+Set-Location ..
+```
+
+The command checks saved source and boundary hashes, replays parser and region
+assignment counts, and writes `validation-report.json` and
+`validation-report.md`. It shows per-region source coverage, the shared source
+date window, and label sensitivity to seeds and omitted regions. A successful
+report still requires domain review; it does not release the held export.
+
 The generated labels are descriptive statistical profiles based on historical records. They are not earthquake predictions.
 
 ## Test And Build
