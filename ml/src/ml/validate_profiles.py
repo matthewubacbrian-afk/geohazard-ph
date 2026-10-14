@@ -15,6 +15,9 @@ from ml.features import RegionFeatures, build_region_features
 from ml.regions import DEFAULT_REGIONS_PATH, MAX_OFFSHORE_KM, assign_regions
 from ml.train import _input_file_record, _validated_source_paths
 
+REFIT_K_CANDIDATES = (3, 4, 5)
+REFIT_RANDOM_STATE = 42
+
 
 @dataclass(frozen=True)
 class VerifiedInputs:
@@ -139,7 +142,9 @@ def _label_stability(
         "unavailable_reason": "insufficient_regions",
     }
     if len(shared_features) >= 2:
-        labels = fit_kmeans(shared_features, random_state=42).risk_labels
+        labels = fit_kmeans(
+            shared_features, k_values=REFIT_K_CANDIDATES, random_state=REFIT_RANDOM_STATE
+        ).risk_labels
         shared_refit.update({
             "labels": labels,
             "change_count": sum(labels[name] != saved_labels[name] for name in labels),
@@ -149,7 +154,9 @@ def _label_stability(
     seed_changes = {name: 0 for name in names}
     seed_fits: list[dict[str, object]] = []
     for seed in range(20):
-        labels = fit_kmeans(saved_features, random_state=seed).risk_labels
+        labels = fit_kmeans(
+            saved_features, k_values=REFIT_K_CANDIDATES, random_state=seed
+        ).risk_labels
         changed = sorted(name for name in names if labels[name] != saved_labels[name])
         seed_fits.append({"seed": seed, "included_regions": names, "changed_regions": changed})
         for name in changed:
@@ -169,7 +176,9 @@ def _label_stability(
                 "unavailable_reason": "insufficient_regions",
             })
             continue
-        labels = fit_kmeans(retained, random_state=42).risk_labels
+        labels = fit_kmeans(
+            retained, k_values=REFIT_K_CANDIDATES, random_state=REFIT_RANDOM_STATE
+        ).risk_labels
         changed = sorted(name for name in included if labels[name] != saved_labels[name])
         leave_fits.append({
             "omitted_region": omitted,
@@ -184,6 +193,15 @@ def _label_stability(
 
     return {
         "saved_labels": dict(sorted(saved_labels.items())),
+        "comparison_parameters": {
+            "k_candidates": list(REFIT_K_CANDIDATES),
+            "shared_window_random_state": REFIT_RANDOM_STATE,
+            "seed_sweep_random_states": list(range(20)),
+            "leave_one_region_out_random_state": REFIT_RANDOM_STATE,
+            "baseline_training_k_candidates": None,
+            "baseline_training_random_state": None,
+            "parameter_match_verified": False,
+        },
         "shared_window_refit": shared_refit,
         "seed_sweep": {
             "seeds": list(range(20)),
@@ -313,6 +331,7 @@ def build_validation_report(
             "Event density is a coordinate-spread proxy, not events per square kilometer.",
             "Classifier accuracy and confidence are in-sample, not independent validation.",
             "Sensitivity checks do not establish predictive accuracy or official hazard levels.",
+            "Original training settings are absent from metadata; refits use current defaults.",
         ],
     }
 
@@ -384,6 +403,13 @@ def _render_markdown(report: dict[str, object]) -> str:
         "## Label stability",
         "",
         (
+            "Comparison K candidates: "
+            f"{', '.join(map(str, stability['comparison_parameters']['k_candidates']))}; "
+            f"fixed refit seed: {stability['comparison_parameters']['shared_window_random_state']}."
+        ),
+        "Original training settings were not recorded, so parameter matching is unverified.",
+        "",
+        (
             f"Seed sweep: {stability['seed_sweep']['fit_count']} fits "
             "(seeds 0-19). Leave-one-region-out: "
             f"{stability['leave_one_region_out']['fit_count']} fits."
@@ -416,6 +442,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
+        if args.output_dir.resolve().is_relative_to(args.artifact_dir.resolve()):
+            raise ValueError("--output-dir must be outside --artifact-dir.")
         report = build_validation_report(
             args.artifact_dir, args.phivolcs_csv, args.usgs_csv
         )

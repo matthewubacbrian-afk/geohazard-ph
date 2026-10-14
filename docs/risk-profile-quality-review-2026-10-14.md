@@ -38,6 +38,12 @@ The report state is `requires_domain_review`.
   leave-one-region-out fits were recorded. Omitting NCR changes labels for
   14 of the remaining 16 regions.
 
+The saved training metadata does not record the original K candidates or random
+seed. These comparison fits explicitly use the current K candidates 3, 4, and
+5, with seed 42 for the shared-window and leave-one-out checks. Their parameter
+match to the original training run cannot be verified, so label-change counts
+are exploratory sensitivity evidence rather than an exact training replay.
+
 The report makes the sparse-region and catalog-coverage issues reproducible.
 It does not establish reliable categories or calibrated classifier confidence.
 

@@ -284,12 +284,17 @@ report from `ml/` with the exact saved CSVs and an ignored output directory:
 
 ```powershell
 Set-Location ml
+$mlRoot = (Get-Location).Path
+$artifactDir = Join-Path $mlRoot 'model_artifacts\snapshots\2026-10-14\v1'
+$phivolcsCsv = Join-Path $mlRoot 'data\raw\bwandowando_philippine-earthquakes-from-phivolcs\phivolcs_earthquake_data.csv'
+$usgsCsv = Join-Path $mlRoot 'data\raw\bwandowando_philippine-earthquakes-1900-2025-from-usgs\Philippine_Earthquakes_USGS.csv'
+$reportDir = Join-Path $mlRoot 'model_artifacts\validation\2026-10-14\v1'
 $env:PYTHONPATH = 'src'
 py -3.11 -m ml.validate_profiles `
-  --artifact-dir 'model_artifacts\snapshots\2026-10-14\v1' `
-  --phivolcs-csv 'data\raw\bwandowando_philippine-earthquakes-from-phivolcs\phivolcs_earthquake_data.csv' `
-  --usgs-csv 'data\raw\bwandowando_philippine-earthquakes-1900-2025-from-usgs\Philippine_Earthquakes_USGS.csv' `
-  --output-dir 'model_artifacts\validation\2026-10-14\v1'
+  --artifact-dir $artifactDir `
+  --phivolcs-csv $phivolcsCsv `
+  --usgs-csv $usgsCsv `
+  --output-dir $reportDir
 Set-Location ..
 ```
 

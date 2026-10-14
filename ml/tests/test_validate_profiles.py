@@ -252,6 +252,17 @@ def test_cli_writes_json_and_markdown_on_success(
     assert payload["assignment_rule"]["max_offshore_km"] == 100.0
     assert "source_coverage" in payload
     assert "label_stability" in payload
+    assert payload["label_stability"]["comparison_parameters"] == {
+        "k_candidates": [3, 4, 5],
+        "shared_window_random_state": 42,
+        "seed_sweep_random_states": list(range(20)),
+        "leave_one_region_out_random_state": 42,
+        "baseline_training_k_candidates": None,
+        "baseline_training_random_state": None,
+        "parameter_match_verified": False,
+    }
+    assert any("training settings" in item for item in payload["limitations"])
+    assert "training settings" in markdown.lower()
     assert "requires domain review" in markdown.lower()
     assert "Bicol Region" in markdown
     assert "Regional observation spans" in markdown
@@ -279,3 +290,23 @@ def test_cli_does_not_create_output_when_inputs_fail(
     ]) == 1
     assert "input_files" in capsys.readouterr().err
     assert not output_dir.exists()
+
+
+@pytest.mark.parametrize("child", [False, True])
+def test_cli_rejects_output_inside_held_bundle(
+    saved_bundle: tuple[Path, Path, Path], child: bool, capsys
+):
+    from ml.validate_profiles import main
+
+    artifact_dir, phivolcs, usgs = saved_bundle
+    output_dir = artifact_dir / "nested" if child else artifact_dir
+
+    assert main([
+        "--artifact-dir", str(artifact_dir),
+        "--phivolcs-csv", str(phivolcs),
+        "--usgs-csv", str(usgs),
+        "--output-dir", str(output_dir),
+    ]) == 1
+    assert "output-dir" in capsys.readouterr().err
+    assert not (output_dir / "validation-report.json").exists()
+    assert not (output_dir / "validation-report.md").exists()

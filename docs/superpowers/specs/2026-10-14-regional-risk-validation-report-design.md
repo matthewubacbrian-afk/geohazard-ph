@@ -100,7 +100,10 @@ window; compare labels only for those regions. Seed sweep fits the saved regiona
 seeds 0–19. Leave-one-region-out
 fits remove each region in turn and compare labels of the other regions against saved labels.
 Each comparison records its included region set, so label shifts caused by changing membership
-are visible. These are sensitivity checks, not external validation or predictive accuracy.
+are visible. The existing metadata does not record the training K candidates or random seed;
+the report records its own K candidates 3–5 and seeds, and explicitly marks parameter matching
+to the original run as unverified. These are sensitivity checks, not external validation or
+predictive accuracy.
 
 ### Configuration
 
