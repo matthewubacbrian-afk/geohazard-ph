@@ -24,8 +24,16 @@ from ml.scene_review.train import TrainingConfig, train_model
 ARTIFACT_ROOT = Path(__file__).resolve().parents[3] / "model_artifacts" / "scene_review"
 
 
+class _PrivacySafeArgumentParser(argparse.ArgumentParser):
+    """Report malformed arguments without echoing user-supplied values."""
+
+    def error(self, message: str) -> None:
+        del message
+        self.exit(2, f"{self.prog}: error: invalid command arguments\n")
+
+
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="scene-review")
+    parser = _PrivacySafeArgumentParser(prog="scene-review")
     commands = parser.add_subparsers(dest="command", required=True)
     validate = commands.add_parser("validate", help="validate local rights-approved scene data")
     _add_manifest_root(validate)

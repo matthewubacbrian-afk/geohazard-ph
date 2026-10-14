@@ -120,7 +120,33 @@ def test_cli_requires_predeclared_sufficiency_policy_for_training(capsys):
         "train", "--manifest", "manifest.json", "--data-root", ".",
         "--splits", "splits.json", "--model-cache", "cache", "--output-dir", "run",
     ]) == 2
-    assert "usage:" in capsys.readouterr().err.lower()
+    assert "invalid command arguments" in capsys.readouterr().err.lower()
+
+
+def test_argparse_errors_do_not_echo_private_argument_values(capsys):
+    private_value = r"private-image-id-C:\Users\matth\private\manifest.json"
+
+    assert cli.main([
+        "split",
+        "--manifest",
+        "manifest.json",
+        "--data-root",
+        ".",
+        "--seed",
+        private_value,
+        "--output",
+        "splits.json",
+    ]) == 2
+
+    output = capsys.readouterr()
+    assert "private-image-id" not in output.out + output.err
+    assert "private" not in output.out + output.err
+    assert "invalid command arguments" in output.err
+
+
+def test_cli_help_remains_available(capsys):
+    assert cli.main(["--help"]) == 0
+    assert "usage: scene-review" in capsys.readouterr().out.lower()
 
 
 def test_cli_errors_do_not_echo_local_paths_or_record_ids(tmp_path, monkeypatch, capsys):
