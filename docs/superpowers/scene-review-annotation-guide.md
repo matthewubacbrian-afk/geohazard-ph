@@ -21,8 +21,8 @@ The indexed-mask IDs are fixed and reserved as follows:
 | `2` | `glass_facade` | Visible exterior glass or window-pane surfaces on a building. |
 | `3` | `overhead_lines` | Visible overhead wires or cables only; their type is not inferred. |
 | `4` | `visible_building_damage` | Directly visible physical damage to a building surface, using the boundaries below. |
-| `5` | `background` | Every visible, labelable pixel that is outside the five target classes. This is a mask annotation value, never a displayed or predicted class. |
-| `255` | `ignore` | Ambiguous, hidden, too small, or otherwise not reliably annotatable pixels. Exclude these pixels from supervised loss and agreement denominators. |
+| `5` | `background` | Every clearly visible, labelable non-target pixel, including identifiable people and other ordinary scene content. This is a mask annotation value, never a displayed or predicted class. |
+| `255` | `ignore` | Only genuinely ambiguous, occluded, or otherwise unlabelable pixels. Exclude these pixels from supervised loss and agreement denominators. |
 
 These are canonical single-class indexed masks: each pixel has one ID. Do not
 invent additional IDs. `ignore` takes precedence where a boundary or identity
@@ -37,6 +37,9 @@ segmentation targets; unmatched DETR queries represent background.
 
 - Annotate only visible pixels in the supplied frame. Do not complete objects
   behind occluders or outside the image.
+- Assign clearly visible non-target content to `background`, including people,
+  clothing, walls, sky, vegetation, and ordinary objects that do not meet a
+  target definition. Do not use `ignore` as a catch-all for out-of-scope content.
 - Trace the visible edge of an object/surface at the source image resolution.
   Include antialiased boundary pixels only when their visible content clearly
   belongs to that class; assign uncertain mixed pixels to `ignore`.
@@ -76,9 +79,8 @@ reliably traced, mark it `ignore`.
 Include visible solid objects and debris that occupy or cross a ground/floor
 area: furniture, bags, vehicles, fallen masonry, rubble, branches, and similar
 items. Trace the visible silhouette, including visible parts over a ground
-surface. Include a person only if the project later explicitly declares human
-occlusion as an obstacle class; under this schema people are `ignore` because
-they are not a stable environmental obstruction category.
+surface. People are not an `obstacle` target in this schema; clearly visible
+people and clothing are `background`.
 
 Exclude shadows, reflections, painted markings, texture, and distant objects
 that do not visibly occupy/cross a ground area. Do not label something an
@@ -129,10 +131,11 @@ only and is not a structural assessment.
 
 ## Ignore and scene inclusion rules
 
-Use `ignore` for occluded boundaries, severe blur, low resolution, glare,
-darkness, compression artifacts, ambiguous class identity, tiny details below
-stable annotation resolution, and any region covered by UI/text overlays.
-Assign every other visible, labelable pixel `background` (`5`). This value is
+Use `ignore` only for genuinely unlabelable pixels, such as an occluded
+boundary, severe blur, an ambiguous target identity, or a UI/text overlay that
+hides the scene. A small or out-of-scope item that is still clearly visible is
+`background`, as are identifiable people. Assign every other visible,
+labelable non-target pixel `background` (`5`). This value is
 used only in indexed masks and is omitted when constructing DETR targets; it
 must never appear as an inference class. In canonical annotation masks, use
 `ignore` (`255`) for ambiguous, occluded, or otherwise unlabelable pixels. In a
@@ -153,6 +156,18 @@ remapped from unsupported classes. Stop training if the remapped pixels and
 resulting sample exclusions leave fewer examples than the declared minimum
 needed for training, validation, or required evaluation slices; do not
 silently drop samples or count unsupported pixels as background.
+
+Before full annotation and training, predeclare with the feature owner the
+maximum acceptable ignore-driven sample exclusion rate, minimum retained sample
+counts, and required scene/source coverage. On the double-annotated pilot,
+report for each proposed supported-label subset and split the total sample
+count, samples with at least one run-mask ignore pixel, excluded count and rate
+(`excluded / total`), retained count, and counts/rates by relevant scene/source
+slice. Do not invent thresholds after seeing results. Stop and revise the
+annotation guidance, data collection, or loss handling if the declared rate is
+exceeded, retained data is insufficient, or exclusions make examples
+unrepresentative; do not recode genuinely ambiguous pixels as background to
+pass the gate.
 
 Include suitable rights-approved indoor and outdoor scenes with varied surface
 types, viewpoints, lighting, occlusion, image quality, and ordinary as well as
