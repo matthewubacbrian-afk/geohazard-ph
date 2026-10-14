@@ -162,12 +162,51 @@ class SceneDatasetManifest:
     records: tuple[SceneImageRecord, ...]
 
 def load_manifest(path: Path) -> SceneDatasetManifest: ...
-def validate_dataset(manifest: SceneDatasetManifest, data_root: Path) -> DatasetValidationReport: ...
+def validate_dataset(
+    manifest: SceneDatasetManifest,
+    data_root: Path,
+    *,
+    split_by_image_id: Mapping[str, str] | None = None,
+    sufficiency_policy: SufficiencyPolicy | None = None,
+) -> DatasetValidationReport: ...
+
+@dataclass(frozen=True)
+class SufficiencyPolicy:
+    maximum_exclusion_rate: float
+    minimum_retained_samples_by_split: Mapping[str, int]
+    required_scene_types_by_split: Mapping[str, tuple[str, ...]]
+    minimum_retained_samples_by_scene_type: Mapping[str, int]
+
+@dataclass(frozen=True)
+class SampleExclusionSummary:
+    total_sample_count: int
+    excluded_sample_count: int
+    retained_sample_count: int
+    exclusion_rate: float
+
+@dataclass(frozen=True)
+class SplitExclusionSummary(SampleExclusionSummary):
+    scene_type_summaries: Mapping[str, SampleExclusionSummary]
+
+@dataclass(frozen=True)
+class DatasetValidationReport:
+    image_count: int
+    pixel_counts: Mapping[str, int]
+    unsupported_pixel_counts: Mapping[str, int]
+    run_mask_ignore_pixel_count: int
+    run_mask_ignore_sample_count: int
+    loss_eligible_sample_count: int
+    loss_excluded_sample_count: int
+    exclusion_rate: float
+    split_summaries: Mapping[str, SplitExclusionSummary]
+    sufficiency_gate_passed: bool | None
+    sufficiency_gate_reasons: tuple[str, ...]
+    warnings: tuple[str, ...]
 ```
 
-`label_schema_version` must be `2` (`scene-review-v2`). The source inventory in `docs/data-sources.md` is the candidate/review ledger; pending and excluded candidates stay there and must not be copied into a training manifest. A training manifest contains only approved dataset/image records, and validation explicitly rejects any non-approved status rather than silently filtering records. At dataset and image level, retain the reviewer, decision date, decision reason, terms evidence, exact immutable release/retrieval identifier and retrieval evidence URL, image/source and creator provenance, annotation provenance, attribution, permitted uses, derived-weight permission status, and explicit derived-weight restrictions. The dataset record also carries its annotation provenance and all source inventory fields; each `SceneImageRecord` carries source-image/page identifiers, original source/creator, image terms and retrieval evidence, rights decision fields, allowed uses, weight status/restrictions, attribution, and annotation record/provenance. `SceneDatasetManifest.retention_limits` is required and records the retention period/limits imposed by source terms; `SceneImageRecord.image_retention_limits` may be omitted only when the dataset-level limit applies unchanged, and is required when an image has a different source-specific retention term. Rights statuses are exactly `approved`, `pending_review`, or `excluded`; non-approved inventory entries require a decision reason. Both dataset-level permissions and every included record's `image_permitted_uses` must include `training`, `evaluation`, and `derived_weight_redistribution`; each dataset/image `derived_weight_status` must affirm redistribution and `derived_weight_restrictions` must state applicable conditions (use `none documented` only when the evidence supports no restrictions). Validation fails closed for missing, unresolved, or insufficient evidence, including a missing dataset retention limit or missing image override when terms differ. A shared grant URL is acceptable only if its written terms expressly cover the specific image; `image_rights_evidence_reference` must identify the image by stable source ID/page or expressly covered subset and point to the exact clause/scope, and that same evidence must support the per-image reviewer decision and all three uses. Generic dataset-card or repository terms do not qualify. Keep detailed rights fields in the local manifest/access-controlled local data root; CLI output is count-only. `DatasetValidationReport` contains `image_count`, canonical target/background/ignore pixel counts, unsupported-pixel counts by canonical class for the declared run subset, run-mask ignore sample counts, pilot/split exclusion counts and rates, `scene_type_counts`, and `warnings`, with no paths or per-image identifiers. `validate_dataset` also checks safe relative paths, file existence, SHA-256 values, JPEG/PNG readability, equal image/mask dimensions, valid canonical mask IDs, unique image IDs, and nonempty scene groups. Background ID `5` is valid; unsupported target IDs remain valid in canonical masks and are remapped to ignore for the run. It never returns image contents or absolute paths.
+`label_schema_version` must be `2` (`scene-review-v2`). The source inventory in `docs/data-sources.md` is the candidate/review ledger; pending and excluded candidates stay there and must not be copied into a training manifest. A training manifest contains only approved dataset/image records, and validation explicitly rejects any non-approved status rather than silently filtering records. At dataset and image level, retain the reviewer, decision date, decision reason, terms evidence, exact immutable release/retrieval identifier and retrieval evidence URL, image/source and creator provenance, annotation provenance, attribution, permitted uses, derived-weight permission status, and explicit derived-weight restrictions. The dataset record also carries its annotation provenance and all source inventory fields; each `SceneImageRecord` carries source-image/page identifiers, original source/creator, image terms and retrieval evidence, rights decision fields, allowed uses, weight status/restrictions, attribution, and annotation record/provenance. `SceneDatasetManifest.retention_limits` is required and records the retention period/limits imposed by source terms; `SceneImageRecord.image_retention_limits` may be omitted only when the dataset-level limit applies unchanged, and is required when an image has a different source-specific retention term. Rights statuses are exactly `approved`, `pending_review`, or `excluded`; non-approved inventory entries require a decision reason. Both dataset-level permissions and every included record's `image_permitted_uses` must include `training`, `evaluation`, and `derived_weight_redistribution`; each dataset/image `derived_weight_status` must affirm redistribution and `derived_weight_restrictions` must state applicable conditions (use `none documented` only when the evidence supports no restrictions). Validation fails closed for missing, unresolved, or insufficient evidence, including a missing dataset retention limit or missing image override when terms differ. A shared grant URL is acceptable only if its written terms expressly cover the specific image; `image_rights_evidence_reference` must identify the image by stable source ID/page or expressly covered subset and point to the exact clause/scope, and that same evidence must support the per-image reviewer decision and all three uses. Generic dataset-card or repository terms do not qualify. Keep detailed rights fields in the local manifest/access-controlled local data root; CLI output is count-only. `DatasetValidationReport` reports canonical pixel totals, unsupported-pixel counts, and ignore-exclusion counts/rates by each declared split and controlled `scene_type` (`indoor`, `outdoor`, `mixed`, or `unknown`), plus retained counts and dataset totals; it contains no image IDs, source/group IDs, paths, or arbitrary manifest text. `validate_dataset` uses the manifest's explicit `supported_labels` subset unless a future reviewed contract adds an explicit override. Split assignments are an explicit image-ID-to-`train`/`validation`/`test` mapping; report keys are only those controlled split and scene-type categories. A `SufficiencyPolicy` must be supplied with no numeric defaults to evaluate the gate: it declares the maximum exclusion rate, minimum retained samples per split, required scene types per split, and any minimum retained count by scene type. The report returns `sufficiency_gate_passed=None` when no policy is supplied, allowing count-only synthetic/mechanics validation; training must fail closed unless the report says `True`. A declared gate reports reasons for excess exclusion, insufficient retained counts, or missing required coverage; it does not invent thresholds. Validation also checks safe relative paths, file existence, SHA-256 values, JPEG/PNG readability, equal image/mask dimensions, valid canonical mask IDs, unique image IDs, and nonempty scene groups. Background ID `5` is valid; unsupported target IDs remain valid in canonical masks and are remapped to ignore for the run.
 
-- [ ] **Step 1: Write failing tests** for an approved-only valid manifest; rejection of pending/excluded dataset or image records; missing reviewer, decision date/reason, release/retrieval evidence, dataset retention limits or required image-level retention override, image/creator or annotation provenance, attribution, derived-weight status/restrictions, and permission purposes; a shared grant that does not expressly cover the image; absolute/traversal paths; missing files; hash mismatch; invalid image/mask; dimension mismatch; duplicate IDs; unsupported-pixel remapping/counts; exclusion-rate reporting; and insufficient or unrepresentative retained data.
+- [ ] **Step 1: Write failing tests** for an approved-only valid manifest; rejection of pending/excluded dataset or image records; missing reviewer, decision date/reason, release/retrieval evidence, dataset retention limits or required image-level retention override, image/creator or annotation provenance, attribution, derived-weight status/restrictions, and permission purposes; a shared grant that does not expressly cover the image; absolute/traversal paths; missing files; hash mismatch; invalid image/mask; dimension mismatch; duplicate IDs; unsupported-pixel remapping/counts; controlled scene-type categories; count-only split and scene-type exclusion reports; sufficiency-gate pass/failure for exclusion rate, retained counts, and required coverage; and absent-gate mechanics reporting.
 - [ ] **Step 2: Run** `pytest tests/test_scene_review_manifest.py -v`; confirm expected failures.
 - [ ] **Step 3: Implement** dataclasses, JSON parsing, strict validation, file hashing, and a count-only report. Do not add network access.
 - [ ] **Step 4: Run** `pytest tests/test_scene_review_manifest.py -v` and `ruff check src/ml/scene_review/manifest.py tests/test_scene_review_manifest.py`.
@@ -247,6 +286,7 @@ class TrainingConfig:
     batch_size: int
     learning_rate: float
     supported_labels: tuple[str, ...]
+    sufficiency_policy: SufficiencyPolicy
     output_dir: Path
 
 def train_model(
@@ -255,11 +295,11 @@ def train_model(
 ) -> TrainingResult: ...
 ```
 
-`TrainingResult` contains `checkpoint_path`, `best_epoch`, `best_validation_loss`, `seed`, `trained_labels`, and `training_metadata`. Metadata includes supported labels and per-split total, per-class unsupported-pixel, ignore-containing, loss-eligible, loss-excluded sample counts, exclusion rate, and retained counts by relevant scene/source slice. Training and validation-loss calculations use only samples without run-specific ignore pixels; fail before training if the predeclared pilot exclusion-rate, minimum-count, or representation gate fails, or if remapping and exclusions leave fewer than the declared minimum samples.
+`TrainingResult` contains `checkpoint_path`, `best_epoch`, `best_validation_loss`, `seed`, `trained_labels`, and `training_metadata`. Metadata includes supported labels and per-split total, per-class unsupported-pixel, ignore-containing, loss-eligible, loss-excluded sample counts, exclusion rate, and retained counts by controlled scene-type slice. Before constructing the trainer or updating weights, training must call `validate_dataset` with the split assignment and required predeclared `config.sufficiency_policy`; fail closed unless `sufficiency_gate_passed is True`. Count-only mechanics validation may omit the policy, but such a report is not training authorization. Training and validation-loss calculations use only samples without run-specific ignore pixels; fail before training if the declared pilot exclusion-rate, minimum-count, or representation gate fails, or if remapping and exclusions leave fewer than the declared minimum samples.
 
 Use `facebook/detr-resnet-50-panoptic` at revision `d53b52a799403a8867920f82c869e40732b47037` as initialization. Load local files only, replace the task classifier for the declared supported labels, set all random seeds, select checkpoints using validation loss, and never inspect test metrics during training. Before editing `pyproject.toml`, verify compatible CPU package versions for supported Python 3.11+ and the project’s Linux deployment target; add a `scene-review` optional dependency extra with explicit versions and documented install command, leaving base tabular installs unchanged.
 
-- [ ] **Step 1: Write failing tests** for config validation, missing local checkpoint failure, deterministic seed propagation, class-head mapping, validation-only checkpoint selection, and no test split use.
+- [ ] **Step 1: Write failing tests** for config validation including required declared sufficiency thresholds, missing local checkpoint failure, refusal to train when the validation report has no declared/passing sufficiency gate, deterministic seed propagation, class-head mapping, validation-only checkpoint selection, and no test split use.
 - [ ] **Step 2: Run** `pytest tests/test_scene_review_train.py -v`; confirm expected failures without downloads.
 - [ ] **Step 3: Implement** training entry function and result metadata. Keep model loading injectable so unit tests use a fake model and trainer.
 - [ ] **Step 4: Run** unit tests and a small synthetic end-to-end train into `tmp_path`; label the output as pipeline-mechanics verification only.

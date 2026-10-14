@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from datetime import date, datetime
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -25,28 +26,8 @@ from ml.scene_review.labels import (
 
 RIGHTS_STATUSES = {"approved", "pending_review", "excluded"}
 REQUIRED_USES = {"training", "evaluation", "derived_weight_redistribution"}
-RIGHTS_FIELDS = {
-    "source_image_id",
-    "source_page_url",
-    "original_image_source",
-    "original_image_creator",
-    "image_license_name",
-    "image_terms_evidence_url",
-    "image_retrieval_evidence_url",
-    "image_release_or_retrieval_id",
-    "image_rights_evidence_scope",
-    "image_rights_evidence_reference",
-    "image_rights_review_status",
-    "image_rights_reviewer",
-    "image_rights_decision_date",
-    "image_rights_decision_reason",
-    "image_permitted_uses",
-    "image_derived_weight_status",
-    "image_derived_weight_restrictions",
-    "image_attribution",
-    "annotation_record_id",
-    "annotation_provenance",
-}
+SCENE_TYPES = frozenset({"indoor", "outdoor", "mixed", "unknown"})
+SPLIT_NAMES = frozenset({"train", "validation", "test"})
 
 
 @dataclass(frozen=True)
@@ -110,6 +91,29 @@ class SceneDatasetManifest:
 
 
 @dataclass(frozen=True)
+class SampleExclusionSummary:
+    total_sample_count: int
+    excluded_sample_count: int
+    retained_sample_count: int
+    exclusion_rate: float
+
+
+@dataclass(frozen=True)
+class SplitExclusionSummary(SampleExclusionSummary):
+    scene_type_summaries: dict[str, SampleExclusionSummary]
+
+
+@dataclass(frozen=True)
+class SufficiencyPolicy:
+    """Predeclared data-retention limits required before real training."""
+
+    maximum_exclusion_rate: float
+    minimum_retained_samples_by_split: Mapping[str, int]
+    required_scene_types_by_split: Mapping[str, tuple[str, ...]]
+    minimum_retained_samples_by_scene_type: Mapping[str, int]
+
+
+@dataclass(frozen=True)
 class DatasetValidationReport:
     image_count: int
     pixel_counts: dict[str, int]
@@ -119,7 +123,9 @@ class DatasetValidationReport:
     loss_eligible_sample_count: int
     loss_excluded_sample_count: int
     exclusion_rate: float
-    scene_type_counts: dict[str, int]
+    split_summaries: dict[str, SplitExclusionSummary]
+    sufficiency_gate_passed: bool | None
+    sufficiency_gate_reasons: tuple[str, ...]
     warnings: tuple[str, ...]
 
 
@@ -382,8 +388,83 @@ def _read_indexed_mask(path: Path) -> np.ndarray:
         raise ValueError("mask is not a readable PNG") from exc
 
 
-def validate_dataset(manifest: SceneDatasetManifest, data_root: Path) -> DatasetValidationReport:
-    """Validate an approved local manifest and return aggregate counts without paths."""
+def _validate_sufficiency_policy(policy: SufficiencyPolicy) -> None:
+    if (
+        not isinstance(policy.maximum_exclusion_rate, (float, int))
+        or isinstance(policy.maximum_exclusion_rate, bool)
+        or not 0 <= policy.maximum_exclusion_rate <= 1
+    ):
+        raise ValueError("maximum_exclusion_rate must be between 0 and 1")
+    if set(policy.minimum_retained_samples_by_split) != SPLIT_NAMES:
+        raise ValueError("sufficiency policy must declare minimums for train, validation, and test")
+    if set(policy.required_scene_types_by_split) != SPLIT_NAMES:
+        raise ValueError("sufficiency policy must declare scene coverage for every split")
+    for count in policy.minimum_retained_samples_by_split.values():
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ValueError("split minimum retained sample counts must be positive integers")
+    for scene_types in policy.required_scene_types_by_split.values():
+        if (
+            not isinstance(scene_types, tuple)
+            or not scene_types
+            or not all(isinstance(scene_type, str) for scene_type in scene_types)
+        ):
+            raise ValueError("each split must declare at least one required scene type")
+        if not set(scene_types).issubset(SCENE_TYPES):
+            raise ValueError("required scene types must use controlled categories")
+    if not set(policy.minimum_retained_samples_by_scene_type).issubset(SCENE_TYPES):
+        raise ValueError("minimum-count scene types must use controlled categories")
+    for count in policy.minimum_retained_samples_by_scene_type.values():
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ValueError("scene type minimum retained sample counts must be positive integers")
+
+
+def _summary(total: int, excluded: int) -> SampleExclusionSummary:
+    return SampleExclusionSummary(
+        total_sample_count=total,
+        excluded_sample_count=excluded,
+        retained_sample_count=total - excluded,
+        exclusion_rate=excluded / total if total else 0.0,
+    )
+
+
+def _sufficiency_failures(
+    summaries: Mapping[str, SplitExclusionSummary], policy: SufficiencyPolicy
+) -> tuple[str, ...]:
+    reasons: list[str] = []
+    for split in sorted(SPLIT_NAMES):
+        summary = summaries[split]
+        if summary.exclusion_rate > policy.maximum_exclusion_rate:
+            reasons.append(f"{split} exclusion rate exceeds declared maximum")
+        if summary.retained_sample_count < policy.minimum_retained_samples_by_split[split]:
+            reasons.append(f"{split} minimum retained sample count not met")
+        retained_scene_types = {
+            scene_type
+            for scene_type, scene_summary in summary.scene_type_summaries.items()
+            if scene_summary.retained_sample_count > 0
+        }
+        missing_scene_types = set(policy.required_scene_types_by_split[split]).difference(
+            retained_scene_types
+        )
+        if missing_scene_types:
+            reasons.append(f"{split} required scene coverage not met")
+    for scene_type, minimum in policy.minimum_retained_samples_by_scene_type.items():
+        retained_count = sum(
+            summary.scene_type_summaries.get(scene_type, _summary(0, 0)).retained_sample_count
+            for summary in summaries.values()
+        )
+        if retained_count < minimum:
+            reasons.append(f"{scene_type} minimum retained sample count not met")
+    return tuple(reasons)
+
+
+def validate_dataset(
+    manifest: SceneDatasetManifest,
+    data_root: Path,
+    *,
+    split_by_image_id: Mapping[str, str] | None = None,
+    sufficiency_policy: SufficiencyPolicy | None = None,
+) -> DatasetValidationReport:
+    """Validate local data and report aggregate counts; no gate is implied by omission."""
     _validate_dataset_rights(manifest)
     if not isinstance(manifest.records, tuple) or not all(
         isinstance(record, SceneImageRecord) for record in manifest.records
@@ -392,10 +473,35 @@ def validate_dataset(manifest: SceneDatasetManifest, data_root: Path) -> Dataset
     if not manifest.records:
         raise ValueError("manifest must contain at least one image record")
 
+    if split_by_image_id is None:
+        if sufficiency_policy is not None:
+            raise ValueError("split assignments are required to evaluate the sufficiency policy")
+        split_assignments = {record.image_id: "unsplit" for record in manifest.records}
+    else:
+        image_ids = {record.image_id for record in manifest.records}
+        if not all(
+            isinstance(image_id, str) and isinstance(split, str)
+            for image_id, split in split_by_image_id.items()
+        ):
+            raise ValueError("split assignments must map image IDs to split names")
+        if set(split_by_image_id) != image_ids:
+            raise ValueError("split assignments must cover each manifest record exactly once")
+        if not set(split_by_image_id.values()).issubset(SPLIT_NAMES):
+            raise ValueError("split assignments must use train, validation, or test")
+        split_assignments = dict(split_by_image_id)
+
+    if sufficiency_policy is not None:
+        _validate_sufficiency_policy(sufficiency_policy)
+        if split_by_image_id is None:
+            raise ValueError("split assignments are required to evaluate the sufficiency policy")
+
     image_ids: set[str] = set()
     pixel_counts = {**{label: 0 for label in LABEL_IDS}, "background": 0, "ignore": 0}
     unsupported_counts: Counter[str] = Counter()
-    scene_type_counts: Counter[str] = Counter()
+    split_totals: Counter[str] = Counter()
+    split_exclusions: Counter[str] = Counter()
+    split_scene_totals: dict[str, Counter[str]] = {}
+    split_scene_exclusions: dict[str, Counter[str]] = {}
     ignore_pixel_count = 0
     ignore_sample_count = 0
 
@@ -404,6 +510,8 @@ def validate_dataset(manifest: SceneDatasetManifest, data_root: Path) -> Dataset
             raise ValueError("duplicate image_id in manifest")
         image_ids.add(record.image_id)
         _validate_record_rights(record, manifest)
+        if record.scene_type not in SCENE_TYPES:
+            raise ValueError("scene_type must use one of the controlled categories")
         image_path = _safe_local_file(data_root, record.image_path)
         mask_path = _safe_local_file(data_root, record.mask_path)
         if _file_sha256(image_path) != record.image_sha256.lower():
@@ -427,10 +535,39 @@ def validate_dataset(manifest: SceneDatasetManifest, data_root: Path) -> Dataset
         )
         ignore_pixel_count += run_ignore_count
         ignore_sample_count += int(run_ignore_count > 0)
-        scene_type_counts[record.scene_type] += 1
+        split = split_assignments[record.image_id]
+        split_totals[split] += 1
+        split_scene_totals.setdefault(split, Counter())[record.scene_type] += 1
+        if run_ignore_count > 0:
+            split_exclusions[split] += 1
+            split_scene_exclusions.setdefault(split, Counter())[record.scene_type] += 1
 
     excluded = ignore_sample_count
     eligible = len(manifest.records) - excluded
+    split_summaries: dict[str, SplitExclusionSummary] = {}
+    for split, total_count in split_totals.items():
+        excluded_count = split_exclusions[split]
+        scene_summaries = {
+            scene_type: _summary(
+                split_scene_totals[split][scene_type],
+                split_scene_exclusions.get(split, Counter())[scene_type],
+            )
+            for scene_type in sorted(SCENE_TYPES)
+        }
+        split_summaries[split] = SplitExclusionSummary(
+            **_summary(total_count, excluded_count).__dict__,
+            scene_type_summaries=scene_summaries,
+        )
+    gate_reasons: tuple[str, ...] = ()
+    gate_passed: bool | None = None
+    if sufficiency_policy is not None:
+        for split in sorted(SPLIT_NAMES):
+            split_summaries.setdefault(
+                split,
+                SplitExclusionSummary(**_summary(0, 0).__dict__, scene_type_summaries={}),
+            )
+        gate_reasons = _sufficiency_failures(split_summaries, sufficiency_policy)
+        gate_passed = not gate_reasons
     return DatasetValidationReport(
         image_count=len(manifest.records),
         pixel_counts=pixel_counts,
@@ -440,6 +577,8 @@ def validate_dataset(manifest: SceneDatasetManifest, data_root: Path) -> Dataset
         loss_eligible_sample_count=eligible,
         loss_excluded_sample_count=excluded,
         exclusion_rate=excluded / len(manifest.records),
-        scene_type_counts=dict(scene_type_counts),
+        split_summaries=split_summaries,
+        sufficiency_gate_passed=gate_passed,
+        sufficiency_gate_reasons=gate_reasons,
         warnings=(),
     )

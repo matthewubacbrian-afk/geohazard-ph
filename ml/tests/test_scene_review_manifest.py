@@ -6,7 +6,7 @@ import pytest
 from PIL import Image
 
 from ml.scene_review.labels import BACKGROUND_ID, IGNORE_ID
-from ml.scene_review.manifest import load_manifest, validate_dataset
+from ml.scene_review.manifest import SufficiencyPolicy, load_manifest, validate_dataset
 
 USES = ["training", "evaluation", "derived_weight_redistribution"]
 
@@ -98,6 +98,56 @@ def add_hashes(item, image_path, mask_path):
     item["mask_sha256"] = hashlib.sha256(mask_path.read_bytes()).hexdigest()
 
 
+def multi_dataset(tmp_path, masks, scene_types, *, supported_labels=None):
+    root = tmp_path / "data"
+    records = []
+    for index, mask_ids in enumerate(masks):
+        image_path = root / f"images/{index}.png"
+        mask_path = root / f"masks/{index}.png"
+        image_path.parent.mkdir(parents=True, exist_ok=True)
+        mask_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.fromarray(np.zeros((1, len(mask_ids), 3), dtype=np.uint8)).save(image_path)
+        Image.fromarray(np.array([mask_ids], dtype=np.uint8)).save(mask_path)
+        item = record(
+            image_id=f"local-{index}",
+            image_path=f"images/{index}.png",
+            mask_path=f"masks/{index}.png",
+            scene_type=scene_types[index],
+            group_id=f"private-location-{index}",
+        )
+        add_hashes(item, image_path, mask_path)
+        records.append(item)
+    manifest_data = manifest(records=records)
+    if supported_labels is not None:
+        manifest_data["supported_labels"] = list(supported_labels)
+    return root, load_manifest(save_manifest(tmp_path, manifest_data))
+
+
+def sufficiency_policy(
+    *,
+    maximum_exclusion_rate=0.5,
+    minimum_retained_samples_by_split=None,
+    required_scene_types_by_split=None,
+    minimum_retained_samples_by_scene_type=None,
+):
+    return SufficiencyPolicy(
+        maximum_exclusion_rate=maximum_exclusion_rate,
+        minimum_retained_samples_by_split=minimum_retained_samples_by_split
+        or {
+            "train": 1,
+            "validation": 1,
+            "test": 1,
+        },
+        required_scene_types_by_split=required_scene_types_by_split
+        or {
+            "train": ("indoor",),
+            "validation": ("outdoor",),
+            "test": ("mixed",),
+        },
+        minimum_retained_samples_by_scene_type=minimum_retained_samples_by_scene_type or {},
+    )
+
+
 def test_load_manifest_parses_dataclasses_and_rejects_missing_or_extra_fields(tmp_path):
     loaded = load_manifest(save_manifest(tmp_path, manifest()))
     assert loaded.records[0].source_image_id == "source-123"
@@ -132,8 +182,118 @@ def test_valid_manifest_reports_counts_only_and_uses_declared_subset(tmp_path):
     assert report.loss_eligible_sample_count == 1
     assert report.loss_excluded_sample_count == 0
     assert report.exclusion_rate == 0
-    assert report.scene_type_counts == {"outdoor": 1}
+    assert (
+        report.split_summaries["unsplit"].scene_type_summaries["outdoor"].retained_sample_count == 1
+    )
+    assert report.sufficiency_gate_passed is None
     assert not hasattr(report, "paths") and not hasattr(report, "records")
+
+
+def test_scene_type_categories_are_controlled_and_group_values_do_not_escape(tmp_path):
+    root, manifest_data = multi_dataset(tmp_path, [(0, BACKGROUND_ID)], ["../../private/path"])
+
+    with pytest.raises(ValueError, match="scene_type"):
+        validate_dataset(manifest_data, root)
+
+
+def test_reports_split_and_scene_type_exclusion_counts_and_passes_declared_gate(tmp_path):
+    root, manifest_data = multi_dataset(
+        tmp_path,
+        [(0, BACKGROUND_ID), (0, BACKGROUND_ID), (0, BACKGROUND_ID)],
+        ["indoor", "outdoor", "mixed"],
+    )
+    splits = {"local-0": "train", "local-1": "validation", "local-2": "test"}
+
+    report = validate_dataset(
+        manifest_data,
+        root,
+        split_by_image_id=splits,
+        sufficiency_policy=sufficiency_policy(),
+    )
+
+    assert report.sufficiency_gate_passed is True
+    assert report.sufficiency_gate_reasons == ()
+    assert report.split_summaries["train"].retained_sample_count == 1
+    assert report.split_summaries["train"].scene_type_summaries["indoor"].retained_sample_count == 1
+    assert "private-location" not in repr(report)
+    assert "local-0" not in repr(report)
+    assert "source-123" not in repr(report)
+    assert "images/0.png" not in repr(report)
+
+
+@pytest.mark.parametrize(
+    "policy, masks, expected_reason",
+    [
+        (
+            sufficiency_policy(maximum_exclusion_rate=0.0),
+            [(0, 1), (0, 5), (0, 5)],
+            "exclusion rate",
+        ),
+        (
+            sufficiency_policy(
+                minimum_retained_samples_by_split={"train": 2, "validation": 1, "test": 1}
+            ),
+            [(0, 5), (0, 5), (0, 5)],
+            "minimum retained",
+        ),
+        (
+            sufficiency_policy(
+                required_scene_types_by_split={
+                    "train": ("outdoor",),
+                    "validation": ("outdoor",),
+                    "test": ("mixed",),
+                }
+            ),
+            [(0, 5), (0, 5), (0, 5)],
+            "required scene coverage",
+        ),
+        (
+            sufficiency_policy(minimum_retained_samples_by_scene_type={"indoor": 2}),
+            [(0, 5), (0, 5), (0, 5)],
+            "indoor minimum retained",
+        ),
+    ],
+)
+def test_declared_gate_fails_exclusion_rate_minimum_or_representation(
+    tmp_path,
+    policy,
+    masks,
+    expected_reason,
+):
+    root, manifest_data = multi_dataset(
+        tmp_path,
+        masks,
+        ["indoor", "outdoor", "mixed"],
+        supported_labels=("open_ground",) if expected_reason == "exclusion rate" else None,
+    )
+    splits = {"local-0": "train", "local-1": "validation", "local-2": "test"}
+
+    report = validate_dataset(
+        manifest_data,
+        root,
+        split_by_image_id=splits,
+        sufficiency_policy=policy,
+    )
+
+    assert report.sufficiency_gate_passed is False
+    assert any(expected_reason in reason for reason in report.sufficiency_gate_reasons)
+
+
+def test_gate_cannot_run_without_complete_declared_splits_or_policy(tmp_path):
+    root, manifest_data = multi_dataset(
+        tmp_path,
+        [(0, BACKGROUND_ID), (0, BACKGROUND_ID), (0, BACKGROUND_ID)],
+        ["indoor", "outdoor", "mixed"],
+    )
+    with pytest.raises(ValueError, match="split assignments"):
+        validate_dataset(
+            manifest_data,
+            root,
+            sufficiency_policy=sufficiency_policy(),
+        )
+
+    report = validate_dataset(manifest_data, root)
+    assert report.sufficiency_gate_passed is None
 
 
 def test_rejects_nonapproved_dataset_or_image_records(tmp_path):
