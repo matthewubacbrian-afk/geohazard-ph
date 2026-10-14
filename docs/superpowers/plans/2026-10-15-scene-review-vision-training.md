@@ -344,24 +344,33 @@ class EvaluationThresholds:
     minimum_precision_by_label: Mapping[str, float]
     minimum_recall_by_label: Mapping[str, float]
     maximum_false_cue_rate: float
+    maximum_false_cue_rate_regression: float
     maximum_metric_regression_by_label: Mapping[str, float]
+    open_ground_component_overlap_iou: float
+    minimum_open_ground_component_coverage: float
+    maximum_open_ground_component_coverage_regression: float
+    minimum_prediction_score: float
+    minimum_samples_per_slice: int
 
 def evaluate_model(model: object, dataset: SceneReviewDataset,
-                   thresholds: EvaluationThresholds) -> EvaluationReport: ...
+                   thresholds: EvaluationThresholds, *, splits: DatasetSplits,
+                   sufficiency_report: DatasetValidationReport) -> EvaluationReport: ...
 def compare_to_baseline(candidate: EvaluationReport,
                         baseline: EvaluationReport) -> BaselineComparison: ...
 ```
 
-`EvaluationReport` contains `per_label_iou`, `per_label_precision`, `per_label_recall`, `false_visual_cue_rate`, `open_ground_component_coverage`, `slice_metrics`, `sample_counts`, and `passed_thresholds`. `BaselineComparison` contains per-label metric deltas and a `passed_required_non_regression` boolean. Open-ground component coverage is the fraction of ground-truth connected open-ground components that overlap a predicted component at or above the IoU threshold recorded in the report.
+`EvaluationReport` contains `per_label_iou`, `per_label_precision`, `per_label_recall`, true/false-positive and false-negative pixel counts, `false_visual_cue_rate`, `open_ground_component_coverage`, `slice_metrics`, `sample_counts`, unsupported-pixel counts, threshold failures, and a fingerprint of the exact held-out test records. False visual-cue rate is the fraction of predicted non-ground cue components without a same-class ground-truth component match at or above the declared overlap IoU. Open-ground component coverage is the fraction of ground-truth connected open-ground components that overlap a predicted component at or above that same declared IoU. Slice reports include controlled scene-type, lighting, occlusion, and image-quality categories; unknown free-text values map to `other`. Source-group reporting contains aggregate counts and metric ranges without group identifiers.
+
+Evaluation requires a declared passing Task 3 sufficiency report covering the same manifest and test split, and the evaluation dataset's record IDs must exactly equal `splits.test_ids`. Baseline comparison requires an identical held-out-record fingerprint and matching prediction/overlap thresholds. All metric, false-cue, component-coverage, and slice-count thresholds are explicit inputs with no defaults; feature owners declare them before evaluating the held-out set. These thresholds are not tuned against test results.
 
 Compute IoU, precision, and recall at pixel level for each supported target class using only non-ignore pixels in the run-specific mask; background pixels are negatives, while original ignore pixels and unsupported-class pixels remapped to ignore are absent from metric denominators. Report per-class unsupported-pixel counts, per-class metrics, false visual-cue rate, open-ground component coverage, total/ignore-containing/evaluated sample counts, ignore exclusion counts/rates and retained counts by split and relevant slices, and slices by scene type, lighting, occlusion, image quality, and source group where sample counts meet the declared minimum. Fail acceptance if the predeclared exclusion-rate, retained-count, or representation gate fails, required thresholds are absent, or any supported class regresses beyond `maximum_metric_regression_by_label` against baseline. Thresholds are written before full annotation/training and before the held-out test run; no tuning uses test results.
 
-- [ ] **Step 1: Write failing tests** with synthetic predictions for metric correctness, empty classes, insufficient slice counts, threshold enforcement, and baseline comparisons.
-- [ ] **Step 2: Run** `pytest tests/test_scene_review_evaluate.py -v`; confirm expected failures.
-- [ ] **Step 3: Implement** pure metric/report functions, then the prediction loop over held-out examples.
-- [ ] **Step 4: Run** focused metric tests and Ruff.
-- [ ] **Step 5: Execute the real-scene held-out evaluation only when Task 1 rights and annotation gates pass.** Record dataset manifest hash, model/code revision, thresholds, metrics, runtime, and uncovered slices; keep images and report out of Git unless the report is scrubbed of local/private data.
-- [ ] **Step 6: Commit** as `feat: evaluate scene review segmentation quality`.
+- [x] **Step 1: Write failing tests** with synthetic predictions for metric correctness, empty classes, insufficient slice counts, threshold enforcement, and baseline comparisons.
+- [x] **Step 2: Run** `pytest tests/test_scene_review_evaluate.py -v`; confirm expected failures.
+- [x] **Step 3: Implement** pure metric/report functions, then the prediction loop over held-out examples.
+- [x] **Step 4: Run** focused metric tests and Ruff.
+- [ ] **Step 5: Execute the real-scene held-out evaluation only when Task 1 rights and annotation gates pass.** This remains unrun because no approved scene images or feature-owner-declared numeric thresholds are available. When those gates pass, record dataset manifest hash, model/code revision, thresholds, metrics, runtime, and uncovered slices; keep images and report out of Git unless the report is scrubbed of local/private data.
+- [x] **Step 6: Commit** as `feat: evaluate scene review segmentation quality`.
 
 ## Task 8: Export immutable artifact and document readiness
 
