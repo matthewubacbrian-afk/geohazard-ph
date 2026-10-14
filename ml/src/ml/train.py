@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 import argparse
+import hashlib
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -8,13 +9,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from ml.clean_merge import load_and_merge_sources
 from ml.classifier import train_random_forest
+from ml.clean_merge import load_and_merge_sources
 from ml.clustering import feature_matrix, fit_kmeans
 from ml.evaluate import evaluate_classifier, evaluate_clustering
 from ml.features import build_region_features
 from ml.ingest_kaggle import DEFAULT_DATASETS, download_datasets
 from ml.persist import ArtifactBundle, save_metadata, save_models, save_risk_profiles
+from ml.regions import DEFAULT_REGIONS_PATH, MAX_OFFSHORE_KM, assign_regions
 
 
 @dataclass
@@ -22,6 +24,42 @@ class TrainingResult:
     profile_count: int
     artifact_dir: Path
     model_version: str
+
+
+def _validated_source_paths(
+    phivolcs_paths: list[Path] | None,
+    usgs_paths: list[Path] | None,
+) -> tuple[list[Path], list[Path]]:
+    if not phivolcs_paths or not usgs_paths:
+        raise ValueError("Training requires PHIVOLCS and USGS CSV paths.")
+
+    seen: set[Path] = set()
+    groups: list[list[Path]] = []
+    for source, paths in (("PHIVOLCS", phivolcs_paths), ("USGS", usgs_paths)):
+        validated: list[Path] = []
+        for path in paths:
+            resolved = path.expanduser().resolve()
+            if not resolved.is_file():
+                raise ValueError(f"{source} CSV file not found: {path}")
+            if resolved.suffix.lower() != ".csv":
+                raise ValueError(f"{source} input must be a CSV file: {path}")
+            if resolved in seen:
+                raise ValueError(f"CSV path assigned more than once: {path}")
+            seen.add(resolved)
+            validated.append(resolved)
+        groups.append(sorted(validated))
+    return groups[0], groups[1]
+
+
+def _input_file_record(path: Path, source: str) -> dict[str, str | int]:
+    with path.open("rb") as stream:
+        digest = hashlib.file_digest(stream, "sha256").hexdigest()
+    return {
+        "source": source,
+        "filename": path.name,
+        "size_bytes": path.stat().st_size,
+        "sha256": digest,
+    }
 
 
 def run_training(
@@ -34,6 +72,8 @@ def run_training(
     random_state: int = 42,
 ) -> TrainingResult:
     if download:
+        if phivolcs_paths is not None or usgs_paths is not None:
+            raise ValueError("Explicit CSV paths require offline training.")
         downloaded = download_datasets(Path("data/raw"))
         dataset_entries = [
             {
@@ -47,7 +87,7 @@ def run_training(
         phivolcs_paths = []
         usgs_paths = []
         for dataset in downloaded:
-            csvs = list(dataset.path.rglob("*.csv"))
+            csvs = sorted(dataset.path.rglob("*.csv"))
             if "phivolcs" in dataset.slug.lower():
                 phivolcs_paths.extend(csvs)
             else:
@@ -62,13 +102,24 @@ def run_training(
             }
             for dataset in DEFAULT_DATASETS
         ]
-        if phivolcs_paths is None:
-            phivolcs_paths = list(Path("data/raw").rglob("*.csv")) if Path("data/raw").exists() else []
-        if usgs_paths is None:
-            usgs_paths = []
+
+    phivolcs_paths, usgs_paths = _validated_source_paths(phivolcs_paths, usgs_paths)
+    input_files = [
+        _input_file_record(path, source)
+        for source, paths in (("phivolcs", phivolcs_paths), ("usgs", usgs_paths))
+        for path in sorted(paths, key=lambda item: (item.name, item.as_posix()))
+    ]
 
     merged_rows, source_reports = load_and_merge_sources(phivolcs_paths or [], usgs_paths or [])
-    region_features_list = list(build_region_features(merged_rows).values())
+    for source, report in source_reports.items():
+        if report.accepted_rows == 0:
+            raise ValueError(f"{source.upper()} has no usable parsed events.")
+
+    assignment = assign_regions(merged_rows)
+    for source, count in assignment.assigned_by_source.items():
+        if count == 0:
+            raise ValueError(f"{source.upper()} has no events within regional assignment range.")
+    region_features_list = list(build_region_features(assignment.rows).values())
 
     if len(region_features_list) < 2:
         raise ValueError("At least two usable regions are required for clustering.")
@@ -118,9 +169,16 @@ def run_training(
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "region_count": len(region_features_list),
             "datasets": dataset_entries,
+            "input_files": input_files,
             "source_reports": {
                 key: {"accepted": report.accepted_rows, "rejected": report.rejected_rows}
                 for key, report in source_reports.items()
+            },
+            "region_assignment": {
+                "boundary_sha256": hashlib.sha256(DEFAULT_REGIONS_PATH.read_bytes()).hexdigest(),
+                "max_offshore_km": MAX_OFFSHORE_KM,
+                "assigned_by_source": assignment.assigned_by_source,
+                "excluded_by_source": assignment.unassigned_by_source,
             },
             "metrics": metrics,
         },
@@ -162,13 +220,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--offline",
         action="store_true",
-        help="Train from local data/raw CSVs instead of downloading",
+        help="Train from explicitly assigned local CSVs instead of downloading",
+    )
+    parser.add_argument(
+        "--phivolcs-csv",
+        action="append",
+        type=Path,
+        help="PHIVOLCS CSV path for offline training; repeat for multiple files",
+    )
+    parser.add_argument(
+        "--usgs-csv",
+        action="append",
+        type=Path,
+        help="USGS CSV path for offline training; repeat for multiple files",
     )
     parser.add_argument("--random-state", type=int, default=42, help="Random seed")
     args = parser.parse_args(argv)
 
     try:
         result = run_training(
+            phivolcs_paths=args.phivolcs_csv,
+            usgs_paths=args.usgs_csv,
             artifact_dir=Path(args.artifact_dir),
             artifact_version=args.artifact_version,
             download=not args.offline,

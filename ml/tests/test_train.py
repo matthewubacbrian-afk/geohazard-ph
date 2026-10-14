@@ -1,9 +1,13 @@
+import hashlib
 import json
+from pathlib import Path
 from shutil import copyfile
 
+import pytest
 from conftest import FIXTURES
 
 from ml.ingest_kaggle import DownloadedDataset
+from ml.regions import DEFAULT_REGIONS_PATH
 from ml.train import run_training
 
 
@@ -18,8 +22,43 @@ def test_main_offline_disables_download(monkeypatch, tmp_path):
 
     monkeypatch.setattr(train_module, "run_training", fake_run_training)
 
-    assert train_module.main(["--offline"]) == 0
+    assert train_module.main([
+        "--offline",
+        "--phivolcs-csv", "phivolcs.csv",
+        "--usgs-csv", "usgs.csv",
+    ]) == 0
     assert captured["download"] is False
+    assert captured["phivolcs_paths"] == [Path("phivolcs.csv")]
+    assert captured["usgs_paths"] == [Path("usgs.csv")]
+
+
+def test_main_forwards_repeated_source_csv_flags(monkeypatch, tmp_path):
+    from ml import train as train_module
+
+    captured = {}
+
+    def fake_run_training(**kwargs):
+        captured.update(kwargs)
+        return train_module.TrainingResult(0, tmp_path, "v1")
+
+    monkeypatch.setattr(train_module, "run_training", fake_run_training)
+
+    assert train_module.main([
+        "--offline",
+        "--phivolcs-csv", "first.csv",
+        "--phivolcs-csv", "second.csv",
+        "--usgs-csv", "usgs.csv",
+    ]) == 0
+    assert captured["download"] is False
+    assert captured["phivolcs_paths"] == [Path("first.csv"), Path("second.csv")]
+    assert captured["usgs_paths"] == [Path("usgs.csv")]
+
+
+def test_main_offline_without_source_paths_fails(capsys, tmp_path):
+    from ml import train as train_module
+
+    assert train_module.main(["--offline", "--artifact-dir", str(tmp_path / "art")]) == 1
+    assert "PHIVOLCS and USGS" in capsys.readouterr().err
 
 
 def test_main_defaults_to_download(monkeypatch, tmp_path):
@@ -84,6 +123,7 @@ def test_run_training_records_downloaded_dataset_versions(monkeypatch, tmp_path)
         }
         for dataset in downloaded
     ]
+    assert {entry["source"] for entry in metadata["input_files"]} == {"phivolcs", "usgs"}
 
 
 def test_run_training_from_existing_csvs_writes_artifacts(tmp_path):
@@ -105,6 +145,131 @@ def test_run_training_from_existing_csvs_writes_artifacts(tmp_path):
     assert "metrics" in metadata
     assert "clustering" in metadata["metrics"]
     assert "classifier" in metadata["metrics"]
+    assert metadata["source_reports"] == {
+        "phivolcs": {"accepted": 2, "rejected": 0},
+        "usgs": {"accepted": 2, "rejected": 0},
+    }
+    assert metadata["region_assignment"] == {
+        "boundary_sha256": hashlib.sha256(DEFAULT_REGIONS_PATH.read_bytes()).hexdigest(),
+        "max_offshore_km": 100.0,
+        "assigned_by_source": {"phivolcs": 1, "usgs": 2},
+        "excluded_by_source": {"phivolcs": 0, "usgs": 0},
+    }
+    profiles = json.loads((tmp_path / "v-test" / "risk_profiles.json").read_text(encoding="utf-8"))
+    assert {profile["region_name"] for profile in profiles} == {
+        "Bicol Region", "Eastern Visayas"
+    }
+    assert metadata["input_files"] == [
+        {
+            "source": source,
+            "filename": path.name,
+            "size_bytes": path.stat().st_size,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        }
+        for source, path in (
+            ("phivolcs", FIXTURES / "phivolcs_sample.csv"),
+            ("usgs", FIXTURES / "usgs_sample.csv"),
+        )
+    ]
+
+
+def test_offline_training_requires_both_sources_before_writing(tmp_path):
+    with pytest.raises(ValueError, match="PHIVOLCS and USGS"):
+        run_training(
+            phivolcs_paths=[FIXTURES / "phivolcs_sample.csv"],
+            artifact_dir=tmp_path / "art",
+            download=False,
+        )
+
+    assert not (tmp_path / "art").exists()
+
+
+def test_offline_training_rejects_source_with_no_parsed_rows(tmp_path):
+    phivolcs = tmp_path / "invalid_phivolcs.csv"
+    phivolcs.write_text(
+        "Date_Time_PH,Latitude,Longitude,Depth_In_Km,Magnitude,Location\n"
+        "2024-01-01 08:00:00,13.4,123.3,invalid,5.1,Bicol Region\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="PHIVOLCS"):
+        run_training(
+            phivolcs_paths=[phivolcs],
+            usgs_paths=[FIXTURES / "usgs_sample.csv"],
+            artifact_dir=tmp_path / "art",
+            download=False,
+        )
+
+    assert not (tmp_path / "art").exists()
+
+
+def test_offline_training_rejects_source_without_region_assignment(tmp_path):
+    phivolcs = tmp_path / "far_phivolcs.csv"
+    usgs = tmp_path / "far_usgs.csv"
+    phivolcs.write_text(
+        "Date_Time_PH,Latitude,Longitude,Depth_In_Km,Magnitude,Location\n"
+        "2024-01-01 08:00:00,0,0,10,5.1,Far A\n",
+        encoding="utf-8",
+    )
+    usgs.write_text(
+        "time,latitude,longitude,depth,mag,place,id\n"
+        "2024-02-03T11:00:00Z,0,1,20,6.2,Far B,usgs-far\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="region"):
+        run_training(
+            phivolcs_paths=[phivolcs],
+            usgs_paths=[usgs],
+            artifact_dir=tmp_path / "art",
+            download=False,
+        )
+
+    assert not (tmp_path / "art").exists()
+
+
+def test_offline_training_rejects_duplicate_source_assignment(tmp_path):
+    path = FIXTURES / "phivolcs_sample.csv"
+    with pytest.raises(ValueError, match="more than once"):
+        run_training(
+            phivolcs_paths=[path],
+            usgs_paths=[path],
+            artifact_dir=tmp_path / "art",
+            download=False,
+        )
+
+    assert not (tmp_path / "art").exists()
+
+
+def test_offline_training_rejects_missing_csv(tmp_path):
+    missing = tmp_path / "missing.csv"
+    with pytest.raises(ValueError, match="missing.csv"):
+        run_training(
+            phivolcs_paths=[missing],
+            usgs_paths=[FIXTURES / "usgs_sample.csv"],
+            artifact_dir=tmp_path / "art",
+            download=False,
+        )
+
+
+def test_offline_training_rejects_non_csv_input(tmp_path):
+    wrong_type = tmp_path / "input.txt"
+    wrong_type.write_text("not a CSV", encoding="utf-8")
+    with pytest.raises(ValueError, match="must be a CSV"):
+        run_training(
+            phivolcs_paths=[wrong_type],
+            usgs_paths=[FIXTURES / "usgs_sample.csv"],
+            artifact_dir=tmp_path / "art",
+            download=False,
+        )
+
+
+def test_download_mode_rejects_explicit_source_paths(tmp_path):
+    with pytest.raises(ValueError, match="require offline"):
+        run_training(
+            phivolcs_paths=[FIXTURES / "phivolcs_sample.csv"],
+            artifact_dir=tmp_path / "art",
+        )
 
 
 def test_run_training_uses_labels_from_saved_kmeans_result(tmp_path):

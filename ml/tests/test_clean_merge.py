@@ -14,6 +14,15 @@ def test_normalize_csv_maps_phivolcs_headers():
     assert rows[0]["depth_km"] == 34.0
 
 
+def test_normalize_csv_accepts_kaggle_phivolcs_headers():
+    rows, report = normalize_csv(FIXTURES / "phivolcs_kaggle_sample.csv", "phivolcs")
+
+    assert report.accepted_rows == 2
+    assert report.rejected_rows == 0
+    assert rows[0]["occurred_at"].isoformat() == "2024-01-01T00:00:00+00:00"
+    assert rows[0]["depth_km"] == 34
+
+
 def test_normalize_csv_maps_usgs_headers():
     rows, report = normalize_csv((FIXTURES / "usgs_sample.csv"), source="usgs")
 

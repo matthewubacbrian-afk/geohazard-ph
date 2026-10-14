@@ -158,6 +158,11 @@ publishes API and web images to GHCR under the commit SHA, and uploads a deploym
 bundle. It does not connect to a host. The bundle contains `compose.staging.yml`,
 the Caddyfile, the deploy script, and `.env.staging.example`.
 
+The 2026-10-14 release for commit `5ada21049808c51f080da1e0080d3ee7577ec32b`
+is available from [its successful workflow run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/38516440460).
+The current regional risk-profile export is on [quality hold](risk-profile-quality-review-2026-10-14.md):
+do not transfer `risk_profiles.json` to staging or configure the API to serve it.
+
 ### Oracle Cloud Infrastructure Always Free A1
 
 This repository and its release workflow do not create OCI resources or provision
@@ -275,23 +280,27 @@ and the event sources.
 
    Replace `owner` and `<sha>` with the workflow's image prefix and release SHA;
    each manifest must list `linux/arm64` and `linux/amd64`.
-4. Generate the production ML output from the repository root on your Windows
+4. Generate the ML export from the repository root on your Windows
    development machine. Normal training requires `KAGGLE_USERNAME` and
    `KAGGLE_KEY` environment variables or credentials in
    `%USERPROFILE%\.kaggle\kaggle.json`. The trainer does not load credentials from
    the repository `.env`; do not rely on that file for Kaggle authentication.
-   The `-Offline` option skips Kaggle downloads and is appropriate only when the
-   needed local CSV inputs already exist under `ml/data/raw/`:
+   The `-Offline` option skips Kaggle downloads and requires explicit paths
+   for both saved source snapshots. Replace the example paths with your files:
 
    ```powershell
    .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1
    # Only when local training inputs exist:
-   .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline
+   .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline `
+     -PhivolcsCsv 'ml\data\raw\phivolcs.csv' `
+     -UsgsCsv 'ml\data\raw\usgs.csv'
    ```
 
-   The output is `ml/model_artifacts/v1/risk_profiles.json`. Keep each trained
-   export immutable and versioned with its release SHA on the VM. Transfer it from
-   PowerShell to a release-specific filename; replace `RELEASESHA` below with the
+   The output is `ml/model_artifacts/v1/risk_profiles.json`. Offline metadata
+   has unknown Kaggle versions but records input-file hashes and the pinned
+   region-boundary hash. Check both source-assignment counts before transfer.
+   Keep each trained export immutable and versioned with its release SHA on the
+   VM. Transfer it from PowerShell to a release-specific filename; replace `RELEASESHA` below with the
    same 40-character SHA used for the images:
 
    ```powershell

@@ -228,19 +228,21 @@ Train with the latest Kaggle data:
 .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1
 ```
 
-Preserve the local CSVs under `ml/data/raw/` and use `-Offline` to reuse saved
-inputs without downloading (`--offline` for the Python CLI):
+Preserve the local CSVs under `ml/data/raw/` and assign each one to its source
+when training offline. Replace these example paths with the files you saved:
 
 ```powershell
-.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline
+.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline `
+  -PhivolcsCsv 'ml\data\raw\phivolcs.csv' `
+  -UsgsCsv 'ml\data\raw\usgs.csv'
 ```
 
-Automatic CLI local discovery currently treats all CSVs as PHIVOLCS inputs.
-For mixed PHIVOLCS/USGS snapshots, this applies Manila time normalization to USGS
-timestamps and can change deduplication, so these flags alone may not reproduce
-download-mode output. For source-correct reproducible processing of saved inputs,
-call `ml.train.run_training(download=False, phivolcs_paths=[...], usgs_paths=[...])`
-with separate explicit lists of `Path` objects for each source.
+Use an array for either PowerShell parameter when a source has multiple CSVs.
+The Python CLI has repeatable `--phivolcs-csv` and `--usgs-csv` flags with
+`--offline`. Offline training requires at least one file from each source; it
+does not guess a source from a filename or directory. Programmatic callers can
+pass separate `phivolcs_paths` and `usgs_paths` lists to
+`ml.train.run_training(download=False, ...)`.
 
 Generated artifacts are written under:
 
@@ -260,6 +262,49 @@ Expected outputs include:
 In `metadata.json`, `datasets[].version` records the integer Kaggle version for
 each downloaded dataset, distinguishing retrains that used different source
 versions. Offline runs record `null` because no Kaggle version is resolved.
+For both modes, `metadata.json` also records each input CSV's source, filename,
+size in bytes, and SHA-256 digest under `input_files` so the exact input bytes
+can be identified without storing local absolute paths.
+Training assigns epicenters to the 17 regions in the pinned web boundary asset.
+Offshore epicenters within 100 km of a region boundary go to the nearest region;
+more distant events are excluded. `metadata.json.region_assignment` records
+the boundary SHA-256, distance limit, and assigned/excluded counts by source
+after deduplication. `source_reports` records parsed/rejected rows before
+deduplication. Training fails if either source has no parsed or assigned events.
+
+An offline run on saved PHIVOLCS and USGS snapshots on 2026-10-14 produced 17
+profiles whose names matched the web regions and passed backend schema parsing.
+The generated bundle is local and ignored by Git. Its Kaggle dataset versions
+remain unknown; the input-file hashes identify the exact saved snapshots.
+Classifier accuracy in this bundle is measured on its training regions and is
+not an independent validation of model quality.
+
+To inspect a held offline bundle without changing its labels, run the validation
+report from `ml/` with the exact saved CSVs and an ignored output directory:
+
+```powershell
+Set-Location ml
+$mlRoot = (Get-Location).Path
+$artifactDir = Join-Path $mlRoot 'model_artifacts\snapshots\2026-10-14\v1'
+$phivolcsCsv = Join-Path $mlRoot 'data\raw\bwandowando_philippine-earthquakes-from-phivolcs\phivolcs_earthquake_data.csv'
+$usgsCsv = Join-Path $mlRoot 'data\raw\bwandowando_philippine-earthquakes-1900-2025-from-usgs\Philippine_Earthquakes_USGS.csv'
+$reportDir = Join-Path $mlRoot 'model_artifacts\validation\2026-10-14\v1'
+$env:PYTHONPATH = 'src'
+py -3.11 -m ml.validate_profiles `
+  --artifact-dir $artifactDir `
+  --phivolcs-csv $phivolcsCsv `
+  --usgs-csv $usgsCsv `
+  --output-dir $reportDir
+Set-Location ..
+```
+
+The command checks saved source and boundary hashes, replays parser and region
+assignment counts, and writes `validation-report.json` and
+`validation-report.md`. It shows per-region source coverage, the shared source
+date window, label sensitivity to seeds and omitted regions, and data-derived
+shared-window event-count cutoff scenarios. These cutoffs are exploratory and
+do not recommend a sparse-region policy. A successful report still requires
+domain review; it does not release the held export.
 
 The generated labels are descriptive statistical profiles based on historical records. They are not earthquake predictions.
 
@@ -335,7 +380,9 @@ Train risk-profile models:
 
 ```powershell
 .\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1
-.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline
+.\scripts\train_risk_profile_models.ps1 -ArtifactVersion v1 -Offline `
+  -PhivolcsCsv 'ml\data\raw\phivolcs.csv' `
+  -UsgsCsv 'ml\data\raw\usgs.csv'
 ```
 
 Run the full local verification set:
