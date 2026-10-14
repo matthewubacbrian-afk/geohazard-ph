@@ -125,3 +125,56 @@ def test_build_validation_report_rejects_malformed_metadata(saved_bundle: tuple[
 
     with pytest.raises(ValueError, match="model_version"):
         build_validation_report(artifact_dir, [phivolcs], [usgs])
+
+
+def test_coverage_uses_inclusive_shared_window_and_sorts_regions():
+    from ml.validate_profiles import _coverage
+
+    rows = [
+        {"region_name": "Bicol Region", "source": "phivolcs", "occurred_at": "2024-01-01T00:00:00Z"},
+        {"region_name": "Bicol Region", "source": "phivolcs", "occurred_at": "2024-01-03T00:00:00Z"},
+        {"region_name": "Eastern Visayas", "source": "usgs", "occurred_at": "2024-01-04T00:00:00Z"},
+        {"region_name": "Bicol Region", "source": "usgs", "occurred_at": "2024-01-02T00:00:00Z"},
+    ]
+
+    coverage = _coverage(rows)
+
+    assert coverage["source_coverage"]["phivolcs"] == {
+        "assigned_count": 2,
+        "first_occurred_at": "2024-01-01T00:00:00+00:00",
+        "last_occurred_at": "2024-01-03T00:00:00+00:00",
+    }
+    assert coverage["shared_window"] == {
+        "start": "2024-01-02T00:00:00+00:00",
+        "end": "2024-01-03T00:00:00+00:00",
+        "available": True,
+        "unavailable_reason": None,
+    }
+    assert [row["region_name"] for row in coverage["regions"]] == [
+        "Bicol Region", "Eastern Visayas"
+    ]
+    assert coverage["regions"][0]["shared_window_count_by_source"] == {
+        "phivolcs": 1,
+        "usgs": 1,
+    }
+    assert coverage["regions"][1]["assigned_by_source"] == {"phivolcs": 0, "usgs": 1}
+    assert coverage["regions"][1]["shared_window_count_by_source"] == {
+        "phivolcs": 0,
+        "usgs": 0,
+    }
+
+
+def test_coverage_reports_no_shared_window():
+    from ml.validate_profiles import _coverage
+
+    coverage = _coverage([
+        {"region_name": "Bicol Region", "source": "phivolcs", "occurred_at": "2024-01-01T00:00:00Z"},
+        {"region_name": "Bicol Region", "source": "usgs", "occurred_at": "2024-02-01T00:00:00Z"},
+    ])
+
+    assert coverage["shared_window"]["available"] is False
+    assert coverage["shared_window"]["unavailable_reason"] == "no_shared_observation_window"
+    assert coverage["regions"][0]["shared_window_count_by_source"] == {
+        "phivolcs": 0,
+        "usgs": 0,
+    }

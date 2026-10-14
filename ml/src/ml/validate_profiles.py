@@ -20,6 +20,80 @@ class VerifiedInputs:
     assigned_rows: list[dict[str, object]]
 
 
+def _utc_timestamp(value: object) -> pd.Timestamp:
+    try:
+        timestamp = pd.Timestamp(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("assigned event has invalid occurred_at") from exc
+    if pd.isna(timestamp) or timestamp.tzinfo is None:
+        raise ValueError("assigned event has invalid occurred_at")
+    return timestamp.tz_convert("UTC")
+
+
+def _coverage(assigned_rows: list[dict[str, object]]) -> dict[str, object]:
+    sources = ("phivolcs", "usgs")
+    timed_rows: list[tuple[str, str, pd.Timestamp]] = []
+    for row in assigned_rows:
+        source = str(row["source"])
+        if source not in sources:
+            raise ValueError(f"assigned event has unsupported source: {source}")
+        timed_rows.append((str(row["region_name"]), source, _utc_timestamp(row["occurred_at"])))
+
+    source_coverage: dict[str, dict[str, object]] = {}
+    source_spans: dict[str, tuple[pd.Timestamp, pd.Timestamp]] = {}
+    for source in sources:
+        times = [time for _, event_source, time in timed_rows if event_source == source]
+        if times:
+            source_spans[source] = (min(times), max(times))
+        source_coverage[source] = {
+            "assigned_count": len(times),
+            "first_occurred_at": min(times).isoformat() if times else None,
+            "last_occurred_at": max(times).isoformat() if times else None,
+        }
+
+    window_start = max((span[0] for span in source_spans.values()), default=None)
+    window_end = min((span[1] for span in source_spans.values()), default=None)
+    available = len(source_spans) == len(sources) and window_start <= window_end
+    shared_window = {
+        "start": window_start.isoformat() if available else None,
+        "end": window_end.isoformat() if available else None,
+        "available": available,
+        "unavailable_reason": None if available else "no_shared_observation_window",
+    }
+
+    regions: list[dict[str, object]] = []
+    for region_name in sorted({name for name, _, _ in timed_rows}):
+        by_source = {
+            source: [
+                time
+                for name, event_source, time in timed_rows
+                if name == region_name and event_source == source
+            ]
+            for source in sources
+        }
+        regions.append({
+            "region_name": region_name,
+            "assigned_by_source": {source: len(times) for source, times in by_source.items()},
+            "first_occurred_at_by_source": {
+                source: min(times).isoformat() if times else None
+                for source, times in by_source.items()
+            },
+            "last_occurred_at_by_source": {
+                source: max(times).isoformat() if times else None
+                for source, times in by_source.items()
+            },
+            "shared_window_count_by_source": {
+                source: sum(window_start <= time <= window_end for time in times) if available else 0
+                for source, times in by_source.items()
+            },
+        })
+    return {
+        "source_coverage": source_coverage,
+        "shared_window": shared_window,
+        "regions": regions,
+    }
+
+
 def _read_json(path: Path, expected_type: type) -> object:
     if not path.is_file():
         raise ValueError(f"Required artifact file not found: {path}")
@@ -105,5 +179,6 @@ def build_validation_report(
     return {
         "artifact_version": verified.metadata.get("model_version"),
         "input_files": verified.metadata["input_files"],
+        **_coverage(verified.assigned_rows),
         "review_state": "requires_domain_review",
     }
