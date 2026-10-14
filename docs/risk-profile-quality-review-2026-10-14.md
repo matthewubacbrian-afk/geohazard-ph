@@ -38,6 +38,28 @@ The report state is `requires_domain_review`.
   leave-one-region-out fits were recorded. Omitting NCR changes labels for
   14 of the remaining 16 regions.
 
+### Event-count cutoff sensitivity
+
+The offline report evaluates 18 data-derived minimum-count transitions using
+the combined PHIVOLCS and USGS counts in the shared observation window. The
+thresholds are exploratory breakpoints, not recommended minimums or a sparse
+region policy.
+
+- At threshold 0, all 17 regions are included and 11 saved labels change.
+- At threshold 4, NCR (three shared-window events) is excluded; 10 of the 16
+  included labels change.
+- At threshold 1,467, NCR and Northern Mindanao are excluded; 10 of the 15
+  included labels change. At threshold 2,015, ARMM is also excluded and 11 of
+  the 14 included labels change.
+- At threshold 25,157, only one region remains, so no refit is available. At
+  threshold 31,275, no region remains.
+
+All cutoff fits use the same shared-window features and fixed comparison
+parameters as the other refits. Source reporting thresholds and catalog
+completeness remain unequal. These scenarios show sensitivity to region
+inclusion; they do not establish which regions should be excluded or validate
+the remaining labels.
+
 The saved training metadata does not record the original K candidates or random
 seed. These comparison fits explicitly use the current K candidates 3, 4, and
 5, with seed 42 for the shared-window and leave-one-out checks. Their parameter
