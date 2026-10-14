@@ -540,6 +540,21 @@ def _validate_baseline_comparison(
         "failures",
     }:
         raise ValueError("baseline comparison is incomplete")
+    reported_failures = comparison["failures"]
+    if not isinstance(reported_failures, (list, tuple)) or any(
+        not isinstance(message, str) for message in reported_failures
+    ):
+        raise ValueError("baseline comparison is incomplete")
+    allowed_failure_messages = {
+        f"{label} {metric} regressed beyond declared maximum"
+        for label in labels
+        for metric in ("iou", "precision", "recall")
+    } | {
+        "false visual-cue rate regressed beyond declared maximum",
+        "open-ground component coverage regressed beyond declared maximum",
+    }
+    if not set(reported_failures).issubset(allowed_failure_messages):
+        raise ValueError("baseline comparison is incomplete")
     limits = evaluation["thresholds"]
     failures = []
     baseline = comparison["baseline_metrics"]
@@ -604,7 +619,7 @@ def _validate_baseline_comparison(
         failures.append("open_ground_component_coverage")
     if (
         comparison["passed_required_non_regression"] is not True
-        or comparison["failures"]
+        or reported_failures
         or failures
     ):
         raise ValueError("baseline non-regression thresholds are inconsistent")
