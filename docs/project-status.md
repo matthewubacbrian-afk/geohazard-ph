@@ -13,7 +13,7 @@ Status is based on the repository and its recorded history, reviewed on
 | Epic 4: Mobile nearby alerts and offline cache | Foreground app and native CI builds implemented; runtime flow checks remain | Saved locations, proximity matching, foreground alert list, and cached events are implemented in [mobile](../mobile/src). Android/iOS native projects are present, and both Android debug and iOS simulator builds passed in [PR #20 CI](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/20). Android/iOS simulator or device user-flow checks remain unverified; use the [runtime smoke checklist](mobile-runtime-smoke-test.md) and [readiness plan](superpowers/plans/2026-10-09-mobile-runtime-readiness.md). Background push, store signing, and publishing remain deferred. See the [Epic 4 spec](superpowers/specs/2026-10-09-epic4-mobile-nearby-alerts-design.md), [mobile native runtime plan](superpowers/plans/2026-10-09-mobile-native-runtime.md), and [nearby-alert implementation plan](superpowers/plans/2026-10-09-epic4-mobile-nearby-alerts.md). |
 | Epic 5: Regional seismic risk profiles | Export structurally validated; quality hold before deployment | The [ML pipeline](../ml/src/ml/train.py), [risk-profile API](../backend/app/api/v1/risk_profile.py), and [web map layer](../web/src) use historical data. Offline training uses explicit PHIVOLCS/USGS files and the pinned 17-region boundary asset, with nearby offshore events assigned within 100 km. A local ignored bundle produced 17 schema-valid profiles on 2026-10-14 with matching source and boundary hashes. The [technical quality review](risk-profile-quality-review-2026-10-14.md) found only five assigned NCR records, unequal source time spans, in-sample classifier accuracy, and unstable category assignments when NCR is excluded. The user chose to hold this export from staging until further validation. Kaggle versions are unknown; scientific review, scheduled refresh, and live-event modeling remain. Labels are descriptive statistical profiles, not predictions. See [data-source assumptions](data-sources.md#kaggle-historical-earthquake-datasets) and [README training instructions](../README.md#regional-seismic-risk-profiles). |
 | Epic 6: Landslide and InSAR stretch work | Deferred | No product-ready landslide or InSAR feature is claimed. Source validation, licensing, ingestion, and user-facing work remain future scope. See [data sources](data-sources.md#static-layers). |
-| Oracle Always Free staging | Multi-architecture release and operator guide implemented; deployment unverified | The [staging workflow](../.github/workflows/deploy-staging.yml) builds AMD64 and ARM64 images, and the [Oracle runbook](runbook.md#oracle-cloud-infrastructure-always-free-a1) documents operator setup and deployment. The user confirmed there is no OCI VM or DNS yet. The current model export is on quality hold and must not be transferred. Host setup, a reviewed export, and deployed-state verification remain. |
+| Oracle Always Free staging | Release images and bundle published; deployment unverified | The [2026-10-14 staging release run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/38516440460) passed verification, published AMD64 and ARM64 API and web images for commit `5ada21049808c51f080da1e0080d3ee7577ec32b`, verified both image architectures, and uploaded `staging-release-5ada21049808c51f080da1e0080d3ee7577ec32b`. The [Oracle runbook](runbook.md#oracle-cloud-infrastructure-always-free-a1) documents operator setup and deployment. The user confirmed there is no OCI VM or DNS yet. The current model export is on quality hold and must not be transferred. Host setup, a reviewed export, and deployed-state verification remain. |
 
 ## Next integration milestone
 
@@ -25,11 +25,12 @@ Status is based on the repository and its recorded history, reviewed on
    counts, and evaluation results. Follow the
    [training instructions](../README.md#regional-seismic-risk-profiles) and
    [data-source assumptions](data-sources.md#kaggle-historical-earthquake-datasets).
-2. Prepare release images and the deployment bundle without the held model export.
-   Once an OCI host, DNS, staging configuration, and reviewed export are available,
-   follow the [Oracle runbook](runbook.md#oracle-cloud-infrastructure-always-free-a1)
-   to deploy and record live health, event-feed, and risk-profile checks. CI does
-   not establish those live checks.
+2. Use the [published release](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/38516440460)
+   when an OCI host, DNS, and staging configuration are available. Follow the
+   [Oracle runbook](runbook.md#oracle-cloud-infrastructure-always-free-a1) to
+   deploy and record live health and event-feed checks. Keep the risk-profile
+   endpoint without the held export until a revised profile passes review, then
+   record its own live check. CI does not establish those live checks.
 
 ## How to read project plans
 

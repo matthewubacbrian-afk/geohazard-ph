@@ -83,6 +83,11 @@ publishes API and web images to GHCR under the commit SHA, and uploads a deploym
 bundle. It does not connect to a host. The bundle contains `compose.staging.yml`,
 the Caddyfile, the deploy script, and `.env.staging.example`.
 
+The 2026-10-14 release for commit `5ada21049808c51f080da1e0080d3ee7577ec32b`
+is available from [its successful workflow run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/38516440460).
+The current regional risk-profile export is on [quality hold](risk-profile-quality-review-2026-10-14.md):
+do not transfer `risk_profiles.json` to staging or configure the API to serve it.
+
 ### Oracle Cloud Infrastructure Always Free A1
 
 This repository and its release workflow do not create OCI resources or provision
