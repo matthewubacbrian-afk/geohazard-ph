@@ -9,6 +9,7 @@ from app.api.v1 import (
     hazards,
     realtime,
     risk_profile,
+    scene_analyses,
     subscribe,
     volcano_zones,
     volcanoes,
@@ -40,6 +41,7 @@ app.include_router(volcanoes.router, prefix="/api/v1")
 app.include_router(alerts.router, prefix="/api/v1")
 app.include_router(subscribe.router, prefix="/api/v1")
 app.include_router(risk_profile.router, prefix="/api/v1")
+app.include_router(scene_analyses.router, prefix="/api/v1")
 app.include_router(realtime.router)
 
 

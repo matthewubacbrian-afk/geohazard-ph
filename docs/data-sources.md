@@ -97,6 +97,163 @@ always require domain review before an export can be considered for staging.
   asset was refreshed at tolerance 0.001 (measured 1,233,793 bytes raw and 266 KB
   gzipped; the main JS bundle measured 576 KB gzipped with the asset included).
 
+## Scene analysis model (preflight)
+
+- Model: [facebook/detr-resnet-50-panoptic at the pinned revision](https://huggingface.co/facebook/detr-resnet-50-panoptic/tree/d53b52a799403a8867920f82c869e40732b47037), pinned to immutable revision `d53b52a799403a8867920f82c869e40732b47037`. The [revision model card](https://huggingface.co/facebook/detr-resnet-50-panoptic/blob/d53b52a799403a8867920f82c869e40732b47037/README.md) declares Apache-2.0; the [revision config](https://huggingface.co/facebook/detr-resnet-50-panoptic/blob/d53b52a799403a8867920f82c869e40732b47037/config.json) supplies the labels below.
+- Model card license: Apache-2.0. The card identifies COCO 2017 panoptic training data; this is not locally validated against Philippine homes, malls, or disaster scenes and is not a safety model.
+- Revision files listed by the Hugging Face model API: `config.json`, `preprocessor_config.json`, `pytorch_model.bin`, and `README.md` (plus `.gitattributes`). Weights are not stored in Git.
+- Relevant exact `id2label` entries in that revision's `config.json`: `floor-other`, `floor-stone`, `floor-tile`, `floor-wood`, `ground-other`, `pavement`, `road`, `grass`, and `gravel`. The config does not define a label named exactly `floor`; downstream allow-lists must use the exact configured strings.
+- Source checks performed 2026-10-13: immutable revision API response, revision README model card, and revision `config.json`. The model card says the model was trained on COCO 2017 panoptic (118k annotated training images).
+- The COCO Consortium's [official terms](https://cocodataset.github.io/dataset/termsofuse.htm) license annotations separately and state that it does not own copyrights in the source images; image use remains subject to each source's terms. Do not republish COCO images or treat the dataset license as a blanket image license. The [ADE20K project](https://ade20k.csail.mit.edu/) requires registration and acceptance of its terms before download, so do not automate a mirror or reuse its images without that review.
+- Epic 7 blur-gate threshold: `400.0` variance-of-Laplacian units, measured after reducing the longest image edge to 512 pixels, currently **provisional**. Unit tests use synthetic patterns and establish deterministic metric behavior only; they do not establish camera blur accuracy. The real-image evaluation has not been run because the model runtime and validation data are not provisioned in the default API image/worktree.
+- Reproducible evaluation protocol: use COCO 2017 panoptic validation images and annotations only if the source-image terms are accepted for the intended educational evaluation. Keep image files and annotations outside Git. Record the dataset release and annotation JSON checksum, image IDs, exact model revision, and script/runtime versions. Compare original images with deterministic Gaussian-blur variants at radii 1, 2, and 3; compute supported-surface mask IoU and candidate coverage for each radius; report sharpness-score distributions. Pick a threshold on a declared calibration subset and report it unchanged on a disjoint held-out subset. Never train on the validation subset. This reports COCO benchmark behavior only, not Philippine home/mall/disaster-scene validity. Threshold calibration and empirical obstruction evaluation remain pending.
+- Isolated CPU package measurements (Windows x64, CPython 3.11.9; not a deployment image): `torch==2.14.1+cpu`, `torchvision==0.29.1+cpu`, `transformers==4.57.6`, `timm==1.0.30`, `Pillow==12.3.0`, `numpy==2.2.6`, and `huggingface-hub==0.36.2`. Torch/torchvision wheels came from `https://download.pytorch.org/whl/cpu`; other wheels came from PyPI. The installed runtime wheel set was 175,404,949 bytes (about 167.2 MiB; excludes test-only `psutil`); `site-packages` occupied 889,171,095 bytes (about 848.3 MiB, including `psutil`). The Torch wheel was 123,978,347 bytes; Transformers 11,993,498 bytes; Pillow 7,233,653 bytes; NumPy 12,907,455 bytes; torchvision 1,376,907 bytes; and timm 2,668,917 bytes.
+- Reproduction used an isolated venv and cache outside the repository. With `$root` set to a fresh temporary directory:
+
+  ```powershell
+  $root = Join-Path $env:TEMP ("epic7-model-preflight-repro-" + [guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Path $root -ErrorAction Stop | Out-Null
+  py -3.11 -m venv "$root\venv"
+  $py = "$root\venv\Scripts\python.exe"
+  @'
+  certifi==2026.7.22
+  charset-normalizer==3.5.2
+  colorama==0.4.6
+  filelock==4.1.1
+  fsspec==2026.9.0
+  huggingface-hub==0.36.2
+  idna==3.20
+  Jinja2==3.1.6
+  MarkupSafe==3.0.4
+  mpmath==1.3.0
+  networkx==3.6.1
+  numpy==2.2.6
+  packaging==26.3
+  Pillow==12.3.0
+  psutil==7.1.3
+  PyYAML==6.0.3
+  regex==2026.9.29
+  requests==2.34.2
+  safetensors==0.8.0
+  setuptools==84.0.0
+  sympy==1.14.0
+  timm==1.0.30
+  tokenizers==0.22.2
+  torch==2.14.1+cpu
+  torchvision==0.29.1+cpu
+  tqdm==4.70.1
+  transformers==4.57.6
+  typing-extensions==4.16.0
+  urllib3==2.8.0
+  '@ | Set-Content -LiteralPath "$root\requirements.txt" -Encoding utf8
+  & $py -m pip download --dest "$root\wheels" --only-binary=:all: --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/cpu -r "$root\requirements.txt"
+  & $py -m pip install --no-index --find-links "$root\wheels" -r "$root\requirements.txt"
+  ```
+
+  After the model run below, this PowerShell reports the installed package bytes and unique model-cache artifact bytes:
+
+  ```powershell
+  $siteBytes = (Get-ChildItem "$root\venv\Lib\site-packages" -Recurse -File | Measure-Object Length -Sum).Sum
+  $artifactBytes = (Get-ChildItem "$root\model-cache\models--facebook--detr-resnet-50-panoptic\blobs" -File | Measure-Object Length -Sum).Sum
+  "SITE_PACKAGES_BYTES=$siteBytes MODEL_BLOB_BYTES=$artifactBytes"
+  ```
+
+  To sum the resolved wheels (excluding the test-only `psutil` helper), run:
+
+  ```powershell
+  $allWheelBytes = (Get-ChildItem "$root\wheels" -File | Measure-Object Length -Sum).Sum
+  $psutilBytes = (Get-ChildItem "$root\wheels\psutil-7.1.3-*.whl" | Measure-Object Length -Sum).Sum
+  "RUNTIME_WHEEL_BYTES=$($allWheelBytes - $psutilBytes)"
+  ```
+
+  Download the exact revision while network access is available, then write the following measured smoke script into the temporary directory:
+
+  ```powershell
+  $modelPath = & $py -c "from huggingface_hub import snapshot_download; print(snapshot_download('facebook/detr-resnet-50-panoptic', revision='d53b52a799403a8867920f82c869e40732b47037', cache_dir=r'$root\model-cache'))"
+  $script = Join-Path $root 'measure.py'
+  @'
+  import json
+  import os
+  import socket
+  import sys
+  import threading
+  import time
+  from pathlib import Path
+
+  os.environ['HF_HUB_OFFLINE'] = '1'
+  os.environ['TRANSFORMERS_OFFLINE'] = '1'
+  os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
+  def deny_network(*args, **kwargs):
+      raise RuntimeError('network disabled by measurement guard')
+  socket.socket.connect = deny_network
+  socket.create_connection = deny_network
+
+  import numpy as np
+  import psutil
+  import torch
+  from PIL import Image, ImageDraw
+  from transformers import DetrConfig, DetrForSegmentation, DetrImageProcessor
+
+  model_path = Path(sys.argv[1])
+  process = psutil.Process()
+  peak_rss = [process.memory_info().rss]
+  stop = threading.Event()
+  def sample_rss():
+      while not stop.wait(0.02):
+          peak_rss[0] = max(peak_rss[0], process.memory_info().rss)
+  sampler = threading.Thread(target=sample_rss, daemon=True)
+  sampler.start()
+  torch.set_num_threads(2)
+  load_start = time.perf_counter()
+  processor = DetrImageProcessor.from_pretrained(model_path, local_files_only=True)
+  config = DetrConfig.from_pretrained(model_path, local_files_only=True)
+  config.use_pretrained_backbone = False
+  model, load_info = DetrForSegmentation.from_pretrained(
+      model_path, config=config, local_files_only=True, use_safetensors=False,
+      output_loading_info=True,
+  )
+  model.eval()
+  load_seconds = time.perf_counter() - load_start
+
+  image = Image.new('RGB', (256, 256), (120, 135, 150))
+  draw = ImageDraw.Draw(image)
+  draw.rectangle((0, 128, 255, 255), fill=(110, 120, 80))
+  draw.rectangle((30, 30, 85, 110), fill=(160, 60, 40))
+  inputs = processor(images=image, return_tensors='pt')
+  inference_start = time.perf_counter()
+  with torch.inference_mode():
+      outputs = model(**inputs)
+      result = processor.post_process_panoptic_segmentation(
+          outputs, target_sizes=[(256, 256)]
+      )[0]
+  inference_seconds = time.perf_counter() - inference_start
+  peak_rss[0] = max(peak_rss[0], process.memory_info().rss)
+  stop.set()
+  sampler.join()
+  print(json.dumps({
+      'python': sys.version.split()[0], 'platform': sys.platform,
+      'torch': torch.__version__, 'transformers': __import__('transformers').__version__,
+      'pillow': Image.__version__, 'numpy': np.__version__,
+      'load_seconds': round(load_seconds, 3),
+      'inference_seconds': round(inference_seconds, 3),
+      'peak_rss_bytes': peak_rss[0],
+      'missing_checkpoint_keys': len(load_info['missing_keys']),
+      'unexpected_checkpoint_keys': len(load_info['unexpected_keys']),
+      'segments': len(result['segments_info']),
+  }))
+  '@ | Set-Content -LiteralPath $script -Encoding utf8
+  $env:HF_HUB_OFFLINE = '1'
+  $env:TRANSFORMERS_OFFLINE = '1'
+  & $py $script $modelPath
+  & $py $script $modelPath
+  ```
+
+  The GUID creates a unique, initially empty temporary directory. Each invocation starts a separate fresh process; both read the already downloaded files with a warmed host file cache. Each output reports that run's load time, inference time, and peak RSS. The recorded load range `0.471–0.483 s` and inference times `23.094 s` and `26.944 s` come from those two invocations; `2,856,464,384` bytes is the maximum RSS across them. Both runs reported zero missing checkpoint keys and four unused BatchNorm `num_batches_tracked` buffers. A separate offline lookup of a nonexistent model path raised `OSError` without a network attempt. Typed unavailable-error mapping remains part of the future adapter.
+- The pinned snapshot occupied 172,263,716 bytes (about 164.3 MiB), including `pytorch_model.bin` at 172,245,279 bytes. Cache-only loading succeeded with a process-cold load of 0.47–0.48 seconds after the host file cache had been warmed. Two 256×256 synthetic-image CPU runs with two Torch threads took 23.1 and 26.9 seconds; peak process RSS was 2,856,464,384 bytes (about 2,724 MiB). These are Windows host measurements, not Linux/container or production estimates, and make no model quality or safety claim.
+- Transformers' `DetrConfig` defaults to attempting to load a separate timm backbone checkpoint. To keep requests and startup offline, the loader must set `config.use_pretrained_backbone = False` before constructing `DetrForSegmentation`; the pinned checkpoint supplied all model parameters (zero missing parameter keys; four unused BatchNorm `num_batches_tracked` buffers). The run set `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, and guarded socket connections against network access.
+- The PyTorch CPU wheel index lists `torch==2.14.1+cpu` and `torchvision==0.29.1+cpu` wheels for CPython 3.12 on both `manylinux_2_28_x86_64` and `manylinux_2_28_aarch64`. This is index-availability evidence only; neither Linux wheel set was installed or measured.
+- The API adapter now loads this revision from the local cache only and maps missing runtime/model files to the typed `scene_analysis_unavailable` API response. Deployment impact remains unverified: Docker's Linux daemon was unavailable, so Linux image delta, actual Python 3.12 package installation, ARM64 inference, and service-level staging memory/CPU headroom were not measured. Do not add model dependencies or default-image provisioning until deployment-target measurements and resource fit are reviewed. See the preflight status in the runbook and Epic 7 plan.
+
 ## Attribution
 
 Every client view that displays public hazard data should identify source and last-updated time. PHIVOLCS-derived scraped data should be labeled as unofficial aggregation and linked back to the source.
