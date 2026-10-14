@@ -16,6 +16,7 @@ from ml.evaluate import evaluate_classifier, evaluate_clustering
 from ml.features import build_region_features
 from ml.ingest_kaggle import DEFAULT_DATASETS, download_datasets
 from ml.persist import ArtifactBundle, save_metadata, save_models, save_risk_profiles
+from ml.regions import DEFAULT_REGIONS_PATH, MAX_OFFSHORE_KM, assign_regions
 
 
 @dataclass
@@ -110,7 +111,15 @@ def run_training(
     ]
 
     merged_rows, source_reports = load_and_merge_sources(phivolcs_paths or [], usgs_paths or [])
-    region_features_list = list(build_region_features(merged_rows).values())
+    for source, report in source_reports.items():
+        if report.accepted_rows == 0:
+            raise ValueError(f"{source.upper()} has no usable parsed events.")
+
+    assignment = assign_regions(merged_rows)
+    for source, count in assignment.assigned_by_source.items():
+        if count == 0:
+            raise ValueError(f"{source.upper()} has no events within regional assignment range.")
+    region_features_list = list(build_region_features(assignment.rows).values())
 
     if len(region_features_list) < 2:
         raise ValueError("At least two usable regions are required for clustering.")
@@ -164,6 +173,12 @@ def run_training(
             "source_reports": {
                 key: {"accepted": report.accepted_rows, "rejected": report.rejected_rows}
                 for key, report in source_reports.items()
+            },
+            "region_assignment": {
+                "boundary_sha256": hashlib.sha256(DEFAULT_REGIONS_PATH.read_bytes()).hexdigest(),
+                "max_offshore_km": MAX_OFFSHORE_KM,
+                "assigned_by_source": assignment.assigned_by_source,
+                "excluded_by_source": assignment.unassigned_by_source,
             },
             "metrics": metrics,
         },
