@@ -69,9 +69,12 @@ The first annotation schema uses image-space masks and a documented annotation g
 - `glass_facade`: visibly identifiable exterior glass or window façade. This is a contextual visual cue, not a prediction of falling glass.
 - `overhead_lines`: visibly identifiable overhead electrical or utility lines. This is a contextual visual cue; the model cannot tell whether a line is energized.
 - `visible_building_damage`: only damage patterns explicitly defined in the annotation guide and reliably identifiable from the image. This label must not be mapped to “structurally unsafe” or used as a proxy for reinforcement.
-- `ignore`: ambiguous, occluded, low-resolution, or otherwise unlabelable pixels, excluded from supervised loss and reported in annotation quality review.
+- `background` (mask ID `5`): every visible, labelable pixel outside the five target classes. It is an annotation value only and is never a displayed or predicted class.
+- `ignore` (mask ID `255`): ambiguous, occluded, low-resolution, or otherwise unlabelable pixels, excluded from loss and reported in annotation quality review.
 
-Annotators label what is visible, not inferred hazard state. If a class cannot be consistently distinguished in a pilot annotation review, exclude it from the trained label set rather than encoding guesses. At least a reviewed sample must be double-annotated; report per-class agreement and adjudication outcomes before full training.
+This is annotation schema version 2 (`scene-review-v2`), superseding the initial draft. Mask IDs are `0=open_ground`, `1=obstacle`, `2=glass_facade`, `3=overhead_lines`, `4=visible_building_damage`, `5=background`, and `255=ignore`. Annotators label what is visible, not inferred hazard state. If a target class cannot be consistently distinguished in a pilot annotation review, exclude it from the trained label set rather than encoding guesses. At least a reviewed sample must be double-annotated; report per-class agreement and adjudication outcomes before full training.
+
+For DETR target conversion, create instances only for connected components of target classes `0`–`4`; omit `background` regions so unmatched DETR queries represent background. The first implementation uses the stock mask loss, which treats pixels outside target masks as negatives and cannot safely ignore selected pixels. Exclude any whole sample containing one or more `ignore` pixels from both training loss and validation loss. Record, for training and validation, total samples, ignore-containing samples, loss-eligible samples, and loss-excluded samples in artifact metadata; for test, record total, ignore-containing, and evaluated sample counts. Evaluation metrics mask out ignore pixels. Stop before training or acceptance if exclusions leave fewer examples than the declared minimum for a split, class, or required scene slice.
 
 ### Model and result mapping
 
@@ -82,7 +85,7 @@ Annotators label what is visible, not inferred hazard state. If a class cannot b
 
 ### Dataset and artifact provenance
 
-Each dataset manifest records source name and URL, license/terms evidence, attribution, version or retrieval date, permitted uses, image and mask counts, hashes, label schema version, annotation process, and source/location split assignments. Training metadata records code revision, dependency/runtime versions, initialization model revision, random seed, image preprocessing, hyperparameters, dataset manifest hash, and metrics. Never store user-uploaded images or absolute local paths in public metadata.
+Each dataset manifest records source name and URL, license/terms evidence, attribution, version or retrieval date, permitted uses, image and mask counts, hashes, label schema version, annotation process, and source/location split assignments. Training metadata records code revision, dependency/runtime versions, initialization model revision, random seed, image preprocessing, hyperparameters, dataset manifest hash, the required per-split ignore/loss/evaluation sample counts described above, and metrics. Never store user-uploaded images or absolute local paths in public metadata.
 
 ### Evaluation and acceptance thresholds
 
@@ -123,14 +126,14 @@ Implement in gates: (1) source/rights inventory and annotation guide, (2) rights
 
 ## Testing Strategy
 
-- ML unit tests use tiny local image/mask fixtures and no network or credentials. Cover license/provenance validation, supported label mapping, invalid mask dimensions and class IDs, duplicate/source leakage detection, deterministic training configuration, metric calculations, insufficient-sample reporting, and immutable artifact export metadata.
+- ML unit tests use tiny local image/mask fixtures and no network or credentials. Cover license/provenance validation, supported label mapping, background and ignore IDs, invalid mask dimensions and class IDs, duplicate/source leakage detection, ignore-sample exclusion from training/validation loss, ignore-masked evaluation metrics, deterministic training configuration, metric calculations, insufficient-sample reporting, and immutable artifact export metadata.
 - A small end-to-end pipeline test trains on synthetic fixtures into `tmp_path`; it validates pipeline mechanics only and is never reported as model-quality evidence.
 - A separate evaluation run uses the rights-reviewed held-out real-scene data and records the exact manifest/model/code hashes, metrics, runtime, and limits. It is an explicit offline maintainer command, not a CI network test.
 - If later API integration occurs, add backend service/API regression tests and run backend verification per `docs/testing-standards.md` in that integration change.
 
 ## Acceptance Criteria
 
-- [ ] Annotation guide defines visible labels, boundaries, ignore conditions, and forbidden inferred claims.
+- [ ] Annotation guide defines visible target classes, background and ignore IDs, boundaries, sample-level ignore-loss exclusions, and forbidden inferred claims.
 - [ ] Every training/evaluation image has source-level terms and provenance sufficient to establish intended use; excluded data cannot enter a run.
 - [ ] Dataset manifests and source/location-grouped splits are deterministic and detect duplicate leakage.
 - [ ] Training and evaluation run offline from a pinned manifest and configuration; tests require no live network or credentials.

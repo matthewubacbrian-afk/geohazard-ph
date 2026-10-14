@@ -1,6 +1,6 @@
 # Scene Review image annotation guide
 
-**Schema version:** `scene-review-v1`
+**Schema version:** `scene-review-v2`
 **Status:** Pilot guidance; no rights-approved image source or pilot labels exist.
 
 This guide describes only what is visible in one image. Annotators must not
@@ -21,13 +21,15 @@ The indexed-mask IDs are fixed and reserved as follows:
 | `2` | `glass_facade` | Visible exterior glass or window-pane surfaces on a building. |
 | `3` | `overhead_lines` | Visible overhead electrical or utility wires/cables. |
 | `4` | `visible_building_damage` | Directly visible physical damage to a building surface, using the boundaries below. |
+| `5` | `background` | Every visible, labelable pixel that is outside the five target classes. This is a mask annotation value, never a displayed or predicted class. |
 | `255` | `ignore` | Ambiguous, hidden, too small, or otherwise not reliably annotatable pixels. Exclude these pixels from supervised loss and agreement denominators. |
 
 These are single-class indexed masks: each pixel has one ID. Do not invent
 additional IDs. `ignore` takes precedence where a boundary or identity is
-uncertain. A run may declare a supported subset of classes, but unsupported
-classes must not be counted as successful predictions or silently converted to
-background.
+uncertain. A run may declare a supported subset of the five target classes,
+but unsupported classes must not be counted as successful predictions or
+silently converted to background. Background pixels do not create DETR
+segmentation targets; unmatched DETR queries represent background.
 
 ## General pixel rules
 
@@ -126,15 +128,22 @@ only and is not a structural assessment.
 Use `ignore` for occluded boundaries, severe blur, low resolution, glare,
 darkness, compression artifacts, ambiguous class identity, tiny details below
 stable annotation resolution, and any region covered by UI/text overlays.
-Pixels outside the five target classes must also be excluded from loss until a
-background representation is explicitly specified. For interim pilot masks,
-encode these non-target pixels as `255`; this makes the masks useful for
-annotation review but does not provide negative/background supervision for a
-conventional full-image classifier. The implementation must not assume a
-library default, reinterpret `0` as background, or train on these masks until a
-compatible background encoding is reviewed. The fixed IDs reserve `0` for
-`open_ground` and `255` for ignore, so adding a dedicated background ID would
-require an explicit schema revision rather than silently changing this guide.
+Assign every other visible, labelable pixel `background` (`5`). This value is
+used only in indexed masks and is omitted when constructing DETR targets; it
+must never appear as an inference class. Use `ignore` (`255`) only for
+ambiguous, occluded, or otherwise unlabelable pixels.
+
+The first implementation uses the stock DETR mask loss, which treats pixels
+outside target masks as negatives and cannot safely apply an ignore mask at
+pixel level. Therefore, exclude an entire sample containing any `ignore` pixel
+from both training loss and validation loss. Record total samples, samples
+containing ignore pixels, loss-eligible samples, and samples excluded from loss
+for the training and validation splits in artifact metadata. Record total,
+ignore-containing, and evaluated sample counts for the test split. Evaluation
+metrics mask out `ignore` pixels. Stop training if these
+exclusions leave fewer samples than the declared minimum needed for training,
+validation, or required evaluation slices; do not silently drop samples or
+count ignored pixels as background.
 
 Include suitable rights-approved indoor and outdoor scenes with varied surface
 types, viewpoints, lighting, occlusion, image quality, and ordinary as well as

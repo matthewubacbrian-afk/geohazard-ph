@@ -20,7 +20,7 @@
 - Use Conventional Commits with one logical change per commit. Do not commit raw images, masks, weights, caches, credentials, or generated reports containing local paths.
 - Dataset manifest paths are relative to a caller-provided data root. Reject absolute paths and path traversal. Do not log image pixels, image paths that contain user information, or private source credentials.
 - Training is offline. The CLI must never download dataset content or model weights implicitly. Resolve and cache the pinned initialization model explicitly before training; fail clearly when absent.
-- Annotation class IDs are fixed: `0=open_ground`, `1=obstacle`, `2=glass_facade`, `3=overhead_lines`, `4=visible_building_damage`, `255=ignore`. The guide may mark a class unsupported when it cannot be reliably annotated; a run must then explicitly declare the supported class subset and must not score omitted classes as successful.
+- Annotation mask IDs are fixed: `0=open_ground`, `1=obstacle`, `2=glass_facade`, `3=overhead_lines`, `4=visible_building_damage`, `5=background`, `255=ignore`. Background is an annotation value only, never a prediction class; omit background regions from DETR targets so unmatched queries represent background. Because stock DETR mask loss cannot ignore selected pixels, exclude every sample containing any ignore pixels from training and validation loss; evaluation metrics mask those pixels out. Record total, ignore-containing, loss-eligible, and loss-excluded sample counts for training and validation, plus total, ignore-containing, and evaluated sample counts for test; stop if exclusions leave insufficient samples. The guide may mark a target class unsupported when it cannot be reliably annotated; a run must then explicitly declare the supported target-class subset and must not score omitted classes as successful.
 - Keep source/location/event/capture groups intact across splits. Exact image hashes must not appear in more than one split.
 - Do not emit or document a safety verdict. Candidate scores are visual ordering only.
 - Write a failing test before each code behavior, run it to confirm the expected failure, implement the smallest change, then rerun focused and package verification.
@@ -73,6 +73,7 @@
 
 ```python
 LABEL_IDS: dict[str, int]
+BACKGROUND_ID: int
 IGNORE_ID: int
 
 def validate_mask(mask: numpy.ndarray, supported_labels: set[str]) -> None: ...
@@ -80,9 +81,9 @@ def labels_for_ids(class_ids: set[int]) -> set[str]: ...
 def training_id_map(supported_labels: Sequence[str]) -> dict[int, int]: ...
 ```
 
-`validate_mask` raises `ValueError` for non-2D masks, unknown IDs, IDs for unsupported classes, or an all-ignore mask. It accepts integer arrays only and accepts `255` as ignore. `training_id_map` maps the selected canonical IDs to contiguous model IDs in the stable order of `LABEL_IDS`; artifact metadata stores both directions so inference can restore canonical labels.
+`LABEL_IDS` maps only the five target labels to IDs `0`–`4`; `BACKGROUND_ID` is `5`, and `IGNORE_ID` is `255`. `validate_mask` raises `ValueError` for non-2D masks, unknown IDs, IDs for unsupported target classes, or an all-ignore mask. It accepts integer arrays only and accepts background and ignore IDs independent of the selected target subset. A background-only mask is valid and produces no DETR targets. `training_id_map` maps only the selected target class IDs (`0`–`4`) to contiguous model IDs in the stable order of `LABEL_IDS`; background is never mapped to a model class. Artifact metadata stores both directions so inference can restore canonical labels.
 
-- [ ] **Step 1: Write failing tests** for the exact IDs, valid mask, unknown ID, unsupported class, non-integer mask, wrong dimensions, all-ignore mask, and contiguous mappings for supported label subsets.
+- [ ] **Step 1: Write failing tests** for the exact IDs, valid mask including background, unknown ID, unsupported target class, non-integer mask, wrong dimensions, all-ignore mask, background-only mask, and contiguous mappings for supported target-label subsets.
 - [ ] **Step 2: Run** `pytest tests/test_scene_review_labels.py -v` from `ml/`; confirm failures are due to the missing functions or validation behavior.
 - [ ] **Step 3: Implement** the label constants and two public functions with type hints and no image I/O.
 - [ ] **Step 4: Run** `pytest tests/test_scene_review_labels.py -v` and `ruff check src/ml/scene_review/labels.py tests/test_scene_review_labels.py` from `ml/`.
@@ -129,7 +130,7 @@ def load_manifest(path: Path) -> SceneDatasetManifest: ...
 def validate_dataset(manifest: SceneDatasetManifest, data_root: Path) -> DatasetValidationReport: ...
 ```
 
-`rights_review_status` is exactly `approved`, `pending_review`, or `excluded`. `permitted_uses` must include `training`, `evaluation`, and `derived_weight_redistribution` for an artifact intended for distribution. `DatasetValidationReport` contains `image_count`, `class_pixel_counts`, `scene_type_counts`, and `warnings`, with no paths. `validate_dataset` checks approved source status, intended training/evaluation/weight-use permissions, safe relative paths, file existence, SHA-256 values, JPEG/PNG readability, equal image/mask dimensions, valid class IDs, unique image IDs, and nonempty scene groups. It never returns image contents or absolute paths.
+`label_schema_version` must be `2` (`scene-review-v2`). `rights_review_status` is exactly `approved`, `pending_review`, or `excluded`. `permitted_uses` must include `training`, `evaluation`, and `derived_weight_redistribution` for an artifact intended for distribution. `DatasetValidationReport` contains `image_count`, target/background/ignore pixel counts, `ignore_sample_count`, `scene_type_counts`, and `warnings`, with no paths. `validate_dataset` checks approved source status, intended training/evaluation/weight-use permissions, safe relative paths, file existence, SHA-256 values, JPEG/PNG readability, equal image/mask dimensions, valid mask IDs, unique image IDs, and nonempty scene groups. Background ID `5` is valid regardless of the supported target subset; ignore ID `255` is counted and marked on the sample. It never returns image contents or absolute paths.
 
 - [ ] **Step 1: Write failing tests** for valid manifests, pending/excluded rights, missing permission purposes, absolute/traversal paths, missing files, hash mismatch, invalid image/mask, dimension mismatch, duplicate IDs, and unsupported label IDs.
 - [ ] **Step 2: Run** `pytest tests/test_scene_review_manifest.py -v`; confirm expected failures.
@@ -184,9 +185,9 @@ class SceneReviewDataset:
     def __getitem__(self, index: int) -> dict[str, object]: ...
 ```
 
-Load RGB images and indexed PNG masks from the validated manifest. Convert each connected component of a non-ignore class mask into one DETR segmentation target with `class_labels`, `masks`, and `boxes`, matching the official [`DetrForSegmentation` training input](https://huggingface.co/docs/transformers/model_doc/detr#transformers.DetrForSegmentation). Convert canonical class IDs to contiguous training IDs using `training_id_map`. Use deterministic preprocessing; do not apply random augmentation in validation/test. Never silently convert an unsupported label or ignore pixels into background.
+Load RGB images and indexed PNG masks from the validated manifest. Convert each connected component of a target class (`0`–`4`) into one DETR segmentation target with `class_labels`, `masks`, and `boxes`, matching the official [`DetrForSegmentation` training input](https://huggingface.co/docs/transformers/model_doc/detr#transformers.DetrForSegmentation). Do not make targets for `background` (`5`); unmatched DETR queries represent background. Convert target class IDs to contiguous training IDs using `training_id_map`. Return an ignore-pixel mask or equivalent per-sample flag. Use deterministic preprocessing; do not apply random augmentation in validation/test. Exclude any complete sample with at least one `ignore` (`255`) pixel from both training and validation loss because the stock mask loss treats outside-mask pixels as negatives. Evaluation metrics instead mask ignore pixels out. Record, for each split, total sample count, samples containing ignore pixels, loss-eligible sample count, and loss-excluded count in metadata; stop if the remaining samples do not meet declared minimums. Never silently convert an unsupported label or ignore pixels into background.
 
-- [ ] **Step 1: Add tiny image and indexed-mask fixtures at runtime in tests** and write failing tests for RGB conversion, target class IDs, connected components, ignored pixels, empty class, and malformed dimensions.
+- [ ] **Step 1: Add tiny image and indexed-mask fixtures at runtime in tests** and write failing tests for RGB conversion, target class IDs, connected components, background-only samples, ignore-pixel masks/flags, ignored sample loss exclusion, empty class, and malformed dimensions.
 - [ ] **Step 2: Run** `pytest tests/test_scene_review_dataset.py -v`; confirm expected failures.
 - [ ] **Step 3: Implement** the dataset adapter against the pinned `DetrImageProcessor` interface. Add Pillow and NumPy to the optional vision extra only if absent from resolved transitive dependencies.
 - [ ] **Step 4: Run** focused dataset and label tests plus Ruff.
@@ -219,7 +220,7 @@ def train_model(
 ) -> TrainingResult: ...
 ```
 
-`TrainingResult` contains `checkpoint_path`, `best_epoch`, `best_validation_loss`, `seed`, `trained_labels`, and `training_metadata`.
+`TrainingResult` contains `checkpoint_path`, `best_epoch`, `best_validation_loss`, `seed`, `trained_labels`, and `training_metadata`. Metadata includes per-split total, ignore-containing, loss-eligible, and loss-excluded sample counts. Training and validation-loss calculations use only samples without ignore pixels; fail before training if this leaves fewer than the declared minimum samples.
 
 Use `facebook/detr-resnet-50-panoptic` at revision `d53b52a799403a8867920f82c869e40732b47037` as initialization. Load local files only, replace the task classifier for the declared supported labels, set all random seeds, select checkpoints using validation loss, and never inspect test metrics during training. Before editing `pyproject.toml`, verify compatible CPU package versions for supported Python 3.11+ and the project’s Linux deployment target; add a `scene-review` optional dependency extra with explicit versions and documented install command, leaving base tabular installs unchanged.
 
@@ -256,7 +257,7 @@ def compare_to_baseline(candidate: EvaluationReport,
 
 `EvaluationReport` contains `per_label_iou`, `per_label_precision`, `per_label_recall`, `false_visual_cue_rate`, `open_ground_component_coverage`, `slice_metrics`, `sample_counts`, and `passed_thresholds`. `BaselineComparison` contains per-label metric deltas and a `passed_required_non_regression` boolean. Open-ground component coverage is the fraction of ground-truth connected open-ground components that overlap a predicted component at or above the IoU threshold recorded in the report.
 
-Compute IoU, precision, and recall at pixel level for each class. Define false visual-cue rate as the fraction of evaluated images with at least one emitted hazard-cue component whose mask has IoU below the matching threshold against all ground-truth components. Report per-class metrics, false visual-cue rate, open-ground component coverage, sample counts, and slices by scene type, lighting, occlusion, image quality, and source group where sample counts meet the declared minimum. Fail acceptance if required thresholds are absent or any class regresses beyond `maximum_metric_regression_by_label` against baseline. Thresholds are written before the held-out test run; no tuning uses test results.
+Compute IoU, precision, and recall at pixel level for each target class using only non-ignore pixels; background pixels are negatives, while ignore pixels are absent from metric denominators. Define false visual-cue rate as the fraction of evaluated images with at least one emitted hazard-cue component whose mask has IoU below the matching threshold against all ground-truth components. Report per-class metrics, false visual-cue rate, open-ground component coverage, total/ignore-containing/evaluated sample counts, and slices by scene type, lighting, occlusion, image quality, and source group where sample counts meet the declared minimum. Fail acceptance if required thresholds are absent or any class regresses beyond `maximum_metric_regression_by_label` against baseline. Thresholds are written before the held-out test run; no tuning uses test results.
 
 - [ ] **Step 1: Write failing tests** with synthetic predictions for metric correctness, empty classes, insufficient slice counts, threshold enforcement, and baseline comparisons.
 - [ ] **Step 2: Run** `pytest tests/test_scene_review_evaluate.py -v`; confirm expected failures.
@@ -287,7 +288,7 @@ scene-review export --checkpoint PATH --evaluation PATH --metadata PATH --versio
 
 Register `scene-review = "ml.scene_review.cli:main"` under `[project.scripts]` in `ml/pyproject.toml`; these commands run after installing the project with the `scene-review` optional extra.
 
-Artifact export writes only under `ml/model_artifacts/scene_review/<version>/`, refuses overwrite, verifies passing evaluation and complete provenance, records model/dataset/code hashes, labels, thresholds, metrics, runtime versions, and limitations, and never copies raw images or absolute local paths. CLI errors return nonzero with actionable messages and do not log source image bytes or private paths.
+Artifact export writes only under `ml/model_artifacts/scene_review/<version>/`, refuses overwrite, verifies passing evaluation and complete provenance, records model/dataset/code hashes, labels, thresholds, metrics, runtime versions, per-split total/ignore-containing/loss-eligible/loss-excluded counts for training and validation, test total/ignore-containing/evaluated counts, and limitations, and never copies raw images or absolute local paths. CLI errors return nonzero with actionable messages and do not log source image bytes or private paths.
 
 - [ ] **Step 1: Write failing tests** for each CLI command, nonzero errors, refusal on pending rights or failed thresholds, immutable version path, metadata completeness, and absence of image/path content.
 - [ ] **Step 2: Run** `pytest tests/test_scene_review_artifacts.py tests/test_scene_review_cli.py -v`; confirm expected failures.
