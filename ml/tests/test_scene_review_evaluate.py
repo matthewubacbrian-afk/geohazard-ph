@@ -41,6 +41,7 @@ def _record(image_id, **overrides):
     values = {
         "image_id": image_id,
         "image_sha256": f"hash-{image_id}",
+        "mask_sha256": f"mask-hash-{image_id}",
         "scene_type": "outdoor",
         "lighting": "day",
         "occlusion": "low",
@@ -381,6 +382,20 @@ def test_baseline_comparison_requires_identical_held_out_samples():
     baseline = _evaluate(_Model([truth]), _Dataset([truth]), _thresholds())
     candidate_dataset = _Dataset([truth], records=[_record("different-test-image")])
     candidate = _evaluate(_Model([truth]), candidate_dataset, _thresholds())
+
+    with pytest.raises(ValueError, match="same held-out test samples"):
+        compare_to_baseline(candidate, baseline)
+
+
+def test_baseline_comparison_rejects_changed_annotation_hash():
+    truth = np.array([[0, 0, 1, 1]], dtype=np.uint8)
+    baseline = _evaluate(_Model([truth]), _Dataset([truth]), _thresholds())
+    changed_annotation = _record("0", mask_sha256="changed-mask-hash")
+    candidate = _evaluate(
+        _Model([truth]),
+        _Dataset([truth], records=[changed_annotation]),
+        _thresholds(),
+    )
 
     with pytest.raises(ValueError, match="same held-out test samples"):
         compare_to_baseline(candidate, baseline)

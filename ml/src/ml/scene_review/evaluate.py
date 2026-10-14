@@ -232,12 +232,23 @@ def evaluate_model(
         != split_assignments_fingerprint(splits)
     ):
         raise ValueError("sufficiency report must cover the same manifest and split assignment")
+    test_input_identity = {
+        "records": sorted(
+            (
+                record.image_id,
+                record.image_sha256.lower(),
+                record.mask_sha256.lower(),
+            )
+            for record in records
+        ),
+        "schema_version": getattr(manifest, "schema_version", None),
+        "label_schema_version": getattr(manifest, "label_schema_version", None),
+        "supported_labels": tuple(sorted(labels)),
+    }
     test_split_sha256 = hashlib.sha256(
         json.dumps(
-            sorted(
-                (record.image_id, record.image_sha256.lower())
-                for record in records
-            ),
+            test_input_identity,
+            sort_keys=True,
             separators=(",", ":"),
         ).encode("utf-8")
     ).hexdigest()
