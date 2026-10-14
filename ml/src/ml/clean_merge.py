@@ -18,10 +18,10 @@ ALIASES = {
     "source_event_id": ("id", "event_id", "source_event_id"),
     "region_name": ("region_name", "region", "province", "location", "place"),
     "magnitude": ("magnitude", "mag"),
-    "depth_km": ("depth_km", "depth", "depth (km)"),
+    "depth_km": ("depth_km", "depth", "depth (km)", "depth_in_km"),
     "latitude": ("latitude", "lat"),
     "longitude": ("longitude", "lon", "lng", "long"),
-    "occurred_at": ("occurred_at", "time", "date - time (philippine time)", "date_time"),
+    "occurred_at": ("occurred_at", "time", "date - time (philippine time)", "date_time", "date_time_ph"),
 }
 
 

@@ -90,7 +90,7 @@ Risk labels are descriptive statistical profiles of historical records. They are
 | --- | --- |
 | training pipeline | `ml/src/ml/*` — ingest, clean/merge, feature-build, cluster, classify, evaluate, persist. The backend never trains models on request paths. |
 | artifact bundle | `ArtifactBundle.for_version(root, version)` — versioned output set under `ml/model_artifacts/<version>/`: `metadata.json`, `risk_profiles.json`, `region_features.csv`, `kmeans_model.joblib`, `scaler.joblib`, `random_forest_model.joblib`. |
-| metadata | `metadata.json` — artifact version, dataset slugs, licenses, resolved versions when downloaded, per-source row counts, evaluation metrics, and `input_files` records with source, filename, byte count, and SHA-256 digest. Required for reproducibility. |
+| metadata | `metadata.json` — artifact version, dataset slugs, licenses, resolved versions when downloaded, parser counts, evaluation metrics, `input_files` with source and SHA-256, and `region_assignment` with boundary SHA-256, 100 km offshore limit, and assigned/excluded counts. Required for reproducibility. |
 | event density | See Hazard Data Concepts. |
 | K selection | Choosing `k` for K-Means via silhouette score over a bounded range, default 3–5. |
 

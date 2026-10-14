@@ -7,6 +7,7 @@ import pytest
 from conftest import FIXTURES
 
 from ml.ingest_kaggle import DownloadedDataset
+from ml.regions import DEFAULT_REGIONS_PATH
 from ml.train import run_training
 
 
@@ -148,6 +149,16 @@ def test_run_training_from_existing_csvs_writes_artifacts(tmp_path):
         "phivolcs": {"accepted": 2, "rejected": 0},
         "usgs": {"accepted": 2, "rejected": 0},
     }
+    assert metadata["region_assignment"] == {
+        "boundary_sha256": hashlib.sha256(DEFAULT_REGIONS_PATH.read_bytes()).hexdigest(),
+        "max_offshore_km": 100.0,
+        "assigned_by_source": {"phivolcs": 1, "usgs": 2},
+        "excluded_by_source": {"phivolcs": 0, "usgs": 0},
+    }
+    profiles = json.loads((tmp_path / "v-test" / "risk_profiles.json").read_text(encoding="utf-8"))
+    assert {profile["region_name"] for profile in profiles} == {
+        "Bicol Region", "Eastern Visayas"
+    }
     assert metadata["input_files"] == [
         {
             "source": source,
@@ -166,6 +177,50 @@ def test_offline_training_requires_both_sources_before_writing(tmp_path):
     with pytest.raises(ValueError, match="PHIVOLCS and USGS"):
         run_training(
             phivolcs_paths=[FIXTURES / "phivolcs_sample.csv"],
+            artifact_dir=tmp_path / "art",
+            download=False,
+        )
+
+    assert not (tmp_path / "art").exists()
+
+
+def test_offline_training_rejects_source_with_no_parsed_rows(tmp_path):
+    phivolcs = tmp_path / "invalid_phivolcs.csv"
+    phivolcs.write_text(
+        "Date_Time_PH,Latitude,Longitude,Depth_In_Km,Magnitude,Location\n"
+        "2024-01-01 08:00:00,13.4,123.3,invalid,5.1,Bicol Region\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="PHIVOLCS"):
+        run_training(
+            phivolcs_paths=[phivolcs],
+            usgs_paths=[FIXTURES / "usgs_sample.csv"],
+            artifact_dir=tmp_path / "art",
+            download=False,
+        )
+
+    assert not (tmp_path / "art").exists()
+
+
+def test_offline_training_rejects_source_without_region_assignment(tmp_path):
+    phivolcs = tmp_path / "far_phivolcs.csv"
+    usgs = tmp_path / "far_usgs.csv"
+    phivolcs.write_text(
+        "Date_Time_PH,Latitude,Longitude,Depth_In_Km,Magnitude,Location\n"
+        "2024-01-01 08:00:00,0,0,10,5.1,Far A\n",
+        encoding="utf-8",
+    )
+    usgs.write_text(
+        "time,latitude,longitude,depth,mag,place,id\n"
+        "2024-02-03T11:00:00Z,0,1,20,6.2,Far B,usgs-far\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="region"):
+        run_training(
+            phivolcs_paths=[phivolcs],
+            usgs_paths=[usgs],
             artifact_dir=tmp_path / "art",
             download=False,
         )
