@@ -8,6 +8,8 @@ from pathlib import Path
 import pandas as pd
 
 from ml.clean_merge import load_and_merge_sources
+from ml.clustering import fit_kmeans
+from ml.features import RegionFeatures, build_region_features
 from ml.regions import DEFAULT_REGIONS_PATH, MAX_OFFSHORE_KM, assign_regions
 from ml.train import _input_file_record, _validated_source_paths
 
@@ -94,6 +96,109 @@ def _coverage(assigned_rows: list[dict[str, object]]) -> dict[str, object]:
     }
 
 
+def _saved_features(frame: pd.DataFrame) -> list[RegionFeatures]:
+    columns = (
+        "region_name", "event_count", "mean_magnitude", "max_magnitude",
+        "mean_depth_km", "event_density",
+    )
+    missing = set(columns).difference(frame.columns)
+    if missing:
+        raise ValueError(f"region_features.csv is missing columns: {', '.join(sorted(missing))}")
+    try:
+        return [
+            RegionFeatures(
+                region_name=str(row.region_name),
+                event_count=int(row.event_count),
+                mean_magnitude=float(row.mean_magnitude),
+                max_magnitude=float(row.max_magnitude),
+                mean_depth_km=float(row.mean_depth_km),
+                event_density=float(row.event_density),
+            )
+            for row in frame.loc[:, columns].sort_values("region_name").itertuples(index=False)
+        ]
+    except (TypeError, ValueError) as exc:
+        raise ValueError("region_features.csv has invalid feature values.") from exc
+
+
+def _label_stability(
+    saved_features: list[RegionFeatures],
+    saved_labels: dict[str, str],
+    shared_rows: list[dict[str, object]],
+) -> dict[str, object]:
+    names = sorted(saved_labels)
+    if {row.region_name for row in saved_features} != set(names):
+        raise ValueError("Saved feature regions do not match saved labels.")
+    shared_features = list(build_region_features(shared_rows).values())
+    shared_features.sort(key=lambda row: row.region_name)
+    shared_refit: dict[str, object] = {
+        "included_regions": [row.region_name for row in shared_features],
+        "labels": None,
+        "change_count": None,
+        "unavailable_reason": "insufficient_regions",
+    }
+    if len(shared_features) >= 2:
+        labels = fit_kmeans(shared_features, random_state=42).risk_labels
+        shared_refit.update({
+            "labels": labels,
+            "change_count": sum(labels[name] != saved_labels[name] for name in labels),
+            "unavailable_reason": None,
+        })
+
+    seed_changes = {name: 0 for name in names}
+    seed_fits: list[dict[str, object]] = []
+    for seed in range(20):
+        labels = fit_kmeans(saved_features, random_state=seed).risk_labels
+        changed = sorted(name for name in names if labels[name] != saved_labels[name])
+        seed_fits.append({"seed": seed, "included_regions": names, "changed_regions": changed})
+        for name in changed:
+            seed_changes[name] += 1
+
+    leave_changes = {name: 0 for name in names}
+    comparisons = {name: 0 for name in names}
+    leave_fits: list[dict[str, object]] = []
+    for omitted in names:
+        retained = [row for row in saved_features if row.region_name != omitted]
+        included = [row.region_name for row in retained]
+        if len(retained) < 2:
+            leave_fits.append({
+                "omitted_region": omitted,
+                "included_regions": included,
+                "changed_regions": None,
+                "unavailable_reason": "insufficient_regions",
+            })
+            continue
+        labels = fit_kmeans(retained, random_state=42).risk_labels
+        changed = sorted(name for name in included if labels[name] != saved_labels[name])
+        leave_fits.append({
+            "omitted_region": omitted,
+            "included_regions": included,
+            "changed_regions": changed,
+            "unavailable_reason": None,
+        })
+        for name in included:
+            comparisons[name] += 1
+        for name in changed:
+            leave_changes[name] += 1
+
+    return {
+        "saved_labels": dict(sorted(saved_labels.items())),
+        "shared_window_refit": shared_refit,
+        "seed_sweep": {
+            "seeds": list(range(20)),
+            "fit_count": len(seed_fits),
+            "included_regions": names,
+            "change_count_by_region": seed_changes,
+            "fits": seed_fits,
+        },
+        "leave_one_region_out": {
+            "fit_count": sum(fit["unavailable_reason"] is None for fit in leave_fits),
+            "comparisons_per_region": comparisons,
+            "change_count_by_region": leave_changes,
+            "fits": leave_fits,
+        },
+    }
+
+
 def _read_json(path: Path, expected_type: type) -> object:
     if not path.is_file():
         raise ValueError(f"Required artifact file not found: {path}")
@@ -176,9 +281,23 @@ def build_validation_report(
     usgs_paths: list[Path],
 ) -> dict[str, object]:
     verified = _load_verified_inputs(artifact_dir, phivolcs_paths, usgs_paths)
+    coverage = _coverage(verified.assigned_rows)
+    window = coverage["shared_window"]
+    shared_rows = []
+    if window["available"]:
+        start = _utc_timestamp(window["start"])
+        end = _utc_timestamp(window["end"])
+        shared_rows = [
+            row for row in verified.assigned_rows
+            if start <= _utc_timestamp(row["occurred_at"]) <= end
+        ]
+    saved_labels = {str(profile["region_name"]): str(profile["label"]) for profile in verified.profiles}
     return {
         "artifact_version": verified.metadata.get("model_version"),
         "input_files": verified.metadata["input_files"],
-        **_coverage(verified.assigned_rows),
+        **coverage,
+        "label_stability": _label_stability(
+            _saved_features(verified.features), saved_labels, shared_rows
+        ),
         "review_state": "requires_domain_review",
     }

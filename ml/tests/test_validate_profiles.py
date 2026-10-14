@@ -5,6 +5,7 @@ from shutil import copyfile
 import pytest
 from conftest import FIXTURES
 
+from ml.features import RegionFeatures
 from ml.train import run_training
 
 
@@ -178,3 +179,52 @@ def test_coverage_reports_no_shared_window():
         "phivolcs": 0,
         "usgs": 0,
     }
+
+
+def test_label_stability_runs_seed_and_leave_one_out_comparisons():
+    from ml.validate_profiles import _label_stability
+
+    rows = [
+        RegionFeatures("A", 10, 4.0, 5.0, 10.0, 1.0),
+        RegionFeatures("B", 20, 4.5, 6.0, 20.0, 2.0),
+        RegionFeatures("C", 30, 5.0, 7.0, 30.0, 3.0),
+        RegionFeatures("D", 40, 5.5, 8.0, 40.0, 4.0),
+    ]
+    saved_labels = {"A": "Low", "B": "Moderate", "C": "Moderate", "D": "High"}
+
+    stability = _label_stability(rows, saved_labels, [])
+
+    assert stability["saved_labels"] == saved_labels
+    assert stability["seed_sweep"]["seeds"] == list(range(20))
+    assert stability["seed_sweep"]["fit_count"] == 20
+    assert set(stability["seed_sweep"]["change_count_by_region"]) == set(saved_labels)
+    assert stability["leave_one_region_out"]["fit_count"] == 4
+    assert stability["leave_one_region_out"]["comparisons_per_region"] == {
+        name: 3 for name in saved_labels
+    }
+    assert stability["shared_window_refit"]["unavailable_reason"] == "insufficient_regions"
+    assert saved_labels == {"A": "Low", "B": "Moderate", "C": "Moderate", "D": "High"}
+
+
+def test_label_stability_refits_shared_window_rows():
+    from ml.validate_profiles import _label_stability
+
+    rows = [
+        RegionFeatures("A", 10, 4.0, 5.0, 10.0, 1.0),
+        RegionFeatures("B", 20, 4.5, 6.0, 20.0, 2.0),
+        RegionFeatures("C", 30, 5.0, 7.0, 30.0, 3.0),
+    ]
+    saved_labels = {"A": "Low", "B": "Moderate", "C": "High"}
+    shared_rows = [
+        {"region_name": "A", "source": "phivolcs", "magnitude": 4.0,
+         "depth_km": 10.0, "latitude": 1.0, "longitude": 1.0},
+        {"region_name": "B", "source": "usgs", "magnitude": 5.0,
+         "depth_km": 20.0, "latitude": 2.0, "longitude": 2.0},
+    ]
+
+    stability = _label_stability(rows, saved_labels, shared_rows)
+
+    assert stability["shared_window_refit"]["unavailable_reason"] is None
+    assert stability["shared_window_refit"]["included_regions"] == ["A", "B"]
+    assert set(stability["shared_window_refit"]["labels"]) == {"A", "B"}
+    assert isinstance(stability["shared_window_refit"]["change_count"], int)
