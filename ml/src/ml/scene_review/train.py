@@ -100,6 +100,7 @@ def train_model(
     """Train and select by validation loss without accessing the held-out test split."""
     if not isinstance(config, TrainingConfig):
         raise TypeError("config must be a TrainingConfig")
+    _require_empty_output_dir(config.output_dir)
     if tuple(config.supported_labels) != tuple(manifest.supported_labels):
         raise ValueError("training labels must exactly match the manifest's supported labels")
     validate_splits(manifest.records, splits)
@@ -284,6 +285,15 @@ def train_model(
 def _require_passing_gate(report: DatasetValidationReport) -> None:
     if report.sufficiency_gate_passed is not True:
         raise ValueError("training requires a declared, passing sufficiency gate")
+
+
+def _require_empty_output_dir(output_dir: Path) -> None:
+    if not output_dir.exists():
+        return
+    if not output_dir.is_dir():
+        raise ValueError("training output path must be a directory")
+    if any(output_dir.iterdir()):
+        raise ValueError("training output directory must be empty")
 
 
 def _seed_everything(seed: int) -> None:

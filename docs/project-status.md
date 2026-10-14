@@ -27,7 +27,7 @@ evaluation, and export under pytest temporary directories using a fake model;
 these tests verify pipeline mechanics only. Evaluation and export bind passing
 reports to the trained model ID/revision, exact checkpoint bytes, manifest
 fingerprint, full split assignment, schema, and supported labels; those checks
-do not establish real-scene recognition. The ML suite passed 187 tests;
+do not establish real-scene recognition. The ML suite passed 204 tests;
 changed Scene Review files passed Ruff. The full ML Ruff run still reports 11
 unrelated existing findings in regional-risk code. Editable installation of
 the optional extra and the installed CLI help were checked in a pre-provisioned

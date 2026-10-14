@@ -71,6 +71,7 @@ class EvaluationReport:
     passed_thresholds: bool
     threshold_failures: tuple[str, ...]
     thresholds: EvaluationThresholds
+    baseline_comparison: BaselineComparison | None = None
 
 
 @dataclass(frozen=True)

@@ -103,6 +103,39 @@ def test_train_requires_a_passing_declared_gate_before_loading_model(tmp_path, m
         )
     assert calls == []
 
+
+def test_train_refuses_nonempty_output_dir_before_model_load_and_preserves_files(
+    tmp_path, monkeypatch
+):
+    from ml.scene_review import train
+
+    output_dir = tmp_path / "existing-run"
+    checkpoint = output_dir / "checkpoint-epoch-1"
+    checkpoint.mkdir(parents=True)
+    checkpoint_file = checkpoint / "weights.bin"
+    checkpoint_file.write_bytes(b"existing checkpoint")
+    metadata_file = output_dir / "training_metadata.json"
+    metadata_file.write_text('{"run":"keep"}\n', encoding="utf-8")
+    loader_calls = []
+    monkeypatch.setattr(
+        train,
+        "validate_dataset",
+        lambda *args, **kwargs: pytest.fail("output preflight must happen first"),
+    )
+
+    with pytest.raises(ValueError, match="output directory must be empty"):
+        train_model(
+            _manifest("abc"),
+            DatasetSplits(("a",), ("b",), ("c",)),
+            replace(_config(tmp_path), output_dir=output_dir),
+            model_cache=tmp_path / "cache",
+            model_loader=lambda **kwargs: loader_calls.append(kwargs),
+        )
+
+    assert loader_calls == []
+    assert checkpoint_file.read_bytes() == b"existing checkpoint"
+    assert metadata_file.read_text(encoding="utf-8") == '{"run":"keep"}\n'
+
 def test_train_loads_pinned_model_locally_and_never_reads_test_samples(tmp_path, monkeypatch):
     from ml.scene_review import train
 
@@ -174,10 +207,12 @@ def test_train_loads_pinned_model_locally_and_never_reads_test_samples(tmp_path,
             for epoch, loss in enumerate((1.0, 0.5, 0.7), start=1):
                 on_validation_epoch_end(epoch, loss)
 
+    config = _config(tmp_path)
+    config.output_dir.mkdir()
     model = train_model(
         _manifest("abcd"),
         DatasetSplits(("a", "b"), ("c",), ("d",)),
-        _config(tmp_path),
+        config,
         model_cache=tmp_path / "cache",
         model_loader=loader,
         image_processor_factory=processor_factory,

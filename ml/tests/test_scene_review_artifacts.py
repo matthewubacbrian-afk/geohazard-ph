@@ -18,18 +18,23 @@ class _Evaluation:
         self.label_schema_version = 2
         self.supported_labels = ("open_ground",)
         self.threshold_failures = ()
+        self.baseline_comparison = None
         self.unsupported_pixel_counts = {"glass_facade": 3}
         self.sample_counts = {
             "total": 2,
             "ignore_containing": 1,
             "evaluated": 2,
             "ignore_exclusion_rate": 0.5,
+            "false_visual_cue_components": 1,
+            "predicted_visual_cue_components": 10,
+            "covered_open_ground_components": 3,
+            "open_ground_components": 4,
         }
         self.per_label_iou = {"open_ground": 0.8}
-        self.per_label_precision = {"open_ground": 0.9}
-        self.per_label_recall = {"open_ground": 0.85}
+        self.per_label_precision = {"open_ground": 8 / 9}
+        self.per_label_recall = {"open_ground": 8 / 9}
         self.per_label_pixel_counts = {
-            "open_ground": {"true_positive": 4, "false_positive": 1, "false_negative": 1}
+            "open_ground": {"true_positive": 8, "false_positive": 1, "false_negative": 1}
         }
         empty_slice = {
             "sample_count": 0,
@@ -37,7 +42,9 @@ class _Evaluation:
             "ignore_containing_sample_count": 0,
             "unsupported_pixel_counts": {},
             "sufficient": False,
-            "per_label_metrics": {},
+            "per_label_metrics": {
+                "open_ground": {"iou": None, "precision": None, "recall": None}
+            },
         }
         self.slice_metrics = {
             "scene_type": {"outdoor": {**empty_slice, "sample_count": 2}},
@@ -51,7 +58,13 @@ class _Evaluation:
                 "evaluated_sample_count": 2,
                 "ignore_containing_sample_count": 1,
                 "minimum_samples_per_group": 1,
-                "aggregate_per_label_metrics": {},
+                "aggregate_per_label_metrics": {
+                    "open_ground": {
+                        "iou": {"minimum": 0.8, "maximum": 0.8},
+                        "precision": {"minimum": 8 / 9, "maximum": 8 / 9},
+                        "recall": {"minimum": 8 / 9, "maximum": 8 / 9},
+                    }
+                },
             },
         }
         self.false_visual_cue_rate = 0.1
@@ -110,6 +123,23 @@ def _bind_checkpoint(checkpoint, metadata, report):
     digest = checkpoint_directory_sha256(checkpoint)
     metadata["checkpoint_sha256"] = digest
     report.checkpoint_sha256 = digest
+
+
+def _set_pixel_counts(report, true_positive, false_positive, false_negative):
+    report.per_label_pixel_counts["open_ground"] = {
+        "true_positive": true_positive,
+        "false_positive": false_positive,
+        "false_negative": false_negative,
+    }
+    report.per_label_iou["open_ground"] = true_positive / (
+        true_positive + false_positive + false_negative
+    )
+    report.per_label_precision["open_ground"] = true_positive / (
+        true_positive + false_positive
+    )
+    report.per_label_recall["open_ground"] = true_positive / (
+        true_positive + false_negative
+    )
 
 
 def test_export_writes_complete_immutable_aggregate_artifact(tmp_path):
@@ -198,6 +228,36 @@ def test_export_rejects_evaluation_provenance_mismatch(tmp_path, field, value):
     report = _Evaluation()
     _bind_checkpoint(checkpoint, metadata, report)
     setattr(report, field, value)
+    if field == "supported_labels":
+        report.per_label_iou = {"obstacle": 0.8}
+        report.per_label_precision = {"obstacle": 8 / 9}
+        report.per_label_recall = {"obstacle": 8 / 9}
+        report.per_label_pixel_counts = {
+            "obstacle": {"true_positive": 8, "false_positive": 1, "false_negative": 1}
+        }
+        for threshold_key in (
+            "minimum_iou_by_label",
+            "minimum_precision_by_label",
+            "minimum_recall_by_label",
+            "maximum_metric_regression_by_label",
+        ):
+            report.thresholds[threshold_key] = {"obstacle": 0.2}
+        for slices in (
+            report.slice_metrics["scene_type"],
+            report.slice_metrics["lighting"],
+            report.slice_metrics["occlusion"],
+            report.slice_metrics["image_quality"],
+        ):
+            for summary in slices.values():
+                summary["per_label_metrics"] = {
+                    "obstacle": {"iou": None, "precision": None, "recall": None}
+                }
+        report.slice_metrics["source_group"]["aggregate_per_label_metrics"] = {
+            "obstacle": {
+                metric: {"minimum": 0.8, "maximum": 0.8}
+                for metric in ("iou", "precision", "recall")
+            }
+        }
 
     with pytest.raises(ValueError, match="evaluation provenance must match training"):
         export_artifact(
@@ -231,6 +291,170 @@ def test_export_rejects_checkpoint_changed_after_evaluation(tmp_path):
             training_metadata=metadata,
             sufficiency_gate_passed=True,
             version="v-checkpoint-changed",
+            output_root=tmp_path / "artifacts",
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("per_label_iou", -0.1),
+        ("per_label_iou", float("nan")),
+        ("per_label_iou", None),
+        ("per_label_iou", 1.1),
+        ("per_label_precision", -0.1),
+        ("per_label_recall", float("nan")),
+        ("false_visual_cue_rate", 1.1),
+        ("open_ground_component_coverage", -0.1),
+        ("false_visual_cue_rate", None),
+    ],
+)
+def test_export_rejects_nonfinite_or_out_of_range_metrics(tmp_path, field, value):
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    (checkpoint / "config.json").write_text('{"model_type":"detr"}', encoding="utf-8")
+    (checkpoint / "preprocessor_config.json").write_text(
+        '{"image_processor_type":"DetrImageProcessor"}', encoding="utf-8"
+    )
+    (checkpoint / "model.safetensors").write_bytes(b"weights")
+    metadata = _training_metadata()
+    report = _Evaluation()
+    _bind_checkpoint(checkpoint, metadata, report)
+    if field.startswith("per_label_"):
+        getattr(report, field)["open_ground"] = value
+    else:
+        setattr(report, field, value)
+
+    with pytest.raises(ValueError, match="evaluation metrics are invalid"):
+        export_artifact(
+            checkpoint_path=checkpoint,
+            evaluation_report=report,
+            training_metadata=metadata,
+            sufficiency_gate_passed=True,
+            version="v-invalid-metric",
+            output_root=tmp_path / "artifacts",
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "counts"),
+    [
+        ("per_label_iou", 0.6, (3, 1, 1)),
+        ("per_label_precision", 0.6, (3, 2, 1)),
+        ("per_label_recall", 0.6, (3, 1, 2)),
+        ("false_visual_cue_rate", 0.6, None),
+        ("open_ground_component_coverage", 0.4, None),
+    ],
+)
+def test_export_recomputes_declared_threshold_satisfaction(tmp_path, field, value, counts):
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    (checkpoint / "config.json").write_text('{"model_type":"detr"}', encoding="utf-8")
+    (checkpoint / "preprocessor_config.json").write_text(
+        '{"image_processor_type":"DetrImageProcessor"}', encoding="utf-8"
+    )
+    (checkpoint / "model.safetensors").write_bytes(b"weights")
+    metadata = _training_metadata()
+    report = _Evaluation()
+    _bind_checkpoint(checkpoint, metadata, report)
+    if field.startswith("per_label_"):
+        _set_pixel_counts(report, *counts)
+    else:
+        setattr(report, field, value)
+        if field == "false_visual_cue_rate":
+            report.sample_counts["false_visual_cue_components"] = 6
+        else:
+            report.sample_counts["covered_open_ground_components"] = 2
+            report.sample_counts["open_ground_components"] = 5
+
+    with pytest.raises(ValueError, match="evaluation thresholds are inconsistent"):
+        export_artifact(
+            checkpoint_path=checkpoint,
+            evaluation_report=report,
+            training_metadata=metadata,
+            sufficiency_gate_passed=True,
+            version="v-threshold-mismatch",
+            output_root=tmp_path / "artifacts",
+        )
+
+
+def test_export_recomputes_optional_baseline_non_regression(tmp_path):
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    (checkpoint / "config.json").write_text('{"model_type":"detr"}', encoding="utf-8")
+    (checkpoint / "preprocessor_config.json").write_text(
+        '{"image_processor_type":"DetrImageProcessor"}', encoding="utf-8"
+    )
+    (checkpoint / "model.safetensors").write_bytes(b"weights")
+    metadata = _training_metadata()
+    report = _Evaluation()
+    _bind_checkpoint(checkpoint, metadata, report)
+    report.baseline_comparison = {
+        "per_label_metric_deltas": {
+            "open_ground": {"iou": -0.3, "precision": 0.0, "recall": 0.0}
+        },
+        "false_visual_cue_rate_delta": 0.0,
+        "open_ground_component_coverage_delta": 0.0,
+        "passed_required_non_regression": True,
+        "failures": [],
+    }
+
+    with pytest.raises(ValueError, match="baseline non-regression thresholds are inconsistent"):
+        export_artifact(
+            checkpoint_path=checkpoint,
+            evaluation_report=report,
+            training_metadata=metadata,
+            sufficiency_gate_passed=True,
+            version="v-baseline-mismatch",
+            output_root=tmp_path / "artifacts",
+        )
+
+    passing_report = _Evaluation()
+    _bind_checkpoint(checkpoint, metadata, passing_report)
+    passing_report.baseline_comparison = {
+        "per_label_metric_deltas": {
+            "open_ground": {"iou": 0.0, "precision": 0.0, "recall": 0.0}
+        },
+        "false_visual_cue_rate_delta": 0.0,
+        "open_ground_component_coverage_delta": 0.0,
+        "passed_required_non_regression": True,
+        "failures": [],
+    }
+    artifact_dir = export_artifact(
+        checkpoint_path=checkpoint,
+        evaluation_report=passing_report,
+        training_metadata=metadata,
+        sufficiency_gate_passed=True,
+        version="v-baseline-passing",
+        output_root=tmp_path / "artifacts",
+    )
+    assert json.loads((artifact_dir / "metadata.json").read_text(encoding="utf-8"))[
+        "evaluation"
+    ]["baseline_comparison"]["passed_required_non_regression"]
+
+
+def test_export_rejects_out_of_range_slice_metrics(tmp_path):
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    (checkpoint / "config.json").write_text('{"model_type":"detr"}', encoding="utf-8")
+    (checkpoint / "preprocessor_config.json").write_text(
+        '{"image_processor_type":"DetrImageProcessor"}', encoding="utf-8"
+    )
+    (checkpoint / "model.safetensors").write_bytes(b"weights")
+    metadata = _training_metadata()
+    report = _Evaluation()
+    _bind_checkpoint(checkpoint, metadata, report)
+    report.slice_metrics["scene_type"]["outdoor"]["per_label_metrics"][
+        "open_ground"
+    ]["iou"] = 1.1
+
+    with pytest.raises(ValueError, match="evaluation metrics are invalid"):
+        export_artifact(
+            checkpoint_path=checkpoint,
+            evaluation_report=report,
+            training_metadata=metadata,
+            sufficiency_gate_passed=True,
+            version="v-out-of-range-slice",
             output_root=tmp_path / "artifacts",
         )
 

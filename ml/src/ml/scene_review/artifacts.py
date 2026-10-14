@@ -332,6 +332,7 @@ def _evaluation_metadata(report: object) -> dict[str, object]:
             "false_visual_cue_rate",
             "open_ground_component_coverage",
             "threshold_failures",
+            "baseline_comparison",
             "thresholds",
             "slice_metrics",
             "sample_counts",
@@ -381,7 +382,9 @@ def _evaluation_metadata(report: object) -> dict[str, object]:
             raise TypeError(f"evaluation {field} must be a mapping")
     if not isinstance(evaluation["slice_metrics"], Mapping):
         raise TypeError("evaluation slice_metrics must be a mapping")
-    evaluation["slice_metrics"] = _sanitize_slice_metrics(evaluation["slice_metrics"])
+    evaluation["slice_metrics"] = _sanitize_slice_metrics(
+        evaluation["slice_metrics"], set(evaluation["supported_labels"])
+    )
     if not isinstance(evaluation["unsupported_pixel_counts"], Mapping) or not set(
         evaluation["unsupported_pixel_counts"]
     ).issubset(LABEL_IDS):
@@ -404,7 +407,182 @@ def _evaluation_metadata(report: object) -> dict[str, object]:
     }
     if set(threshold_values) != required_thresholds:
         raise ValueError("evaluation thresholds are incomplete")
+    labels = set(evaluation["supported_labels"])
+    _validate_threshold_satisfaction(evaluation, labels)
+    _validate_baseline_comparison(evaluation, labels)
     return evaluation
+
+
+def _require_rate(value: object) -> float:
+    if (
+        not isinstance(value, (int, float))
+        or isinstance(value, bool)
+        or not math.isfinite(value)
+        or not 0 <= value <= 1
+    ):
+        raise ValueError("evaluation metrics are invalid")
+    return float(value)
+
+
+def _validate_threshold_satisfaction(
+    evaluation: Mapping[str, Any], labels: set[str]
+) -> None:
+    metric_maps = {
+        "iou": (evaluation["per_label_iou"], "minimum_iou_by_label"),
+        "precision": (evaluation["per_label_precision"], "minimum_precision_by_label"),
+        "recall": (evaluation["per_label_recall"], "minimum_recall_by_label"),
+    }
+    thresholds = evaluation["thresholds"]
+    failures = []
+    for metric_name, (metric_values, threshold_name) in metric_maps.items():
+        if set(metric_values) != labels or set(thresholds[threshold_name]) != labels:
+            raise ValueError("evaluation metrics are invalid")
+        for label in labels:
+            score = _require_rate(metric_values[label])
+            minimum = _require_rate(thresholds[threshold_name][label])
+            if score < minimum:
+                failures.append(f"{label} {metric_name}")
+
+    counts_by_label = evaluation["per_label_pixel_counts"]
+    if set(counts_by_label) != labels:
+        raise ValueError("evaluation metrics are invalid")
+    for label in labels:
+        counts = counts_by_label[label]
+        if not isinstance(counts, Mapping) or set(counts) != {
+            "true_positive", "false_positive", "false_negative"
+        }:
+            raise ValueError("evaluation metrics are invalid")
+        if any(
+            not isinstance(count, int) or isinstance(count, bool) or count < 0
+            for count in counts.values()
+        ):
+            raise ValueError("evaluation metrics are invalid")
+        true_positive = counts["true_positive"]
+        false_positive = counts["false_positive"]
+        false_negative = counts["false_negative"]
+        denominators = (
+            true_positive + false_positive + false_negative,
+            true_positive + false_positive,
+            true_positive + false_negative,
+        )
+        if any(denominator == 0 for denominator in denominators):
+            raise ValueError("evaluation metrics are invalid")
+        actual = (
+            true_positive / denominators[0],
+            true_positive / denominators[1],
+            true_positive / denominators[2],
+        )
+        reported = tuple(metric_maps[name][0][label] for name in metric_maps)
+        if any(
+            not math.isclose(_require_rate(value), expected, rel_tol=1e-8, abs_tol=1e-8)
+            for value, expected in zip(reported, actual, strict=True)
+        ):
+            raise ValueError("evaluation metrics are invalid")
+
+    sample_counts = evaluation["sample_counts"]
+    cue_total = _require_count(sample_counts.get("predicted_visual_cue_components"))
+    cue_false = _require_count(sample_counts.get("false_visual_cue_components"))
+    ground_total = _require_count(sample_counts.get("open_ground_components"))
+    ground_covered = _require_count(sample_counts.get("covered_open_ground_components"))
+    if cue_total <= 0 or ground_total <= 0 or cue_false > cue_total or ground_covered > ground_total:
+        raise ValueError("evaluation metrics are invalid")
+    cue_rate = _require_rate(evaluation["false_visual_cue_rate"])
+    coverage = _require_rate(evaluation["open_ground_component_coverage"])
+    if not math.isclose(cue_rate, cue_false / cue_total, rel_tol=1e-8, abs_tol=1e-8):
+        raise ValueError("evaluation metrics are invalid")
+    if not math.isclose(coverage, ground_covered / ground_total, rel_tol=1e-8, abs_tol=1e-8):
+        raise ValueError("evaluation metrics are invalid")
+
+    for threshold_name in (
+        "maximum_false_cue_rate",
+        "minimum_open_ground_component_coverage",
+        "open_ground_component_overlap_iou",
+        "maximum_false_cue_rate_regression",
+        "maximum_open_ground_component_coverage_regression",
+        "minimum_prediction_score",
+    ):
+        _require_rate(thresholds[threshold_name])
+    _require_rate(thresholds["maximum_false_cue_rate"])
+    if cue_rate > thresholds["maximum_false_cue_rate"]:
+        failures.append("false_visual_cue_rate")
+    if coverage < thresholds["minimum_open_ground_component_coverage"]:
+        failures.append("open_ground_component_coverage")
+    if (
+        not isinstance(thresholds["minimum_samples_per_slice"], int)
+        or isinstance(thresholds["minimum_samples_per_slice"], bool)
+        or thresholds["minimum_samples_per_slice"] <= 0
+    ):
+        raise ValueError("evaluation thresholds are invalid")
+    for map_name in (
+        "maximum_metric_regression_by_label",
+    ):
+        values = thresholds[map_name]
+        if not isinstance(values, Mapping) or set(values) != labels:
+            raise ValueError("evaluation thresholds are invalid")
+        for value in values.values():
+            _require_rate(value)
+    if not evaluation["passed_thresholds"] or evaluation["threshold_failures"] or failures:
+        raise ValueError("evaluation thresholds are inconsistent")
+
+
+def _validate_baseline_comparison(
+    evaluation: Mapping[str, Any], labels: set[str]
+) -> None:
+    comparison = evaluation.get("baseline_comparison")
+    if comparison is None:
+        return
+    if not isinstance(comparison, Mapping) or set(comparison) != {
+        "per_label_metric_deltas",
+        "false_visual_cue_rate_delta",
+        "open_ground_component_coverage_delta",
+        "passed_required_non_regression",
+        "failures",
+    }:
+        raise ValueError("baseline comparison is incomplete")
+    limits = evaluation["thresholds"]
+    failures = []
+    per_label = comparison["per_label_metric_deltas"]
+    if not isinstance(per_label, Mapping) or set(per_label) != labels:
+        raise ValueError("baseline comparison is incomplete")
+    for label, metric_deltas in per_label.items():
+        if not isinstance(metric_deltas, Mapping) or set(metric_deltas) != {
+            "iou", "precision", "recall"
+        }:
+            raise ValueError("baseline comparison is incomplete")
+        maximum_drop = limits["maximum_metric_regression_by_label"][label]
+        for delta in metric_deltas.values():
+            _require_delta(delta)
+            if delta < -maximum_drop:
+                failures.append(label)
+    false_delta = _require_delta(comparison["false_visual_cue_rate_delta"])
+    coverage_delta = _require_delta(comparison["open_ground_component_coverage_delta"])
+    if false_delta > limits["maximum_false_cue_rate_regression"]:
+        failures.append("false_visual_cue_rate")
+    if coverage_delta < -limits["maximum_open_ground_component_coverage_regression"]:
+        failures.append("open_ground_component_coverage")
+    if (
+        comparison["passed_required_non_regression"] is not True
+        or comparison["failures"]
+        or failures
+    ):
+        raise ValueError("baseline non-regression thresholds are inconsistent")
+
+
+def _require_count(value: object) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise ValueError("evaluation metrics are invalid")
+    return value
+
+
+def _require_delta(value: object) -> float:
+    if (
+        not isinstance(value, (int, float))
+        or isinstance(value, bool)
+        or not math.isfinite(value)
+        or not -1 <= value <= 1
+    ):
+        raise ValueError("baseline comparison is invalid")
+    return float(value)
 
 
 def _validate_class_counts(counts: object) -> None:
@@ -415,7 +593,9 @@ def _validate_class_counts(counts: object) -> None:
         raise ValueError("unsupported pixel counts must be nonnegative integers")
 
 
-def _sanitize_slice_metrics(slices: Mapping[str, Any]) -> dict[str, object]:
+def _sanitize_slice_metrics(
+    slices: Mapping[str, Any], labels: set[str]
+) -> dict[str, object]:
     if set(slices) != {*_SLICE_CATEGORIES, "source_group"}:
         raise ValueError("evaluation slices must use controlled categories")
     sanitized: dict[str, object] = {}
@@ -423,7 +603,13 @@ def _sanitize_slice_metrics(slices: Mapping[str, Any]) -> dict[str, object]:
         values = slices[field]
         if not isinstance(values, Mapping) or not set(values).issubset(allowed_categories):
             raise ValueError("evaluation slices must use controlled categories")
-        sanitized[field] = dict(values)
+        sanitized_values = {}
+        for category, summary in values.items():
+            if not isinstance(summary, Mapping):
+                raise TypeError("evaluation slice metrics must be mappings")
+            _validate_slice_summary(summary, labels)
+            sanitized_values[category] = dict(summary)
+        sanitized[field] = sanitized_values
     group_summary = slices["source_group"]
     required_group_fields = {
         "group_count",
@@ -436,8 +622,57 @@ def _sanitize_slice_metrics(slices: Mapping[str, Any]) -> dict[str, object]:
     }
     if not isinstance(group_summary, Mapping) or set(group_summary) != required_group_fields:
         raise ValueError("source-group evaluation must contain aggregate counts only")
+    for field in (
+        "group_count", "groups_meeting_minimum", "sample_count", "evaluated_sample_count",
+        "ignore_containing_sample_count", "minimum_samples_per_group",
+    ):
+        _require_count(group_summary[field])
+    if group_summary["groups_meeting_minimum"] > group_summary["group_count"]:
+        raise ValueError("source-group evaluation counts are invalid")
+    group_metrics = group_summary["aggregate_per_label_metrics"]
+    if not isinstance(group_metrics, Mapping) or set(group_metrics) != labels:
+        raise ValueError("source-group evaluation metrics are invalid")
+    for metric_ranges in group_metrics.values():
+        if not isinstance(metric_ranges, Mapping) or set(metric_ranges) != {
+            "iou", "precision", "recall"
+        }:
+            raise ValueError("source-group evaluation metrics are invalid")
+        for bounds in metric_ranges.values():
+            if not isinstance(bounds, Mapping) or set(bounds) != {"minimum", "maximum"}:
+                raise ValueError("source-group evaluation metrics are invalid")
+            minimum = bounds["minimum"]
+            maximum = bounds["maximum"]
+            if minimum is not None:
+                minimum = _require_rate(minimum)
+            if maximum is not None:
+                maximum = _require_rate(maximum)
+            if minimum is not None and maximum is not None and minimum > maximum:
+                raise ValueError("source-group evaluation metrics are invalid")
     sanitized["source_group"] = dict(group_summary)
     return sanitized
+
+
+def _validate_slice_summary(summary: Mapping[str, Any], labels: set[str]) -> None:
+    required = {
+        "sample_count", "evaluated_sample_count", "ignore_containing_sample_count",
+        "unsupported_pixel_counts", "sufficient", "per_label_metrics",
+    }
+    if set(summary) != required:
+        raise ValueError("evaluation slice metrics are invalid")
+    for field in ("sample_count", "evaluated_sample_count", "ignore_containing_sample_count"):
+        _require_count(summary[field])
+    if not isinstance(summary["sufficient"], bool):
+        raise TypeError("evaluation slice sufficiency must be boolean")
+    _validate_class_counts(summary["unsupported_pixel_counts"])
+    per_label = summary["per_label_metrics"]
+    if not isinstance(per_label, Mapping) or set(per_label) != labels:
+        raise ValueError("evaluation slice metrics are invalid")
+    for values in per_label.values():
+        if not isinstance(values, Mapping) or set(values) != {"iou", "precision", "recall"}:
+            raise ValueError("evaluation slice metrics are invalid")
+        for value in values.values():
+            if value is not None:
+                _require_rate(value)
 
 
 def _aggregate_split_counts(
