@@ -9,16 +9,16 @@
 .activityContent::-webkit-scrollbar { width: 5px; }
 .activityContent::-webkit-scrollbar-thumb { border-radius: var(--radius-pill); background: var(--outline-variant); }
 @media (max-width: 1200px) and (min-width: 901px) {
-  .controlsCollapsed { grid-template-columns: 56px minmax(0, 1fr); }
-  .activityCollapsed { grid-template-columns: minmax(260px, 29vw) minmax(0, 1fr); }
-  .controlsCollapsed.activityCollapsed { grid-template-columns: 56px minmax(0, 1fr); }
-}
-
-@media (max-width: 1200px) and (min-width: 901px) {
   .main { grid-template-columns: minmax(260px, 29vw) minmax(0, 1fr); grid-template-rows: minmax(520px, 1fr) minmax(320px, 42vh); grid-template-areas: "controls map" "activity activity"; overflow: auto; }
   .main > :first-child { grid-area: controls; }
   .main > :nth-child(2) { grid-area: map; }
   .sidePanel { grid-area: activity; border-top: 1px solid var(--border-subtle); border-left: 0; }
+  .main.controlsCollapsed { grid-template-columns: 56px minmax(0, 1fr); }
+  .main.activityCollapsed { grid-template-columns: minmax(260px, 29vw) minmax(0, 1fr) 56px; grid-template-rows: minmax(520px, 1fr); grid-template-areas: none; overflow: hidden; }
+  .main.activityCollapsed > :first-child,
+  .main.activityCollapsed > :nth-child(2),
+  .main.activityCollapsed > :nth-child(3) { grid-area: auto; }
+  .main.controlsCollapsed.activityCollapsed { grid-template-columns: 56px minmax(0, 1fr) 56px; grid-template-rows: minmax(520px, 1fr); grid-template-areas: none; overflow: hidden; }
 }
 
 @media (max-width: 900px) {

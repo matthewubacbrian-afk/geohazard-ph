@@ -20,4 +20,10 @@ describe('dashboard desktop scrolling layout', () => {
     expect(sidebarStyles).toMatch(/\.sidebar\s*\{[^}]*min-height:\s*0/s);
     expect(sidebarStyles).toMatch(/\.body\s*\{[^}]*min-height:\s*0/s);
   });
+
+  it('keeps each collapsed rail narrow at tablet widths', () => {
+    expect(dashboardStyles).toMatch(/\.main\.controlsCollapsed\s*\{[^}]*grid-template-columns:\s*56px/s);
+    expect(dashboardStyles).toMatch(/\.main\.activityCollapsed\s*\{[^}]*grid-template-columns:[^}]*56px/s);
+    expect(dashboardStyles).toMatch(/\.main\.controlsCollapsed\.activityCollapsed\s*\{[^}]*56px\s+minmax\(0,\s*1fr\)\s+56px/s);
+  });
 });
