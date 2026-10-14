@@ -15,6 +15,10 @@ from ml.ingest_kaggle import (
 )
 
 
+def test_repository_root_points_to_project_root():
+    assert ingest_kaggle.REPOSITORY_ROOT == Path(ingest_kaggle.__file__).resolve().parents[3]
+
+
 def test_download_datasets_loads_credentials_from_repository_dotenv(monkeypatch, tmp_path):
     monkeypatch.delenv("KAGGLE_USERNAME", raising=False)
     monkeypatch.delenv("KAGGLE_KEY", raising=False)

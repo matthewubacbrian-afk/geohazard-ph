@@ -7,7 +7,7 @@ from pathlib import Path
 
 PHIVOLCS_DATASET = "bwandowando/philippine-earthquakes-from-phivolcs"
 USGS_DATASET = "bwandowando/philippine-earthquakes-1900-2025-from-usgs"
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 _KAGGLE_CREDENTIAL_KEYS = ("KAGGLE_USERNAME", "KAGGLE_KEY")
 
 
