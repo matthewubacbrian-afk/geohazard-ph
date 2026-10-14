@@ -230,6 +230,97 @@ def test_label_stability_refits_shared_window_rows():
     assert isinstance(stability["shared_window_refit"]["change_count"], int)
 
 
+def test_sparse_region_sensitivity_uses_shared_window_breakpoints(monkeypatch):
+    from types import SimpleNamespace
+
+    import ml.validate_profiles as validation
+
+    counts = [
+        {"region_name": "A", "shared_window_count_by_source": {"phivolcs": 1, "usgs": 2}},
+        {"region_name": "B", "shared_window_count_by_source": {"phivolcs": 2, "usgs": 2}},
+        {"region_name": "C", "shared_window_count_by_source": {"phivolcs": 3, "usgs": 3}},
+    ]
+    features = [
+        RegionFeatures("A", 3, 4.0, 5.0, 10.0, 1.0),
+        RegionFeatures("B", 4, 4.5, 6.0, 20.0, 2.0),
+        RegionFeatures("C", 6, 5.0, 7.0, 30.0, 3.0),
+    ]
+    saved = {"A": "Low", "B": "Moderate", "C": "Moderate"}
+    fit_sizes = []
+
+    def fake_fit(rows, k_values, random_state):
+        names = [row.region_name for row in rows]
+        fit_sizes.append(len(names))
+        labels = {"A": "Low", "B": "Moderate", "C": "High"}
+        return SimpleNamespace(risk_labels={name: labels[name] for name in names})
+
+    monkeypatch.setattr(validation, "fit_kmeans", fake_fit)
+    result = validation._sparse_region_sensitivity(counts, saved, features)
+
+    assert result["count_basis"] == "combined_sources_in_shared_window"
+    assert result["thresholds_are_policy"] is False
+    scenarios = result["scenarios"]
+    assert [item["minimum_shared_window_events"] for item in scenarios] == [0, 4, 5, 7]
+    assert scenarios[1]["included_regions"] == ["B", "C"]
+    assert scenarios[1]["excluded_regions"] == ["A"]
+    assert scenarios[1]["changed_regions"] == ["C"]
+    assert scenarios[1]["change_count"] == 1
+    assert scenarios[1]["exclusion_reason_by_region"] == {
+        "A": "below_minimum_event_count"
+    }
+    assert scenarios[-1]["labels"] is None
+    assert scenarios[-1]["unavailable_reason"] == "insufficient_regions"
+    assert fit_sizes == [3, 2]
+
+
+def test_sparse_region_sensitivity_treats_missing_coverage_as_zero():
+    from ml.validate_profiles import _sparse_region_sensitivity
+
+    result = _sparse_region_sensitivity(
+        [{"region_name": "A", "shared_window_count_by_source": {"phivolcs": 1, "usgs": 0}}],
+        {"A": "Low", "No events": "Moderate"},
+        [RegionFeatures("A", 1, 4.0, 5.0, 10.0, 1.0)],
+    )
+
+    first = result["scenarios"][0]
+    assert first["excluded_regions"] == ["No events"]
+    assert first["exclusion_reason_by_region"] == {
+        "No events": "no_shared_window_observations"
+    }
+
+
+@pytest.mark.parametrize(
+    "coverage, saved, features",
+    [
+        (
+            [{"region_name": "A", "shared_window_count_by_source": {"phivolcs": 1}}],
+            {"A": "Low"},
+            [RegionFeatures("A", 1, 4.0, 5.0, 10.0, 1.0)],
+        ),
+        (
+            [{"region_name": "A", "shared_window_count_by_source": {"phivolcs": -1, "usgs": 2}}],
+            {"A": "Low"},
+            [RegionFeatures("A", 1, 4.0, 5.0, 10.0, 1.0)],
+        ),
+        (
+            [{"region_name": "B", "shared_window_count_by_source": {"phivolcs": 1, "usgs": 0}}],
+            {"A": "Low"},
+            [RegionFeatures("A", 1, 4.0, 5.0, 10.0, 1.0)],
+        ),
+        (
+            [{"region_name": "A", "shared_window_count_by_source": {"phivolcs": 1, "usgs": 1}}],
+            {"A": "Low"},
+            [RegionFeatures("A", 1, 4.0, 5.0, 10.0, 1.0)],
+        ),
+    ],
+)
+def test_sparse_region_sensitivity_rejects_malformed_counts(coverage, saved, features):
+    from ml.validate_profiles import _sparse_region_sensitivity
+
+    with pytest.raises(ValueError):
+        _sparse_region_sensitivity(coverage, saved, features)
+
+
 def test_cli_writes_json_and_markdown_on_success(
     saved_bundle: tuple[Path, Path, Path], tmp_path: Path
 ):

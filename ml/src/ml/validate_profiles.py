@@ -219,6 +219,101 @@ def _label_stability(
     }
 
 
+def _sparse_region_sensitivity(
+    region_coverage: list[dict[str, object]],
+    saved_labels: dict[str, str],
+    shared_features: list[RegionFeatures],
+) -> dict[str, object]:
+    names = sorted(saved_labels)
+    coverage_by_name: dict[str, int] = {}
+    for region in region_coverage:
+        name = region.get("region_name")
+        if not isinstance(name, str) or name not in saved_labels:
+            raise ValueError("Coverage includes a region absent from saved labels.")
+        if name in coverage_by_name:
+            raise ValueError(f"Coverage repeats region: {name}")
+
+        source_counts = region.get("shared_window_count_by_source")
+        if not isinstance(source_counts, dict):
+            raise ValueError(  # noqa: TRY004
+                f"Coverage counts are missing for region: {name}"
+            )
+        values = [source_counts.get(source) for source in ("phivolcs", "usgs")]
+        if any(
+            isinstance(value, bool) or not isinstance(value, int) or value < 0
+            for value in values
+        ):
+            raise ValueError(f"Coverage counts are invalid for region: {name}")
+        coverage_by_name[name] = sum(values)
+
+    features_by_name: dict[str, RegionFeatures] = {}
+    for feature in shared_features:
+        name = feature.region_name
+        if name not in saved_labels or name in features_by_name:
+            raise ValueError(f"Shared-window features have an invalid region: {name}")
+        features_by_name[name] = feature
+
+    counts = {name: coverage_by_name.get(name, 0) for name in names}
+    for name, feature in features_by_name.items():
+        if feature.event_count != counts[name]:
+            raise ValueError(f"Shared-window count does not match features for region: {name}")
+    if any(count > 0 and name not in features_by_name for name, count in counts.items()):
+        raise ValueError("Positive shared-window count has no feature row.")
+
+    thresholds = [0, *sorted({count + 1 for count in counts.values()})]
+    scenarios: list[dict[str, object]] = []
+    for threshold in thresholds:
+        included = sorted(
+            name for name in names
+            if name in features_by_name and counts[name] >= threshold
+        )
+        excluded = sorted(set(names).difference(included))
+        reasons = {
+            name: (
+                "no_shared_window_observations"
+                if name not in features_by_name
+                else "below_minimum_event_count"
+            )
+            for name in excluded
+        }
+        labels = None
+        changed = None
+        change_count = None
+        unavailable_reason = "insufficient_regions"
+        if len(included) >= 2:
+            rows = [features_by_name[name] for name in included]
+            labels = fit_kmeans(
+                rows,
+                k_values=REFIT_K_CANDIDATES,
+                random_state=REFIT_RANDOM_STATE,
+            ).risk_labels
+            labels = dict(sorted(labels.items()))
+            changed = sorted(name for name in included if labels[name] != saved_labels[name])
+            change_count = len(changed)
+            unavailable_reason = None
+        scenarios.append({
+            "minimum_shared_window_events": threshold,
+            "included_regions": included,
+            "excluded_regions": excluded,
+            "exclusion_reason_by_region": reasons,
+            "labels": labels,
+            "changed_regions": changed,
+            "change_count": change_count,
+            "unavailable_reason": unavailable_reason,
+        })
+
+    return {
+        "count_basis": "combined_sources_in_shared_window",
+        "thresholds_are_policy": False,
+        "comparison_parameters": {
+            "k_candidates": list(REFIT_K_CANDIDATES),
+            "random_state": REFIT_RANDOM_STATE,
+            "parameter_match_verified": False,
+        },
+        "scenarios": scenarios,
+    }
+
+
 def _read_json(path: Path, expected_type: type) -> object:
     if not path.is_file():
         raise ValueError(f"Required artifact file not found: {path}")

@@ -142,7 +142,9 @@ def _sparse_region_sensitivity(
             raise ValueError(f"Coverage repeats region: {name}")
         source_counts = region.get("shared_window_count_by_source")
         if not isinstance(source_counts, dict):
-            raise ValueError(f"Coverage counts are missing for region: {name}")
+            raise ValueError(  # noqa: TRY004
+                f"Coverage counts are missing for region: {name}"
+            )
         values = [source_counts.get(source) for source in ("phivolcs", "usgs")]
         if any(
             isinstance(value, bool) or not isinstance(value, int) or value < 0
