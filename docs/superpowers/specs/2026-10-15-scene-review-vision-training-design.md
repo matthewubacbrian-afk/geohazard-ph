@@ -67,11 +67,16 @@ The first annotation schema uses image-space masks and a documented annotation g
 - `open_ground`: visible floor or ground surface that appears visually unobstructed in the captured pixels. This describes appearance only; it does not assert accessibility, stability, or safety.
 - `obstacle`: visible object, debris, or obstruction occupying or crossing a candidate ground area.
 - `glass_facade`: visibly identifiable exterior glass or window façade. This is a contextual visual cue, not a prediction of falling glass.
-- `overhead_lines`: visibly identifiable overhead electrical or utility lines. This is a contextual visual cue; the model cannot tell whether a line is energized.
+- `overhead_lines`: visible overhead wires or cables only. The model does not identify their type (electrical, utility, communications, or other), voltage, live/energized status, or danger.
 - `visible_building_damage`: only damage patterns explicitly defined in the annotation guide and reliably identifiable from the image. This label must not be mapped to “structurally unsafe” or used as a proxy for reinforcement.
-- `ignore`: ambiguous, occluded, low-resolution, or otherwise unlabelable pixels, excluded from supervised loss and reported in annotation quality review.
+- `background` (mask ID `5`): every visible, labelable pixel outside the five target classes. It is an annotation value only and is never a displayed or predicted class.
+- `ignore` (canonical mask ID `255`): ambiguous, occluded, low-resolution, or otherwise unlabelable pixels. In a run-specific mask, pixels assigned to canonical target classes unsupported by that run are also mapped to `255`, never to background; report these remapped pixels separately.
 
-Annotators label what is visible, not inferred hazard state. If a class cannot be consistently distinguished in a pilot annotation review, exclude it from the trained label set rather than encoding guesses. At least a reviewed sample must be double-annotated; report per-class agreement and adjudication outcomes before full training.
+This is annotation schema version 2 (`scene-review-v2`), superseding the initial draft. Mask IDs are `0=open_ground`, `1=obstacle`, `2=glass_facade`, `3=overhead_lines`, `4=visible_building_damage`, `5=background`, and `255=ignore`. Clearly visible, labelable non-target pixels—including identifiable people—are background; ignore is reserved for genuinely ambiguous, occluded, or otherwise unlabelable pixels. Annotators label what is visible, not inferred hazard state. If a target class cannot be consistently distinguished in a pilot annotation review, exclude it from the trained label set rather than encoding guesses. For double annotation, compute pixel agreement, per-class IoU, and confusion counts only on pixels where neither mask is ignore; separately report counts and fractions of one-sided-ignore disagreement, both-ignore coverage, and jointly labelable coverage using all image pixels as the coverage denominator. At least a reviewed sample must be double-annotated, with agreement and adjudication outcomes reported before full training.
+
+For each run, build a run-specific mask from the canonical annotation mask and its declared supported target subset: replace every pixel whose canonical target class is unsupported in that run with `ignore` (`255`), never `background` (`5`). Preserve and hash the canonical source mask. Count remapped pixels by canonical class and count all samples containing run-specific ignore pixels, including original ignore labels and remapped unsupported classes. For DETR target conversion, create instances only for supported target classes; omit `background` regions so unmatched DETR queries represent background. The first implementation uses the stock mask loss, which treats pixels outside target masks as negatives and cannot safely ignore selected pixels. Exclude any whole sample whose run-specific mask contains one or more `ignore` pixels from both training loss and validation loss. Record, for training and validation, total samples, per-class unsupported-pixel counts, ignore-containing samples, loss-eligible samples, and loss-excluded samples in artifact metadata; for test, record the same pixel/sample counts plus total and evaluated sample counts. Evaluation metrics mask out run-specific ignore pixels, including remapped unsupported classes. Stop before training or acceptance if remapping and resulting exclusions leave fewer examples than the declared minimum for a split, class, or required scene slice.
+
+Before full annotation and training, the feature owner must declare the maximum acceptable ignore-driven sample exclusion rate, minimum retained sample counts, and required scene/source coverage. The pilot reports total samples, ignore-containing/excluded samples, exclusion rate (`excluded / total`), retained count, and corresponding counts/rates by relevant split and scene/source slice for each proposed supported-label subset. Do not invent numeric thresholds; declare them before full annotation/training. Stop to revise annotation guidance, collection, or loss handling if the gate fails, retained data is insufficient, or exclusions make the set unrepresentative. Do not recode genuinely ambiguous pixels as background to meet the gate.
 
 ### Model and result mapping
 
@@ -82,7 +87,7 @@ Annotators label what is visible, not inferred hazard state. If a class cannot b
 
 ### Dataset and artifact provenance
 
-Each dataset manifest records source name and URL, license/terms evidence, attribution, version or retrieval date, permitted uses, image and mask counts, hashes, label schema version, annotation process, and source/location split assignments. Training metadata records code revision, dependency/runtime versions, initialization model revision, random seed, image preprocessing, hyperparameters, dataset manifest hash, and metrics. Never store user-uploaded images or absolute local paths in public metadata.
+Each dataset manifest retains dataset-level source name and URL, license/terms evidence, attribution, version or retrieval date, permitted uses, image and mask counts, hashes, label schema version, annotation process, supported target subset, and source/location split assignments. In addition, every `SceneImageRecord` carries a stable original-source image ID, source page URL, image license/terms evidence URL, per-image rights-review status, per-image permitted uses, and attribution. A shared grant URL is acceptable only when its written terms expressly cover that image; record the coverage reference for the specific image. Every included record must have approved image-level rights and permissions for `training`, `evaluation`, and `derived_weight_redistribution`; a dataset-level approval cannot substitute for record-level evidence. Keep detailed per-image rights metadata in the local manifest/access-controlled local data root. CLI output reports aggregate counts only and must not print image IDs, URLs, attribution, or paths. Training metadata records code revision, dependency/runtime versions, initialization model revision, random seed, image preprocessing, hyperparameters, dataset manifest hash, per-split remapped unsupported-pixel counts by class, ignore/loss/evaluation sample counts and pilot exclusion rates described above, and metrics. Never store user-uploaded images or absolute local paths in public metadata.
 
 ### Evaluation and acceptance thresholds
 
@@ -90,7 +95,8 @@ Before final training, define minimum per-class metrics and acceptable false-pos
 
 The prototype is not eligible for API integration unless:
 
-- Dataset rights and model-weight use are documented and reviewed.
+- Dataset-level terms and per-image rights evidence cover every included image's training, evaluation, and derived-weight redistribution use.
+- The predeclared pilot exclusion-rate, retained-data, and representation gates pass.
 - Annotation agreement and class coverage meet the thresholds declared before training.
 - The trained model improves the agreed task metrics over the baseline without unacceptable regressions in any required scene slice.
 - The model artifact can be loaded locally without network access, and backend resource/latency limits are measured.
@@ -100,7 +106,9 @@ If suitable licensed images or enough labeled examples cannot be obtained, stop 
 
 ### Error handling
 
-Dataset validation fails closed for missing provenance, invalid masks, unknown labels, duplicate leakage across splits, or disallowed license status. Training fails with a clear diagnostic for missing data, incompatible masks, or invalid configuration. Evaluation must not silently omit a class or scene slice with insufficient samples; it reports the gap. Artifact export refuses to overwrite an existing version and includes a manifest checksum.
+Dataset validation fails closed for missing provenance, invalid masks, unknown labels, duplicate leakage across splits, or disallowed license status. Training fails with a clear diagnostic for missing data, incompatible masks, or invalid configuration. Evaluation must not silently omit a class or scene slice with insufficient samples; it reports the gap. Its provenance must bind the exact checkpoint hash, model ID/revision, manifest fingerprint, full split-assignment fingerprint, schema versions, and supported labels to the matching training metadata. The checkpoint configuration carries model ID/revision, data fingerprints, schema versions, and supported labels; the checkpoint hash is stored in training/evaluation metadata and verified against checkpoint bytes (it cannot be embedded in the bytes it hashes). Evaluation and export reject mismatches. Export recomputes the checkpoint hash and refuses to package an unrelated passing evaluation. Artifact export refuses to overwrite an existing version and includes these provenance checks and a manifest checksum.
+
+Training may use a nonexistent or empty output directory; it must reject a nonempty output directory before loading the dataset/model or writing files. Artifact export independently validates accepted metric ranges and consistency with pixel/component counts and declared thresholds. An attached baseline comparison must include aggregate baseline per-label IoU/precision/recall and false-cue/coverage metrics; export recomputes all candidate-minus-baseline deltas from those inputs and independently checks the declared non-regression limits and pass/failure consistency.
 
 ### Privacy and safety copy
 
@@ -123,15 +131,16 @@ Implement in gates: (1) source/rights inventory and annotation guide, (2) rights
 
 ## Testing Strategy
 
-- ML unit tests use tiny local image/mask fixtures and no network or credentials. Cover license/provenance validation, supported label mapping, invalid mask dimensions and class IDs, duplicate/source leakage detection, deterministic training configuration, metric calculations, insufficient-sample reporting, and immutable artifact export metadata.
+- ML unit tests use tiny local image/mask fixtures and no network or credentials. Cover license/provenance validation, supported label mapping, background and ignore IDs, invalid mask dimensions and class IDs, duplicate/source leakage detection, ignore-sample exclusion from training/validation loss, ignore-masked evaluation metrics, deterministic training configuration, metric calculations, insufficient-sample reporting, and immutable artifact export metadata.
 - A small end-to-end pipeline test trains on synthetic fixtures into `tmp_path`; it validates pipeline mechanics only and is never reported as model-quality evidence.
 - A separate evaluation run uses the rights-reviewed held-out real-scene data and records the exact manifest/model/code hashes, metrics, runtime, and limits. It is an explicit offline maintainer command, not a CI network test.
 - If later API integration occurs, add backend service/API regression tests and run backend verification per `docs/testing-standards.md` in that integration change.
 
 ## Acceptance Criteria
 
-- [ ] Annotation guide defines visible labels, boundaries, ignore conditions, and forbidden inferred claims.
-- [ ] Every training/evaluation image has source-level terms and provenance sufficient to establish intended use; excluded data cannot enter a run.
+- [ ] Annotation guide defines visible target classes, visible non-target background (including people), genuinely unlabelable ignore pixels, boundaries, sample-level ignore-loss exclusions, and forbidden inferred claims.
+- [ ] Every training/evaluation image record has source-level rights evidence and permissions for training, evaluation, and derived-weight redistribution; excluded or unapproved records cannot enter a run.
+- [ ] Pilot ignore-exclusion rate, retained sample counts, and scene/source representation pass thresholds declared before full annotation/training.
 - [ ] Dataset manifests and source/location-grouped splits are deterministic and detect duplicate leakage.
 - [ ] Training and evaluation run offline from a pinned manifest and configuration; tests require no live network or credentials.
 - [ ] Evaluation reports per-class metrics, false detections, scene-condition slices, baseline comparison, and data coverage limitations.
