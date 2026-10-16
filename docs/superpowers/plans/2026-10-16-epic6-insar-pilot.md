@@ -4,7 +4,7 @@
 
 **Goal:** Complete a bounded, source-documented Philippine InSAR feasibility pilot and deliver a go/no-go recommendation without adding an operational hazard layer.
 
-**Architecture:** This is a research workflow, not an application feature. First establish reproducible candidate sites and independent validation evidence, then query public NISAR and Sentinel-1 archive metadata, and only then assess whether a small no-cost processing trial is justified. Publish a report with scene provenance, quality gaps, validation limits, access/cost findings, and a recommendation; keep raw satellite products outside Git.
+**Architecture:** This is a research workflow, not an application feature. The initial execution reviewed published candidate evidence and queried public NISAR and Sentinel-1 archive metadata at the Naga event centroid. It stopped before image access or processing because exact source-area geometry, reconciled study inputs, and a current independent reference were not established. The report records this bounded result and gates any later processing trial; raw satellite products remain outside Git.
 
 **Tech Stack:** ASF Vertex / DAAC catalog, ASF HyP3 only if eligible under its no-cost Basic allowance, NISAR data products, Sentinel-1 IW SLC, published Philippine Engineering Journal and other cited studies, Markdown.
 
@@ -35,10 +35,10 @@
 - Consumes: published case-study methods, locations, observation intervals, GNSS/field references, and reuse conditions.
 - Produces: a report table with candidate site, evidence source, reported period, sensor/method, independent reference, reference availability, reuse status, and selection decision.
 
-- [ ] **Step 1: Review Antipolo reference evidence.** Read the full UP Diliman Philippine Engineering Journal article and record its site footprint, Sentinel-1 acquisition dates/orbits, processing method, reported 0.83 LOS correlation, GNSS receiver location and time interval, and availability/reuse terms. Treat abstract-only details as unverified.
-- [ ] **Step 2: Review two comparator candidates.** Read the ISPRS Naga retrospective study and the Toledo City mining-site study. Record the same fields, explicitly mark absent GNSS/field validation or reuse evidence as unavailable, and do not treat a published claim of precursory motion as a validated warning signal.
-- [ ] **Step 3: Select the bounded pilot sites.** Choose Antipolo as the primary candidate only if its footprint and independent comparison can be reconstructed. Select no more than two additional sites from the reviewed studies only when geometry, source provenance, and a relevant independent reference are sufficient. Record rejected candidates and reasons.
-- [ ] **Step 4: Confirm report provenance.** Add stable article links, full citations, access date `2026-10-16`, and a note that the report is an independent feasibility review, not a replication of the papers.
+- [x] **Step 1: Review Antipolo reference evidence.** The abstract and reported 0.83 LOS correlation were recorded; full text, footprint, acquisitions, GNSS series, and reuse terms remain unavailable. Do not treat this as a reproducible benchmark.
+- [x] **Step 2: Review the Naga comparator.** The ISPRS Naga retrospective study was reviewed and its reported field-crack comparison, scene count, dates, inconsistencies, and missing point coordinate were recorded. Toledo was not selected for this bounded screen.
+- [x] **Step 3: Select the bounded screen site.** Naga was selected for metadata screening from the published study. The event centroid was used only as a reproducible catalog point, not as source-area geometry or a validated pilot AOI.
+- [x] **Step 4: Confirm report provenance.** Stable links, citations, access date `2026-10-16`, and the independent-review limitation are in the report.
 
 **Commit:** `docs: document epic 6 insar pilot sites`
 
@@ -55,10 +55,10 @@
 - Consumes: site polygons or documented study-area bounds approved in Task 1.
 - Produces: one scene-inventory table per selected site, with mission, product, maturity, relative orbit/track/frame, acquisition interval, processing version, spatial intersection, nominal/observed revisit, and archive URL.
 
-- [ ] **Step 1: Query Sentinel-1 history.** Search the Sentinel-1 IW SLC archive for each site's study interval and available historical/current dates. Record ascending and descending separately, exact scene IDs, dates, relative orbit, polarization, footprint overlap, and candidate repeat-pair temporal/spatial baselines.
-- [ ] **Step 2: Query NISAR current coverage.** Search ASF for L-band products intersecting each site from 2026-06-17 onward. Record product type, maturity, track/frame, direction, dates, full/partial coverage, processing release, and whether the product is a mission-generated unwrapped interferogram or an input image product.
-- [ ] **Step 3: Distinguish observation cadence from product availability.** Calculate observed gaps only from returned acquisitions. Report nominal mission cadence separately and note scenes that are absent, partial, provisional, or not usable for the intended time-series comparison.
-- [ ] **Step 4: Record catalog evidence.** Include the query date, search geometry, date filters, product filters, scene count, and direct archive links in the report so a reviewer can repeat the search.
+- [x] **Step 1: Query Sentinel-1 history.** The public metadata query returned 34 descending Sentinel-1B IW SLC records on relative orbit 61 at the event centroid from 2017-08-12 through 2018-09-12. Exact record details are in the repeatable API query. Source-scarp overlap, scene-pair baselines, and quality were not evaluated; the paper reports 35 scenes, which remains unresolved.
+- [x] **Step 2: Query NISAR current coverage.** The public query returned 26 PROVISIONAL GUNW records in three orbit groups, with collection and processor maturity recorded in the report. Search geometry was the event centroid only.
+- [x] **Step 3: Distinguish observation cadence from product availability.** Product acquisition intervals were recorded; the records are not evidence of usable cadence or a validated time series. No pixel-level usability was inferred.
+- [x] **Step 4: Record catalog evidence.** Query date, parameters, point geometry, counts, and direct API links are in the report.
 
 **Commit:** `docs: record epic 6 insar archive coverage`
 
@@ -76,10 +76,10 @@
 - Consumes: verified candidate pairs, NISAR product metadata, the reference data availability findings, and ASF service terms.
 - Produces: a processing decision record with input IDs, pair rationale, method/product type, expected resolution, free-credit estimate, credentials requirement, expected queue/retention constraints, and a `proceed`, `defer`, or `stop` result.
 
-- [ ] **Step 1: Identify one Sentinel-1 comparison pair or stack.** Prefer the exact published Antipolo observation window if its scene IDs and comparison period are public. Otherwise choose one pair only when the paper's temporal window, orbit, and independent reference can be aligned; record why the selected pair is scientifically comparable.
+- [ ] **Step 1: Identify one Sentinel-1 comparison pair or stack.** Deferred: resolve the paper's inputs and establish a source-area AOI and independent reference first.
 - [ ] **Step 2: Identify NISAR analysis-ready products.** Prefer a documented GUNW or other appropriate product only after its product guide confirms that it supports the intended LOS displacement comparison and its maturity is recorded. Do not combine BETA and PROVISIONAL data in one time series without explicitly accounting for processing-version changes.
 - [ ] **Step 3: Estimate processing cost and access.** Confirm HyP3 Basic credit requirements from the current official credit table before submitting any job. If Earthdata authentication, user-specific account state, or any paid credits are required, stop and document the requirement; do not request credentials or submit paid processing.
-- [ ] **Step 4: Gate the processing trial.** Process no more than one site and one bounded Sentinel-1 stack through an already authorized no-cost service path. If no eligible public/no-cost path is available, stop after catalog feasibility and state that clearly. Keep downloaded source products in ignored local storage and record checksums and provider metadata, not the files, in the report.
+- [x] **Step 4: Gate the processing trial.** Stopped at metadata feasibility. No source scenes were downloaded and no HyP3 job was submitted because the study inputs, source-area AOI, validation target, and no-cost account allowance were not confirmed. No paid credits were used.
 
 **Commit:** `docs: record epic 6 insar processing feasibility`
 
@@ -96,10 +96,10 @@
 - Consumes: candidate processing outputs or a documented no-processing stop, plus published/field/GNSS references whose access and time interval are verified.
 - Produces: quality/validation results, a per-site go/no-go decision, updated source notes, and an accurate Epic 6 status entry.
 
-- [ ] **Step 1: Report quality evidence.** For each actual product, report valid-pixel fraction, coherence/quality mask behavior, spatial coverage, temporal gaps, layover/shadow, atmospheric/unwrapping issues, LOS viewing geometry, processing version, and known limitations. If no products were processed, mark every metric `not evaluated`.
+- [x] **Step 1: Report quality evidence.** No image products were processed; pixel quality, coherence, masks, layover/shadow, atmospheric and unwrapping behavior, and displacement are marked not evaluated in the report.
 - [ ] **Step 2: Compare only time-aligned references.** Compare LOS trends with the Antipolo GNSS or cited Sentinel-1 outputs only when the exact intervals, LOS projection, and reference time series are accessible. Keep published claims distinct from measurements independently reproduced in this pilot.
-- [ ] **Step 3: Issue the bounded recommendation.** Choose `go to a second research validation site`, `remain research-only`, or `stop`. A go decision requires reproducible data access and independent validation at more than one site, matching the approved spec. No single-site result authorizes an operational map layer.
-- [ ] **Step 4: Update source and project records.** Record the source maturity, reuse/citation requirements, measured access/cost limits, and the report link in `docs/data-sources.md`; update Epic 6 status in `docs/project-status.md` only to the level supported by the completed evidence.
+- [x] **Step 3: Issue the bounded recommendation.** Remain research-only and proceed only to a reproduction-design review; no go decision for processing or a user-facing layer was reached.
+- [x] **Step 4: Update source and project records.** Data-source notes and project status now link to and accurately summarize the metadata-only result.
 
 **Commit:** `docs: report epic 6 insar pilot findings`
 
@@ -111,7 +111,7 @@
 - Verify: all files created or modified above.
 
 - [ ] **Step 1: Check the source statements.** Reopen every cited primary source and verify dates, product maturity, sensor, reference period, access, and licensing statements against the report.
-- [ ] **Step 2: Check the documentation diff.** Run `git diff --check` and `python scripts/verify_structure.py`; expected output is no whitespace errors and `All 140 expected scaffold paths exist.`
+- [ ] **Step 2: Check the documentation diff.** Run `git diff --check` and `python scripts/verify_structure.py` before handoff.
 - [ ] **Step 3: Check artifact hygiene.** Run `git status --short`; ensure no product rasters, source scenes, credentials, local caches, or generated processing outputs are staged.
 - [ ] **Step 4: Summarize the decision.** Report which sites were evaluated, the archive evidence, whether processing ran, what validation was possible, and the exact reasons for go/defer/stop. Do not recommend UI work unless the multi-site validation gate is satisfied.
 

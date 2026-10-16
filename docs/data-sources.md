@@ -119,7 +119,14 @@ always require domain review before an export can be considered for staging.
   Credit NASA/ISRO and ASF for NISAR products, and ESA/Copernicus Sentinel-1 and ASF
   for Sentinel-1 products according to the product citation and terms. See the
   [Epic 6 InSAR feasibility spec](superpowers/specs/2026-10-16-epic6-insar-feasibility-design.md)
-  and its primary-source links before any pilot or product work.
+  and its primary-source links before any pilot or product work. A read-only ASF
+  metadata query on 2026-10-16 found 34 descending Sentinel-1B IW SLC records
+  (relative orbit 61) and 26 PROVISIONAL NISAR GUNW records intersecting only the
+  published Naga landslide event-centroid point. This does not establish coverage
+  of the source scarp or usable pixel quality. No scenes were downloaded, no HyP3
+  jobs were submitted, and no displacement was measured. The screening details and
+  reproducible catalog links are in the
+  [Epic 6 InSAR pilot report](epic6-insar-pilot-report.md).
 - Philippine administrative regions: the version-pinned geoBoundaries open ADM1
   derivative for the Philippines, sourced from NAMRIA, PSA, and OCHA Philippines.
   The web risk overlay uses the simplified WGS84 FeatureCollection from boundary
