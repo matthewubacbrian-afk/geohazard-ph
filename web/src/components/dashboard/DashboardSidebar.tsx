@@ -27,6 +27,7 @@ const LAYERS: LayerDef[] = [
   { key: 'risk', label: 'Risk overlay', available: true },
   { key: 'faults', label: 'Fault lines', available: true },
   { key: 'volcanoes', label: 'Volcano zones', available: true },
+  { key: 'landslideSusceptibility', label: 'Landslide susceptibility', available: true },
 ];
 
 const EVENT_CATEGORIES: { key: RiskBucket; label: string }[] = [

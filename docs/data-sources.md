@@ -83,7 +83,7 @@ always require domain review before an export can be considered for staging.
 - NASA Global Landslide Susceptibility Map: remote global raster reference, approximately
   1 km pixel size, with service values from 0 to 5. Credit NASA and link the map/service
   in the UI. Label it as a **coarse, informational susceptibility reference**; NASA
-  describes the product as research-grade and unsuitable for operational use. It is an
+  warns it may be research-grade and unsuitable for operational use. It is an
   awareness aid, not an early-warning authority, live warning, event probability, or
   site-level assessment. Do not interpret missing pixels as low susceptibility. The
   dashboard requests imagery from the [NASA ImageServer](https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/Global_Landslide_Susceptibility/ImageServer)

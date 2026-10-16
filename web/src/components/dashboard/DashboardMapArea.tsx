@@ -1,5 +1,6 @@
 import type { StaticLayer } from '../../types/staticLayer';
 import type { VolcanoOverlayState } from '../map/volcanoOverlays';
+import type { LandslideOverlayState } from '../map/landslideOverlays';
 import styles from "./DashboardMapArea.module.css";
 import Skeleton from "../common/Skeleton";
 import DashboardSummaryBar from './DashboardSummaryBar';
@@ -16,6 +17,9 @@ type DashboardMapAreaProps = {
   showVolcanoZones?: boolean;
   volcanoOverlayRevision?: number;
   onVolcanoOverlayState?: (state: VolcanoOverlayState) => void;
+  showLandslideSusceptibility?: boolean;
+  landslideOverlayRevision?: number;
+  onLandslideOverlayState?: (state: LandslideOverlayState) => void;
   isLoading: boolean;
   error: Error | null;
   onRetry: () => void;
@@ -37,6 +41,9 @@ export default function DashboardMapArea({
   events,
   faults, volcanoZones, showFaults, showVolcanoZones,
   volcanoOverlayRevision, onVolcanoOverlayState,
+  showLandslideSusceptibility = false,
+  landslideOverlayRevision,
+  onLandslideOverlayState,
   isLoading,
   error,
   onRetry,
@@ -60,6 +67,9 @@ export default function DashboardMapArea({
         showFaults={showFaults} showVolcanoZones={showVolcanoZones}
         volcanoOverlayRevision={volcanoOverlayRevision}
         onVolcanoOverlayState={onVolcanoOverlayState}
+        showLandslideSusceptibility={showLandslideSusceptibility}
+        landslideOverlayRevision={landslideOverlayRevision}
+        onLandslideOverlayState={onLandslideOverlayState}
         basemap={basemap}
         selectedEvent={selectedEvent}
         onSelectEvent={onSelectEvent}
