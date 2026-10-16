@@ -53,7 +53,7 @@ export default function EventFeed({
     <div className={styles.feed}>
       <div className={styles.header}>
         <div>
-          <p className={styles.title}>Regional activity</p>
+          <p className={styles.title}>Recent events</p>
           <p className={styles.subtitle}>Live hazard events</p>
         </div>
         <span className={styles.count}>{filtered.length} events</span>

@@ -51,6 +51,9 @@ Related contracts:
 | is_primary | `is_primary` | Display-authority flag; exactly one row in a canonical group should be primary. |
 | match_confidence | `match_confidence` | Numeric confidence assigned when cross-source rows are canonicalized. |
 | EventChange | `EventChange` | Post-commit event-change payload used by realtime consumers. |
+| dashboard notification | `DashboardNotification` | Browser-local record created from a primary realtime `EventChange`; identified by its `canonical_id`. It is not an official warning or server-delivered notification. |
+| notification received time | `received_at` | Browser time when a realtime event was received; distinct from the event's `occurred_at`. |
+| notification read time | `read_at` | Browser time when a notification was marked read; null means unread. |
 | match_and_link | `match_and_link` | Synchronous ingest operation that matches cross-source rows into canonical groups. |
 | canonical reconciliation | `reconcile_canonical_events` | Preview or apply regrouping of persisted source rows after matching rules or source records change. |
 | event density | `event_density` | Coordinate-spread density proxy; not events per km² until authoritative boundaries exist. |
@@ -146,3 +149,46 @@ When a spec or plan introduces a new concept:
 - PHIVOLCS volcano overlays: source-rendered base-surge, lava, pyroclastic-density-current
   and lahar reference images used when local `VolcanoZone` vectors are absent.
   These are remotely rendered hazard maps, not imported polygons or live alert levels.
+
+## Epic 6 landslide reference layer
+
+- landslide susceptibility overlay: optional NASA Global Landslide Susceptibility Map
+  credited and linked in the UI as a coarse, informational global susceptibility
+  reference (about 1 km pixels; values 0–5). NASA warns it may be research-grade and
+  unsuitable for operational use. It is an awareness aid, not an early-warning
+  authority, live warning, event probability, site assessment, or evidence that a
+  location is safe; missing pixels do not mean low susceptibility. A higher-resolution
+  MGB reference may complement it later after reuse rights and coverage are confirmed.
+
+## 7. Camera scene analysis
+
+| Term | Canonical field / meaning |
+| --- | --- |
+| scene analysis | `SceneAnalysis`, endpoint `/scene-analyses`; transient visual review of one user-captured image, with no server-side image/history persistence. |
+| candidate region | `candidate_regions[]`; image-space connected floor/ground component ranked for visual review, not a verified safe place. |
+| open_ground | Training annotation label for floor or ground pixels that appear visually unobstructed in the image; does not establish accessibility, stability, or safety. |
+| obstacle | Training annotation label for a visible object, debris, or obstruction occupying or crossing a candidate ground area. |
+| polygon | `polygon`; closed list of normalized `{x, y}` image points from top-left origin, each coordinate in `[0, 1]`; not GeoJSON or map coordinates. |
+| visual cue | `visual_cues[]`; recognized model class and model confidence shown for review, not an inferred hazard verdict. |
+| visible hazard cue | A visible class such as glass façade, overhead utility lines, debris, or explicitly annotated building damage; describes image evidence and does not claim an active or imminent hazard. |
+| scene annotation | Image-space masks labeling visible classes with an annotation-schema version; ambiguous pixels use `ignore` and are excluded from supervised loss. |
+| scene dataset manifest | Versioned record of image source, reuse terms, hashes, annotation schema, and source/location-based split assignment used to reproduce an offline training or evaluation run. |
+| ranking score | `ranking_score`; deterministic weighted visual-review ordering value in `[0, 1]`, never a safety probability or confidence. |
+| model version | `model_version`; model ID and immutable model-artifact revision that produced scene-analysis cues. |
+| image_base64 | `image_base64`; standard base64 JPEG request field without a data URL prefix; transient input, never persisted or logged. |
+| mime_type | `mime_type`; scene-analysis input media type, fixed to `image/jpeg`. |
+| accept_quality_warning | `accept_quality_warning`; explicit per-request boolean that lets the user continue after a likely-blur warning; defaults to `false` and does not affect model ranking. |
+| sharpness score | variance of the four-neighbor grayscale Laplacian after reducing the longest image edge to 512 pixels; a provisional blur cue, not a general image-quality or obstruction score. |
+| scene image quality warning | API error `scene_image_quality_warning`; advisory result for a low provisional sharpness score, with retake and explicit continue actions. |
+| result_status | `result_status`; `candidates_found` when candidate regions exist, otherwise `no_clear_candidate`. |
+| scene-analysis limitations | `limitations`; fixed caveats that visual cues do not determine safety, image conditions can hide cues, and one image cannot verify structural integrity, earthquake resistance, ground conditions, falling-glass or electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions. |
+
+## 8. Epic 6 landslide and InSAR
+
+| Term | Canonical field / meaning |
+| --- | --- |
+| InSAR | Interferometric synthetic aperture radar; compares radar phase observations from repeat acquisitions to estimate surface displacement after accounting for topography, orbit, atmosphere, and other phase contributions. |
+| line-of-sight displacement | Surface displacement component measured toward or away from the radar viewing direction; it is not a complete three-dimensional or slope-parallel motion vector. |
+| coherence | Similarity of radar phase between repeat acquisitions; low coherence or decorrelation can make an InSAR displacement estimate unavailable or unreliable. |
+| landslide susceptibility reference | A mapped, coarse indication of relative susceptibility; not measured ground motion, a site-specific assessment, forecast, or warning. |
+| research-grade ground-motion estimate | A sourced, date-bounded InSAR measurement with quality and maturity caveats; not an operational alert or safety determination. |

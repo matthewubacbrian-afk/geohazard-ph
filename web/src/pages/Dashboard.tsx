@@ -2,6 +2,8 @@ import { useStaticLayers } from '../hooks/useStaticLayers';
 import StaticLayerStatus from '../components/map/StaticLayerStatus';
 import VolcanoOverlayStatus from '../components/map/VolcanoOverlayStatus';
 import type { VolcanoOverlayState } from '../components/map/volcanoOverlays';
+import LandslideOverlayStatus from '../components/map/LandslideOverlayStatus';
+import type { LandslideOverlayState } from '../components/map/landslideOverlays';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import styles from './Dashboard.module.css';
@@ -15,11 +17,16 @@ import RiskProfilesPanel from '../components/risk/RiskProfilesPanel';
 import type { View } from '../types/views';
 import type { BasemapId } from '../components/map/basemaps';
 import VolcanoPanel from '../components/volcanoes/VolcanoPanel';
-import EventFilterBar from '../components/events/EventFilterBar';
 import RealtimeStatus from '../components/dashboard/RealtimeStatus';
+import DashboardInfoPanel from '../components/dashboard/DashboardInfoPanel';
 import { useRealtimeAlerts } from '../hooks/useRealtimeAlerts';
+import { useNotifications } from '../hooks/useNotifications';
+import DashboardActivityPanel, { type ActivityTab } from '../components/dashboard/DashboardActivityPanel';
+import NotificationCenter from '../components/dashboard/NotificationCenter';
 import { useEvents } from '../hooks/useEvents';
 import { eventRiskBucket, type RiskBucket } from '../lib/risk';
+import type { HazardEvent } from '../types/hazard';
+import { getDatePresetRange, type DashboardDatePreset } from '../lib/dashboardFilterPresets';
 import {
   parseDashboardQuery,
   serializeDashboardQuery,
@@ -28,6 +35,7 @@ import {
 
 const navItems = [
   'Dashboard',
+  'Scene Review',
   'How It Works',
   'About',
   'Data Sources',
@@ -45,11 +53,32 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
   const [source, setSource] = useState(initialQuery.source);
   const [volcanoOverlayState, setVolcanoOverlayState] = useState<VolcanoOverlayState>('loading');
   const [volcanoOverlayRevision, setVolcanoOverlayRevision] = useState(0);
+  const [landslideOverlayState, setLandslideOverlayState] = useState<LandslideOverlayState>('loading');
+  const [landslideOverlayRevision, setLandslideOverlayRevision] = useState(0);
   const [startDate, setStartDate] = useState(initialQuery.startDate);
   const [endDate, setEndDate] = useState(initialQuery.endDate);
   const [minMagnitude, setMinMagnitude] = useState(initialQuery.minMagnitude);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const realtime = useRealtimeAlerts();
+  const [activeHazardTypes, setActiveHazardTypes] = useState<HazardEvent['hazard_type'][]>([
+    'earthquake',
+    'volcanic',
+    'landslide',
+  ]);
+  const notificationState = useNotifications();
+  const realtime = useRealtimeAlerts(notificationState.addEvent);
+  const [controlsCollapsed, setControlsCollapsed] = useState(false);
+  const [activityCollapsed, setActivityCollapsed] = useState(false);
+  const [activityTab, setActivityTab] = useState<ActivityTab>('events');
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia('(max-width: 900px)');
+    const expandForSmallScreens = () => {
+      if (media.matches) { setControlsCollapsed(false); setActivityCollapsed(false); }
+    };
+    expandForSmallScreens();
+    media.addEventListener('change', expandForSmallScreens);
+    return () => media.removeEventListener('change', expandForSmallScreens);
+  }, []);
   const { data: events = [], isLoading, error, refetch } = useEvents({
     source,
     since: startDate ? `${startDate}T00:00:00Z` : undefined,
@@ -64,6 +93,7 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
     risk: false,
     faults: false,
     volcanoes: false,
+    landslideSusceptibility: false,
   });
   const [activeEventCategories, setActiveEventCategories] = useState<RiskBucket[]>([
     'critical',
@@ -94,10 +124,17 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
     );
   }
 
+  function toggleHazardType(type: HazardEvent['hazard_type']) {
+    setActiveHazardTypes((previous) =>
+      previous.includes(type) ? previous.filter((item) => item !== type) : [...previous, type],
+    );
+  }
+
   const showRisk = activeView === 'risk';
   const visibleEvents = events.filter((event) => {
     if (!activeLayers.events) return false;
-    return activeEventCategories.includes(eventRiskBucket(event.alert_level));
+    return activeEventCategories.includes(eventRiskBucket(event.alert_level)) &&
+      activeHazardTypes.includes(event.hazard_type);
   });
   const selectedEvent = visibleEvents.find((event) => event.id === selectedEventId) ?? null;
 
@@ -139,6 +176,13 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
     updateQuery({ endDate: value });
   }
 
+  function changeDatePreset(preset: DashboardDatePreset) {
+    const range = getDatePresetRange(preset);
+    setStartDate(range.startDate);
+    setEndDate(range.endDate);
+    updateQuery(range);
+  }
+
   function changeMinMagnitude(value: number) {
     setMinMagnitude(value);
     updateQuery({ minMagnitude: value });
@@ -155,11 +199,12 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
         items={navItems}
         activeItem="Dashboard"
         theme="dashboard"
+        status={<RealtimeStatus {...realtime} />}
         onNavigate={onNavigate}
         onSettings={onSettings}
       />
 
-      <div className={styles.main}>
+      <div className={`${styles.main} ${controlsCollapsed ? styles.controlsCollapsed : ''} ${activityCollapsed ? styles.activityCollapsed : ''}`}>
         <DashboardSidebar
           basemap={basemap}
           onBasemapChange={changeBasemap}
@@ -175,6 +220,13 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
           onEndDateChange={changeEndDate}
           minMagnitude={minMagnitude}
           onMinMagnitudeChange={changeMinMagnitude}
+          activeHazardTypes={activeHazardTypes}
+          onToggleHazardType={toggleHazardType}
+          onDatePresetChange={changeDatePreset}
+          source={source}
+          onSourceChange={changeSource}
+          collapsed={controlsCollapsed}
+          onToggleCollapsed={() => setControlsCollapsed((value) => !value)}
         />
 
         <DashboardMapArea
@@ -193,10 +245,21 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
           showVolcanoZones={activeLayers.volcanoes}
           volcanoOverlayRevision={volcanoOverlayRevision}
           onVolcanoOverlayState={setVolcanoOverlayState}
-          onViewDetailedReport={() => setActiveView('risk')}
+          showLandslideSusceptibility={activeLayers.landslideSusceptibility}
+          landslideOverlayRevision={landslideOverlayRevision}
+          onLandslideOverlayState={setLandslideOverlayState}
         />
 
-        <section className={styles.sidePanel} aria-label="Activity panel">
+        <DashboardActivityPanel collapsed={activityCollapsed} unreadCount={notificationState.unreadCount}
+          activeTab={activityTab} onToggleCollapsed={() => setActivityCollapsed((value) => !value)}
+          onSelectTab={(tab) => {
+            setActivityTab(tab);
+            if (tab === 'notifications' || tab === 'events') {
+              setActiveView('map');
+              updateQuery({ view: 'map' });
+            }
+          }}>
+          <div className={styles.activityContent}>
           {activeLayers.faults && <StaticLayerStatus label="Fault lines" rows={faults.data}
             loading={faults.isLoading} error={faults.error} onRetry={() => { void faults.refetch(); }} />}
           {activeLayers.volcanoes && (volcanoZones.data?.length ?
@@ -204,9 +267,11 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
               loading={volcanoZones.isLoading} error={volcanoZones.error} onRetry={() => { void volcanoZones.refetch(); }} /> :
             <VolcanoOverlayStatus state={volcanoOverlayState}
               onRetry={() => setVolcanoOverlayRevision(value => value + 1)} />)}
-          <RealtimeStatus {...realtime} />
-          <EventFilterBar source={source} onChange={changeSource} />
-          {activeView === 'volcanoes' ? <VolcanoPanel /> : showRisk ? <RiskProfilesPanel /> : (
+          {activeLayers.landslideSusceptibility && <LandslideOverlayStatus
+            state={landslideOverlayState}
+            onRetry={() => setLandslideOverlayRevision(value => value + 1)} />}
+          {activityTab === 'notifications' ? <NotificationCenter notifications={notificationState.notifications}
+            onMarkRead={notificationState.markRead} onMarkAllRead={notificationState.markAllRead} /> : activeView === 'volcanoes' ? <VolcanoPanel /> : showRisk ? <RiskProfilesPanel /> : (
             <EventFeed
               events={visibleEvents}
               isLoading={isLoading}
@@ -217,7 +282,9 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
               onClearSelection={() => setSelectedEventId(null)}
             />
           )}
-        </section>
+          {activityTab === 'events' && <DashboardInfoPanel onViewDetailedReport={() => changeView('risk')} />}
+          </div>
+        </DashboardActivityPanel>
       </div>
     </div>
   );

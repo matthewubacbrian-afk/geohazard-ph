@@ -1,1 +1,1 @@
-export type View = "hero" | "dashboard" | "about" | "data-sources" | "historical";
+export type View = "hero" | "dashboard" | "about" | "data-sources" | "historical" | "scene-analysis";

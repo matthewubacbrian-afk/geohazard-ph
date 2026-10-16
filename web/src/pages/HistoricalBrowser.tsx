@@ -12,7 +12,7 @@ type HistoricalBrowserProps = {
 export default function HistoricalBrowser({ onNavigate, onSettings }: HistoricalBrowserProps) {
   return (
     <main className={styles.page}>
-      <TopNav items={navItems} activeItem="Historical" onNavigate={onNavigate} onSettings={onSettings} />
+      <TopNav items={navItems} activeItem="Historical" theme="dashboard" onNavigate={onNavigate} onSettings={onSettings} />
       <div className={styles.content}>
         <header className={styles.intro}>
           <p className={styles.eyebrow}>Planned capability</p>

@@ -13,6 +13,7 @@ describe('application routes', () => {
     ['/about', /About GeoHazard/i],
     ['/data-sources', /Data Sources/i],
     ['/historical', /Historical Event Browser/i],
+    ['/scene-analysis', /Camera scene review/i],
   ])('renders the page at %s', (path, heading) => {
     window.history.pushState({}, '', path);
     render(<App />);
@@ -35,6 +36,22 @@ describe('application routes', () => {
 
     expect(screen.getByRole('heading', { name: 'About GeoHazard' })).toBeTruthy();
     expect(window.location.pathname).toBe('/about');
+  });
+
+  it('keeps shared navigation and settings available on Scene Review', () => {
+    window.history.pushState({}, '', '/');
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Scene Review' }));
+    expect(window.location.pathname).toBe('/scene-analysis');
+    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Scene Review' })).toHaveAttribute('aria-current', 'page');
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(screen.getByRole('dialog', { name: 'Settings' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'About' }));
+    expect(window.location.pathname).toBe('/about');
+    expect(screen.getByRole('heading', { name: 'About GeoHazard' })).toBeInTheDocument();
   });
 
   it('links the hero footer to the existing About and Data Sources routes', () => {

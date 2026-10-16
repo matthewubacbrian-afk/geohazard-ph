@@ -1,0 +1,26 @@
+.center { padding:14px; color:var(--text); }
+.heading { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding-bottom:12px; border-bottom:1px solid var(--border-subtle); }
+.heading h2 { margin:0; font:600 19px/1.3 var(--font-display); }
+.heading p,.note { margin:4px 0 0; color:var(--text-muted); font-size:11px; line-height:1.5; }
+.heading button { border:1px solid var(--border); border-radius:var(--radius-control); background:var(--surface-container); color:var(--text); padding:7px 9px; font:600 10px var(--font-sans); cursor:pointer; }
+.list { list-style:none; margin:0; padding:0; }
+.item { border-bottom:1px solid var(--border-subtle); }
+.unread { background:color-mix(in srgb,var(--accent) 5%,transparent); }
+.itemButton { display:grid; grid-template-columns:12px minmax(0,1fr) auto 14px; align-items:center; gap:9px; width:100%; padding:13px 2px; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; }
+.dot { width:9px; height:9px; border-radius:50%; background:var(--outline-variant); }
+.unread .dot { background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 17%,transparent); }
+.summary,.meta { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.summary strong,.meta strong { font:600 12px/1.3 var(--font-sans); }
+.summary span,.meta span { color:var(--text-muted); font-size:10px; line-height:1.4; }
+.meta { text-align:right; }
+.meta .source { display:inline-block; align-self:flex-end; padding:2px 5px; border-radius:4px; background:var(--surface-container); color:var(--text); font:600 9px var(--font-mono); }
+.chevron { color:var(--text-muted); }
+.details { padding:0 22px 13px; color:var(--text-muted); font-size:11px; line-height:1.5; }
+.details p { margin:0 0 9px; }
+.details dl { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0; }
+.details dl div { display:flex; flex-direction:column; gap:2px; }
+.details dt { font-size:9px; text-transform:uppercase; letter-spacing:.06em; }
+.details dd { margin:0; color:var(--text); font-size:11px; }
+.empty { padding:36px 10px; text-align:center; color:var(--text-muted); font:500 12px var(--font-sans); }
+.note { margin-top:14px; padding:10px; border-radius:var(--radius-control); background:var(--surface-container); }
+.itemButton:focus-visible,.heading button:focus-visible { outline:3px solid var(--focus-ring); outline-offset:2px; }

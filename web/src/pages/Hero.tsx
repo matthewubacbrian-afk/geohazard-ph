@@ -9,7 +9,7 @@ type HeroProps = {
   onSettings?: () => void;
 };
 
-const navItems = ["Dashboard", "How It Works", "About", "Data Sources", "Historical"];
+const navItems = ["Dashboard", "Scene Review", "How It Works", "About", "Data Sources", "Historical"];
 
 const steps = [
   {
@@ -42,7 +42,7 @@ export default function Hero({ onNavigate, onSettings }: HeroProps) {
         activeItem="How It Works"
         onNavigate={onNavigate}
         onSettings={onSettings}
-        theme="hero"
+        theme="dashboard"
       />
 
       <section className={styles.heroSection}>

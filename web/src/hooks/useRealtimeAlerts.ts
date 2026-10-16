@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { applyEventChange, parseEventChange, realtimeUrl } from '../api/realtime';
 import type { HazardEvent } from '../types/hazard';
+import type { EventChange } from '../types/hazard';
 
-export function useRealtimeAlerts() {
+export function useRealtimeAlerts(onEventChange?: (event: EventChange) => void) {
   const client = useQueryClient();
+  const onEventChangeRef = useRef(onEventChange);
+  onEventChangeRef.current = onEventChange;
   const [connected, setConnected] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
@@ -47,6 +50,7 @@ export function useRealtimeAlerts() {
         if (stopped) return;
         try {
           const change = parseEventChange(data);
+          onEventChangeRef.current?.(change);
           pending = pending.then(async () => {
             await client.cancelQueries({ queryKey: ['events'] });
             if (stopped) return;

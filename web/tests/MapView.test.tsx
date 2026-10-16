@@ -6,13 +6,13 @@ import type { StaticLayer } from '../src/types/staticLayer';
 import type { HazardEvent } from '../src/types/hazard';
 import type { RiskProfile } from '../src/types/hazard';
 
-const handlers = new Map<string, Set<() => void>>();
+const handlers = new Map<string, Set<(event?: unknown) => void>>();
 const layerHandlers = new Map<string, (event: { features?: Array<{ properties?: Record<string, unknown> }> }) => void>();
 const paintUpdates: Array<[string, string, unknown]> = [];
 let source: { setData: ReturnType<typeof vi.fn> } | undefined;
 const sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>();
 const layers = new Set<string>();
-function emit(name: string) { handlers.get(name)?.forEach((callback) => callback()); }
+function emit(name: string, event?: unknown) { handlers.get(name)?.forEach((callback) => callback(event)); }
 const mapInstance = {
   addControl: vi.fn(),
   addLayer: vi.fn((layer: { id: string; paint?: Record<string, unknown> }) => layers.add(layer.id)),
@@ -26,9 +26,9 @@ const mapInstance = {
   getCenter: vi.fn(() => ({ toArray: () => [121.774, 12.8797] })),
   getBearing: vi.fn(() => 0), getPitch: vi.fn(() => 0),
   flyTo: vi.fn(),
-  on: vi.fn((name: string, layerOrCallback: string | (() => void), maybeCallback?: (event: { features?: Array<{ properties?: Record<string, unknown> }> }) => void) => {
+  on: vi.fn((name: string, layerOrCallback: string | ((event?: unknown) => void), maybeCallback?: (event: { features?: Array<{ properties?: Record<string, unknown> }> }) => void) => {
     if (typeof layerOrCallback === 'string' && maybeCallback) { layerHandlers.set(layerOrCallback, maybeCallback); return; }
-    const callback = layerOrCallback as () => void;
+    const callback = layerOrCallback as (event?: unknown) => void;
     if (!handlers.has(name)) handlers.set(name, new Set());
     handlers.get(name)!.add(callback);
   }),
@@ -41,6 +41,7 @@ const mapInstance = {
   removeLayer: vi.fn((id: string) => layers.delete(id)),
   removeSource: vi.fn((id: string) => { sources.delete(id); if (id === 'events') source = undefined; }),
   setLayoutProperty: vi.fn(),
+  isSourceLoaded: vi.fn(() => true),
   setPaintProperty: vi.fn((layer: string, property: string, value: unknown) => paintUpdates.push([layer, property, value])),
   setStyle: vi.fn((_style: unknown, _options?: { diff?: boolean }) => {
     source = undefined; layers.clear(); sources.clear();
@@ -73,6 +74,43 @@ beforeEach(() => {
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
 });
 describe('MapView style lifecycle', () => {
+  it('adds the NASA raster only when the landslide susceptibility layer is enabled', async () => {
+    const { LANDSLIDE_LAYER_ID } = await import('../src/components/map/landslideOverlays');
+    const view = render(<MapView events={[]} />);
+    act(() => emit('style.load'));
+    expect(mapInstance.addSource).not.toHaveBeenCalledWith(LANDSLIDE_LAYER_ID, expect.anything());
+
+    view.rerender(<MapView events={[]} showLandslideSusceptibility onLandslideOverlayState={vi.fn()} />);
+    expect(mapInstance.addSource).toHaveBeenCalledWith(LANDSLIDE_LAYER_ID, expect.objectContaining({ type: 'raster' }));
+    view.rerender(<MapView events={[]} showLandslideSusceptibility={false} />);
+    expect(mapInstance.setLayoutProperty).toHaveBeenCalledWith(LANDSLIDE_LAYER_ID, 'visibility', 'none');
+  });
+
+  it('reports loading, error, and ready states only for the NASA raster source', async () => {
+    const { LANDSLIDE_LAYER_ID } = await import('../src/components/map/landslideOverlays');
+    const onLandslideOverlayState = vi.fn();
+    render(<MapView events={[]} showLandslideSusceptibility onLandslideOverlayState={onLandslideOverlayState} />);
+    act(() => emit('style.load'));
+    act(() => emit('sourcedataloading', { sourceId: LANDSLIDE_LAYER_ID }));
+    act(() => emit('idle'));
+    expect(onLandslideOverlayState).toHaveBeenLastCalledWith('ready');
+    act(() => emit('error', { sourceId: LANDSLIDE_LAYER_ID, error: new Error('unavailable') }));
+    expect(onLandslideOverlayState).toHaveBeenLastCalledWith('error');
+    act(() => emit('idle'));
+    expect(onLandslideOverlayState).not.toHaveBeenLastCalledWith('ready');
+  });
+
+  it('recreates the remote raster source when retry revision changes', async () => {
+    const { LANDSLIDE_LAYER_ID } = await import('../src/components/map/landslideOverlays');
+    const view = render(<MapView events={[]} showLandslideSusceptibility landslideOverlayRevision={0} />);
+    act(() => emit('style.load'));
+    const firstAddCount = mapInstance.addSource.mock.calls.filter(([id]) => id === LANDSLIDE_LAYER_ID).length;
+
+    view.rerender(<MapView events={[]} showLandslideSusceptibility landslideOverlayRevision={1} />);
+
+    expect(mapInstance.removeSource).toHaveBeenCalledWith(LANDSLIDE_LAYER_ID);
+    expect(mapInstance.addSource.mock.calls.filter(([id]) => id === LANDSLIDE_LAYER_ID)).toHaveLength(firstAddCount + 1);
+  });
   it('selects the event represented by a clicked map circle', () => {
     const onSelectEvent = vi.fn();
     render(<MapView events={[event]} onSelectEvent={onSelectEvent} />);

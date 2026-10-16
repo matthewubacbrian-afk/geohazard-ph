@@ -24,3 +24,13 @@ The backend (FastAPI) exposes the following REST endpoints under `/api/v1`:
 - `GET /subscribe` — realtime channel subscription status (stub).
 - `GET /risk-profile/clusters` — regional seismic risk profiles.
 - `GET /risk-profile/{region_name}` — single region risk profile.
+- `POST /scene-analyses` — transient camera-image review returning ranked image-space floor/ground candidates, visual cues, and limitations. This route does not persist photos or assess safety; model runtime and weights are not provisioned in the default image pending measured deployment fit.
+
+Epic 7 clients capture still images only after an explicit user action. Web and mobile
+send bounded JPEGs to the same FastAPI route, then render normalized candidate polygons
+over the captured image and show the evidence checklist. The API keeps image processing
+in memory and applies deterministic visual-cue ranking; it does not save an image or
+result history. This path is for review only and cannot establish structural stability,
+hidden hazards, or route accessibility. A provisional sharpness check can warn of
+likely blur before segmentation; obstruction is not detected. See the [scene-review runbook](runbook.md#epic-7-scene-review)
+and [model preflight status](data-sources.md#scene-analysis-model-preflight).

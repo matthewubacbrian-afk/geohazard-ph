@@ -26,7 +26,7 @@ describe('live event display', () => {
     client.setQueryData(['events'], [row, { ...row, id: 'two', source: 'phivolcs', place_name: 'PH event' }]);
     render(<QueryClientProvider client={client}><Feed /></QueryClientProvider>);
     expect(screen.getByText(/USGS event/)).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('Event source'), { target: { value: 'phivolcs' } });
+    fireEvent.click(screen.getByRole('button', { name: 'PHIVOLCS' }));
     expect(screen.queryByText(/USGS event/)).toBeNull();
     expect(screen.getByText(/PH event/)).toBeTruthy();
     await act(async () => {
@@ -39,7 +39,7 @@ describe('live event display', () => {
   it('distinguishes live transport from reconnecting and labels the last received time', () => {
     const view = render(<RealtimeStatus connected={false} lastUpdated={null} />);
     expect(screen.getByText(/Reconnecting/)).toBeTruthy();
-    expect(screen.getByText('GeoHazard PH is not an official PHIVOLCS/NDRRMC advisory')).toBeTruthy();
+    expect(screen.getByText('Earthquake and volcano activity')).toBeTruthy();
     view.rerender(<RealtimeStatus connected lastUpdated="2026-08-29T09:30:00Z" />);
     expect(screen.getByText('LIVE')).toBeTruthy();
     expect(screen.getByText(/Last update/)).toBeTruthy();

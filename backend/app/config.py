@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     phivolcs_volcano_stale_seconds: int = Field(default=3600, ge=60)
     ingest_poll_interval_seconds: int = Field(default=60, ge=60)
     ingest_max_cycles: int | None = Field(default=None, ge=1)
+    scene_analysis_model_cache_dir: Path = Path(__file__).resolve().parents[2] / "model-cache"
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[2] / ".env",

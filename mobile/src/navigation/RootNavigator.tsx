@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import AlertsScreen from '../screens/AlertsScreen';
 import NearbyHazardsScreen from '../screens/NearbyHazardsScreen';
 import SavedLocationsScreen from '../screens/SavedLocationsScreen';
+import SceneAnalysisScreen from '../screens/SceneAnalysisScreen';
 import { API_BASE_URL } from '../config';
 import { isHazardEvent, loadEventFeed } from '../services/eventFeed';
 import { loadSavedLocations, saveSavedLocations } from '../services/savedLocations';
@@ -14,8 +15,8 @@ import { ApiError } from '../services/api';
 import { styles } from '../styles';
 import type { HazardEvent, SavedLocation } from '../types/hazard';
 
-type AppTab = 'Nearby' | 'Saved locations' | 'Alerts';
-const TABS: AppTab[] = ['Nearby', 'Saved locations', 'Alerts'];
+type AppTab = 'Nearby' | 'Saved locations' | 'Alerts' | 'Scene review';
+const TABS: AppTab[] = ['Nearby', 'Saved locations', 'Alerts', 'Scene review'];
 const LATEST_EVENTS_KEY = 'mobile.latestEvents';
 
 export default function RootNavigator() {
@@ -153,6 +154,7 @@ export default function RootNavigator() {
         />
       ) : null}
       {isReady && selectedTab === 'Alerts' ? <AlertsScreen {...screenProps} /> : null}
+      <SceneAnalysisScreen apiBaseUrl={apiBaseUrl} isActive={isReady && selectedTab === 'Scene review'} />
       <View style={styles.tabs}>
         {TABS.map((tab) => (
           <Pressable

@@ -417,6 +417,7 @@ Rules:
 | 403 | Valid identity without permission |
 | 404 | Resource not found |
 | 409 | Duplicate or conflicting state |
+| 413 | Request body exceeds a documented size limit |
 | 422 | Pydantic validation error |
 | 500 | Unexpected server error |
 

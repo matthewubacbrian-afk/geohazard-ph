@@ -1,0 +1,310 @@
+# Scene Review Vision Training Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build a rights-aware, reproducible offline workflow for training and evaluating Scene Review segmentation of open ground, obstacles, and visible hazard cues.
+
+**Architecture:** Keep image training isolated under `ml/src/ml/scene_review/` from the existing earthquake-risk pipeline. Validate source/license provenance and indexed image masks before generating group-separated splits; fine-tune the pinned DETR panoptic model offline; evaluate against the pinned baseline; export only a reviewed, versioned artifact. Backend integration remains a separate follow-up after the held-out metrics and runtime review pass.
+
+**Tech Stack:** Python 3.11+, PyTorch, Transformers, Pillow, NumPy, pytest, Ruff, JSON manifests, indexed PNG masks.
+
+**Spec:** `docs/superpowers/specs/2026-10-15-scene-review-vision-training-design.md`
+
+---
+
+## Global Constraints
+
+- Follow `AGENTS.md`, `CODING_STANDARDS.md`, `docs/glossary.md`, `docs/data-sources.md`, and `docs/testing-standards.md`; read `BACKEND_STANDARDS.md` only if a later task touches backend code.
+- Keep scene-image training separate from regional risk-profile training and its artifact bundle.
+- Work on the current `feat/scene-review-camera-controls` branch only after confirming it is the intended checkout. Stage only files in the task; preserve existing Scene Review edits and `.superpowers/brainstorm/`.
+- Use Conventional Commits with one logical change per commit. Do not commit raw images, masks, weights, caches, credentials, or generated reports containing local paths.
+- Dataset manifest paths are relative to a caller-provided data root. Reject absolute paths and path traversal. Do not log image pixels, image paths that contain user information, or private source credentials.
+- Training is offline. The CLI must never download dataset content or model weights implicitly. Resolve and cache the pinned initialization model explicitly before training; fail clearly when absent.
+- Annotation class IDs are fixed: `0=open_ground`, `1=obstacle`, `2=glass_facade`, `3=overhead_lines`, `4=visible_building_damage`, `255=ignore`. The guide may mark a class unsupported when it cannot be reliably annotated; a run must then explicitly declare the supported class subset and must not score omitted classes as successful.
+- Keep source/location/event/capture groups intact across splits. Exact image hashes must not appear in more than one split.
+- Do not emit or document a safety verdict. Candidate scores are visual ordering only.
+- Write a failing test before each code behavior, run it to confirm the expected failure, implement the smallest change, then rerun focused and package verification.
+- ML tests run from `ml/` with `pytest -v`; formatting uses `ruff check .`; run `python scripts\verify_structure.py` when the file tree changes and `git diff --check` before each commit.
+
+## File Map
+
+- `docs/superpowers/scene-review-annotation-guide.md`: boundaries, inclusion/exclusion examples, annotator workflow, ambiguity/ignore rules, and double-annotation review.
+- `docs/data-sources.md`: source-level reuse findings and approved dataset inventory; do not mark a source approved without permission evidence covering training and intended model-weight use.
+- `ml/pyproject.toml`: optional vision-training dependencies and CLI entry point, leaving base seismic dependencies unchanged.
+- `ml/src/ml/scene_review/labels.py`: canonical label IDs, mask validation, and class-subset validation.
+- `ml/src/ml/scene_review/manifest.py`: typed manifest records, source-rights checks, relative-path safety, content hashes, and image/mask validation.
+- `ml/src/ml/scene_review/splits.py`: deterministic source-group split generation and leakage checks.
+- `ml/src/ml/scene_review/dataset.py`: validated image/mask loading and conversion to the target format required by the selected segmentation model.
+- `ml/src/ml/scene_review/train.py`: deterministic offline fine-tuning and checkpoint selection using validation data only.
+- `ml/src/ml/scene_review/evaluate.py`: held-out metrics, slice reports, and baseline comparison.
+- `ml/src/ml/scene_review/artifacts.py`: immutable model export and provenance metadata validation.
+- `ml/src/ml/scene_review/cli.py`: `validate`, `split`, `train`, `evaluate`, and `export` subcommands.
+- `ml/tests/test_scene_review_labels.py`, `test_scene_review_manifest.py`, `test_scene_review_splits.py`, `test_scene_review_dataset.py`, `test_scene_review_train.py`, `test_scene_review_evaluate.py`, `test_scene_review_artifacts.py`, `test_scene_review_cli.py`, and `test_scene_review_pipeline.py`: tiny fixtures and offline contract coverage.
+- `docs/project-status.md`: update only with actual data readiness, metrics, hashes, and runtime evidence.
+
+## Task 1: Review image-source rights and create the annotation guide
+
+**Files:**
+- Create: `docs/superpowers/scene-review-annotation-guide.md`
+- Modify: `docs/data-sources.md`
+- Test: N/A (documentation and source-rights review; do not download images during this task)
+
+**Interfaces:**
+- Annotation IDs and meanings must match the Global Constraints exactly.
+- Source inventory rows record source, original image origin, terms/permission evidence URL, retrieval date/version, attribution, allowed training/evaluation use, model-weight redistribution status, and decision (`approved`, `excluded`, or `pending review`).
+
+- [ ] **Step 1: Inspect source terms** for every candidate dataset using the dataset owner's documentation and, where images originate elsewhere, the original image source terms. Record why the evidence covers or fails to cover model training and intended weight use.
+- [ ] **Step 2: Write the annotation guide** with pixel boundary rules for each class, ignore conditions, indoor/outdoor examples to include, and explicit exclusions for inferred reinforcement, safety, energized wires, or actual falling-glass risk.
+- [ ] **Step 3: Define the annotation quality review**: double-annotate a pilot subset, report per-class agreement and disagreement categories, and adjudicate before expanding labels.
+- [ ] **Step 4: Record source decisions** in `docs/data-sources.md`; pending or excluded sources cannot be used by the training CLI.
+- [ ] **Step 5: Review the documentation** for consistent terminology, rights evidence, and no accidental claim that a dataset card license covers underlying images.
+- [ ] **Step 6: Commit** as `docs: define scene review dataset annotations`.
+
+**Gate:** If no dataset has documented rights for the intended use, do not acquire it or train on it. Finish the source inventory and continue only with the offline pipeline mechanics; a real-scene training/evaluation run remains pending until an approved dataset is supplied or collected under explicit permission.
+
+## Task 2: Define labels and validate indexed masks
+
+**Files:**
+- Create: `ml/src/ml/scene_review/__init__.py`
+- Create: `ml/src/ml/scene_review/labels.py`
+- Create: `ml/tests/test_scene_review_labels.py`
+
+**Interfaces:**
+
+```python
+LABEL_IDS: dict[str, int]
+IGNORE_ID: int
+
+def validate_mask(mask: numpy.ndarray, supported_labels: set[str]) -> None: ...
+def labels_for_ids(class_ids: set[int]) -> set[str]: ...
+def training_id_map(supported_labels: Sequence[str]) -> dict[int, int]: ...
+```
+
+`validate_mask` raises `ValueError` for non-2D masks, unknown IDs, IDs for unsupported classes, or an all-ignore mask. It accepts integer arrays only and accepts `255` as ignore. `training_id_map` maps the selected canonical IDs to contiguous model IDs in the stable order of `LABEL_IDS`; artifact metadata stores both directions so inference can restore canonical labels.
+
+- [ ] **Step 1: Write failing tests** for the exact IDs, valid mask, unknown ID, unsupported class, non-integer mask, wrong dimensions, all-ignore mask, and contiguous mappings for supported label subsets.
+- [ ] **Step 2: Run** `pytest tests/test_scene_review_labels.py -v` from `ml/`; confirm failures are due to the missing functions or validation behavior.
+- [ ] **Step 3: Implement** the label constants and two public functions with type hints and no image I/O.
+- [ ] **Step 4: Run** `pytest tests/test_scene_review_labels.py -v` and `ruff check src/ml/scene_review/labels.py tests/test_scene_review_labels.py` from `ml/`.
+- [ ] **Step 5: Commit** as `feat: define scene review training labels`.
+
+## Task 3: Add rights-aware dataset manifest validation
+
+**Files:**
+- Create: `ml/src/ml/scene_review/manifest.py`
+- Create: `ml/tests/test_scene_review_manifest.py`
+
+**Interfaces:**
+
+```python
+@dataclass(frozen=True)
+class SceneImageRecord:
+    image_id: str
+    image_path: str
+    mask_path: str
+    image_sha256: str
+    mask_sha256: str
+    group_id: str
+    scene_type: str
+    lighting: str
+    occlusion: str
+    image_quality: str
+
+@dataclass(frozen=True)
+class SceneDatasetManifest:
+    schema_version: int
+    dataset_id: str
+    source_url: str
+    terms_evidence_url: str
+    license_name: str
+    retrieved_at: str
+    rights_review_status: str
+    permitted_uses: tuple[str, ...]
+    attribution: str
+    label_schema_version: int
+    supported_labels: tuple[str, ...]
+    records: tuple[SceneImageRecord, ...]
+
+def load_manifest(path: Path) -> SceneDatasetManifest: ...
+def validate_dataset(manifest: SceneDatasetManifest, data_root: Path) -> DatasetValidationReport: ...
+```
+
+`rights_review_status` is exactly `approved`, `pending_review`, or `excluded`. `permitted_uses` must include `training`, `evaluation`, and `derived_weight_redistribution` for an artifact intended for distribution. `DatasetValidationReport` contains `image_count`, `class_pixel_counts`, `scene_type_counts`, and `warnings`, with no paths. `validate_dataset` checks approved source status, intended training/evaluation/weight-use permissions, safe relative paths, file existence, SHA-256 values, JPEG/PNG readability, equal image/mask dimensions, valid class IDs, unique image IDs, and nonempty scene groups. It never returns image contents or absolute paths.
+
+- [ ] **Step 1: Write failing tests** for valid manifests, pending/excluded rights, missing permission purposes, absolute/traversal paths, missing files, hash mismatch, invalid image/mask, dimension mismatch, duplicate IDs, and unsupported label IDs.
+- [ ] **Step 2: Run** `pytest tests/test_scene_review_manifest.py -v`; confirm expected failures.
+- [ ] **Step 3: Implement** dataclasses, JSON parsing, strict validation, file hashing, and a count-only report. Do not add network access.
+- [ ] **Step 4: Run** `pytest tests/test_scene_review_manifest.py -v` and `ruff check src/ml/scene_review/manifest.py tests/test_scene_review_manifest.py`.
+- [ ] **Step 5: Commit** as `feat: validate scene review dataset manifests`.
+
+## Task 4: Generate deterministic group-separated splits
+
+**Files:**
+- Create: `ml/src/ml/scene_review/splits.py`
+- Create: `ml/tests/test_scene_review_splits.py`
+
+**Interfaces:**
+
+```python
+@dataclass(frozen=True)
+class DatasetSplits:
+    train_ids: tuple[str, ...]
+    validation_ids: tuple[str, ...]
+    test_ids: tuple[str, ...]
+
+def make_grouped_splits(
+    records: Sequence[SceneImageRecord], *, seed: int = 42,
+    ratios: tuple[float, float, float] = (0.70, 0.15, 0.15),
+) -> DatasetSplits: ...
+
+def validate_splits(records: Sequence[SceneImageRecord], splits: DatasetSplits) -> None: ...
+```
+
+Use a deterministic seeded shuffle of `group_id` values, then greedily assign whole groups to the split with the largest remaining target image count. Validate ratios sum to 1, every record appears exactly once, no group or image hash crosses splits, and all three splits are nonempty. Serialize sorted IDs and the seed as JSON.
+
+- [ ] **Step 1: Write failing tests** for deterministic output, group isolation, hash leakage, ratio validation, duplicate/missing IDs, and insufficient group counts.
+- [ ] **Step 2: Run** `pytest tests/test_scene_review_splits.py -v`; confirm expected failures.
+- [ ] **Step 3: Implement** the split dataclass, algorithm, validator, and JSON serialization helper.
+- [ ] **Step 4: Run** focused tests and Ruff for the changed files.
+- [ ] **Step 5: Commit** as `feat: split scene images by source group`.
+
+## Task 5: Load image/mask pairs for panoptic fine-tuning
+
+**Files:**
+- Create: `ml/src/ml/scene_review/dataset.py`
+- Create: `ml/tests/test_scene_review_dataset.py`
+
+**Interfaces:**
+
+```python
+class SceneReviewDataset:
+    def __init__(self, manifest: SceneDatasetManifest, data_root: Path,
+                 record_ids: Sequence[str], image_processor: DetrImageProcessor) -> None: ...
+    def __len__(self) -> int: ...
+    def __getitem__(self, index: int) -> dict[str, object]: ...
+```
+
+Load RGB images and indexed PNG masks from the validated manifest. Convert each connected component of a non-ignore class mask into one DETR segmentation target with `class_labels`, `masks`, and `boxes`, matching the official [`DetrForSegmentation` training input](https://huggingface.co/docs/transformers/model_doc/detr#transformers.DetrForSegmentation). Convert canonical class IDs to contiguous training IDs using `training_id_map`. Use deterministic preprocessing; do not apply random augmentation in validation/test. Never silently convert an unsupported label or ignore pixels into background.
+
+- [ ] **Step 1: Add tiny image and indexed-mask fixtures at runtime in tests** and write failing tests for RGB conversion, target class IDs, connected components, ignored pixels, empty class, and malformed dimensions.
+- [ ] **Step 2: Run** `pytest tests/test_scene_review_dataset.py -v`; confirm expected failures.
+- [ ] **Step 3: Implement** the dataset adapter against the pinned `DetrImageProcessor` interface. Add Pillow and NumPy to the optional vision extra only if absent from resolved transitive dependencies.
+- [ ] **Step 4: Run** focused dataset and label tests plus Ruff.
+- [ ] **Step 5: Commit** as `feat: prepare scene masks for panoptic training`.
+
+## Task 6: Add pinned optional dependencies and deterministic training
+
+**Files:**
+- Modify: `ml/pyproject.toml`
+- Create: `ml/src/ml/scene_review/train.py`
+- Create: `ml/tests/test_scene_review_train.py`
+
+**Interfaces:**
+
+```python
+@dataclass(frozen=True)
+class TrainingConfig:
+    model_id: str
+    model_revision: str
+    seed: int
+    epochs: int
+    batch_size: int
+    learning_rate: float
+    supported_labels: tuple[str, ...]
+    output_dir: Path
+
+def train_model(
+    manifest: SceneDatasetManifest, splits: DatasetSplits,
+    config: TrainingConfig, *, model_cache: Path,
+) -> TrainingResult: ...
+```
+
+`TrainingResult` contains `checkpoint_path`, `best_epoch`, `best_validation_loss`, `seed`, `trained_labels`, and `training_metadata`.
+
+Use `facebook/detr-resnet-50-panoptic` at revision `d53b52a799403a8867920f82c869e40732b47037` as initialization. Load local files only, replace the task classifier for the declared supported labels, set all random seeds, select checkpoints using validation loss, and never inspect test metrics during training. Before editing `pyproject.toml`, verify compatible CPU package versions for supported Python 3.11+ and the project’s Linux deployment target; add a `scene-review` optional dependency extra with explicit versions and documented install command, leaving base tabular installs unchanged.
+
+- [ ] **Step 1: Write failing tests** for config validation, missing local checkpoint failure, deterministic seed propagation, class-head mapping, validation-only checkpoint selection, and no test split use.
+- [ ] **Step 2: Run** `pytest tests/test_scene_review_train.py -v`; confirm expected failures without downloads.
+- [ ] **Step 3: Implement** training entry function and result metadata. Keep model loading injectable so unit tests use a fake model and trainer.
+- [ ] **Step 4: Run** unit tests and a small synthetic end-to-end train into `tmp_path`; label the output as pipeline-mechanics verification only.
+- [ ] **Step 5: Resolve and install** the optional dependency extra in an isolated environment; verify the pinned checkpoint loads from a local cache with network access disabled.
+- [ ] **Step 6: Run** ML package verification and inspect dependency changes for unintended updates to the base seismic environment.
+- [ ] **Step 7: Commit** as `feat: fine tune scene review segmentation model`.
+
+## Task 7: Evaluate held-out scenes and compare with the baseline
+
+**Files:**
+- Create: `ml/src/ml/scene_review/evaluate.py`
+- Create: `ml/tests/test_scene_review_evaluate.py`
+
+**Interfaces:**
+
+```python
+@dataclass(frozen=True)
+class EvaluationThresholds:
+    minimum_iou_by_label: Mapping[str, float]
+    minimum_precision_by_label: Mapping[str, float]
+    minimum_recall_by_label: Mapping[str, float]
+    maximum_false_cue_rate: float
+    maximum_metric_regression_by_label: Mapping[str, float]
+
+def evaluate_model(model: object, dataset: SceneReviewDataset,
+                   thresholds: EvaluationThresholds) -> EvaluationReport: ...
+def compare_to_baseline(candidate: EvaluationReport,
+                        baseline: EvaluationReport) -> BaselineComparison: ...
+```
+
+`EvaluationReport` contains `per_label_iou`, `per_label_precision`, `per_label_recall`, `false_visual_cue_rate`, `open_ground_component_coverage`, `slice_metrics`, `sample_counts`, and `passed_thresholds`. `BaselineComparison` contains per-label metric deltas and a `passed_required_non_regression` boolean. Open-ground component coverage is the fraction of ground-truth connected open-ground components that overlap a predicted component at or above the IoU threshold recorded in the report.
+
+Compute IoU, precision, and recall at pixel level for each class. Define false visual-cue rate as the fraction of evaluated images with at least one emitted hazard-cue component whose mask has IoU below the matching threshold against all ground-truth components. Report per-class metrics, false visual-cue rate, open-ground component coverage, sample counts, and slices by scene type, lighting, occlusion, image quality, and source group where sample counts meet the declared minimum. Fail acceptance if required thresholds are absent or any class regresses beyond `maximum_metric_regression_by_label` against baseline. Thresholds are written before the held-out test run; no tuning uses test results.
+
+- [ ] **Step 1: Write failing tests** with synthetic predictions for metric correctness, empty classes, insufficient slice counts, threshold enforcement, and baseline comparisons.
+- [ ] **Step 2: Run** `pytest tests/test_scene_review_evaluate.py -v`; confirm expected failures.
+- [ ] **Step 3: Implement** pure metric/report functions, then the prediction loop over held-out examples.
+- [ ] **Step 4: Run** focused metric tests and Ruff.
+- [ ] **Step 5: Execute the real-scene held-out evaluation only when Task 1 rights and annotation gates pass.** Record dataset manifest hash, model/code revision, thresholds, metrics, runtime, and uncovered slices; keep images and report out of Git unless the report is scrubbed of local/private data.
+- [ ] **Step 6: Commit** as `feat: evaluate scene review segmentation quality`.
+
+## Task 8: Export immutable artifact and document readiness
+
+**Files:**
+- Create: `ml/src/ml/scene_review/artifacts.py`
+- Create: `ml/tests/test_scene_review_artifacts.py`
+- Create: `ml/tests/test_scene_review_cli.py`
+- Create: `ml/tests/test_scene_review_pipeline.py`
+- Create: `ml/src/ml/scene_review/cli.py`
+- Modify: `docs/project-status.md`
+
+**Interfaces:**
+
+```text
+scene-review validate --manifest PATH --data-root PATH
+scene-review split --manifest PATH --data-root PATH --seed 42 --output PATH
+scene-review train --manifest PATH --data-root PATH --splits PATH --model-cache PATH --output-dir PATH
+scene-review evaluate --manifest PATH --data-root PATH --splits PATH --checkpoint PATH --thresholds PATH --output PATH
+scene-review export --checkpoint PATH --evaluation PATH --metadata PATH --version VERSION --output-root PATH
+```
+
+Register `scene-review = "ml.scene_review.cli:main"` under `[project.scripts]` in `ml/pyproject.toml`; these commands run after installing the project with the `scene-review` optional extra.
+
+Artifact export writes only under `ml/model_artifacts/scene_review/<version>/`, refuses overwrite, verifies passing evaluation and complete provenance, records model/dataset/code hashes, labels, thresholds, metrics, runtime versions, and limitations, and never copies raw images or absolute local paths. CLI errors return nonzero with actionable messages and do not log source image bytes or private paths.
+
+- [ ] **Step 1: Write failing tests** for each CLI command, nonzero errors, refusal on pending rights or failed thresholds, immutable version path, metadata completeness, and absence of image/path content.
+- [ ] **Step 2: Run** `pytest tests/test_scene_review_artifacts.py tests/test_scene_review_cli.py -v`; confirm expected failures.
+- [ ] **Step 3: Implement** export validation, command argument parsing, and artifact metadata serialization.
+- [ ] **Step 4: Run** all focused tests; then `pytest -v` and `ruff check .` from `ml/`.
+- [ ] **Step 5: Run** the synthetic end-to-end pipeline test; verify it writes only under pytest `tmp_path` and uses a fake model with no network access.
+- [ ] **Step 6: For an approved real dataset only,** run the held-out evaluation from Task 7, then load the exported artifact with network access disabled and record one-image CPU latency and peak resident memory on the target backend environment.
+- [ ] **Step 7: Run** `python scripts\verify_structure.py` and `git diff --check` from the repository root.
+- [ ] **Step 8: Update project status** with only verified outcomes. If rights/data gates are not met, state that training is pending approved labeled data and report only pipeline-mechanics checks; do not mark model recognition validated.
+- [ ] **Step 9: Commit** as `feat: export reviewed scene review model artifacts`.
+
+## Completion Gate
+
+The training pipeline is complete when all code and documentation tasks pass and the artifact gate is exercised. A real model-quality result is complete only when a rights-approved, sufficiently annotated dataset passes held-out acceptance thresholds. If no such dataset is available, report the exact data-readiness blocker and leave real-scene training and model acceptance pending. Do not update `backend/app/services/scene_analysis_model.py`, change the SceneAnalysis API, or deploy the artifact in this plan.
+
+## Notes for the executor
+
+- Do not create a new worktree until implementation begins; this plan is documented on the current feature branch, which contains unrelated uncommitted camera-work changes. At execution, use the `using-git-worktrees` skill and start a clean worktree from the branch containing this plan, then stage and commit only planned files.
+- The spec intentionally puts backend integration in a later plan. This plan ends with a locally exported artifact and evaluation evidence.
+- Verify the annotation guide and dataset permissions before any real image download or training run. A model card or code license is not sufficient to clear image rights.

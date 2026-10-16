@@ -30,9 +30,9 @@ components and intentionally unavailable capabilities.
 
 | Existing capability | Current view/component | Data path and behavior that must remain |
 | --- | --- | --- |
-| Live event feed and event selection | Dashboard → `EventFeed`, `EventFeedItem`, `EventDetailPanel` | `useEvents` → `fetchEvents` → `GET /events`; filtered list and map use the same source/date/magnitude/category state; selection shows original event fields and units. |
+| Live event feed and event selection | Dashboard → `EventFeed`, `EventFeedItem`, `EventDetailPanel` | `useEvents` → `fetchEvents` → `GET /events`; filtered list and map use the same source/date/magnitude/hazard-type/category state; selection shows original event fields and units. |
 | Map event markers | Dashboard → `DashboardMapArea` → `MapView` | Same filtered `HazardEvent[]`; longitude/latitude mapping, magnitude sizing, selected event, visibility, and four basemaps stay intact. |
-| National event summary card | `DashboardMapArea` | `useEventSummary` → `fetchEventSummary` → `GET /events/summary`; server-backed count and average magnitude, loading/error/retry/empty states. Classification and dominant fault system currently say “Coming soon.” |
+| National event summary panel | Dashboard activity panel → `DashboardInfoPanel` | `useEventSummary` → `fetchEventSummary` → `GET /events/summary`; server-backed count and average magnitude, loading/error/retry/empty states. Classification and dominant fault system currently say “Coming soon.” A separate map badge reports the currently filtered event count. |
 | Realtime updates and REST reconciliation | Dashboard → `RealtimeStatus`, `useRealtimeAlerts` | WebSocket `/ws/events`, reconnect/backoff, query-cache updates, REST invalidation on connect, and 30-second event and summary refresh remain unchanged. “LIVE” means transport connectivity only. |
 | Volcano bulletins | Dashboard volcano view → `VolcanoPanel` | `useVolcanoes` → `GET /volcanoes`; retain alert level including valid zero, missing-level text, official links, bulletin/retrieval timestamps, stale-cache status, loading/error/retry/empty states. |
 | Imported fault and local volcano-zone vectors | Sidebar toggles → `useStaticLayers` → `GET /faults`, `GET /volcano-zones` → `MapView`, `StaticLayerStatus` | Queries remain enabled only when selected; preserve geometry, visibility, source/version/license attribution, loading/error/retry and explicit “not imported yet” messages. |
@@ -49,25 +49,28 @@ components and intentionally unavailable capabilities.
 | Existing feature | New location after redesign | Verification status |
 | --- | --- | --- |
 | Live events feed, category filters, event selection and detail panel | Dashboard activity panel; event markers and summary on the map | Verified with live API data; feed and markers show the same filtered events. |
-| Event source filter | Dashboard activity panel | Verified in browser; All sources, USGS, and PHIVOLCS remain available. |
-| Date range and minimum magnitude | Dashboard controls rail | Verified reachable by scrolling the rail; shared filters continue to drive map and feed. |
-| Live WebSocket status and 30-second REST reconcile | Dashboard status strip and existing data hooks | Hook/API behavior preserved; live REST data loaded during browser review. |
+| Event source filter | Dashboard controls rail | Source buttons preserve All, USGS, and PHIVOLCS and feed the existing query/filter state. |
+| Date range and minimum magnitude | Dashboard controls rail | Date presets (1D, 7D, 30D, 90D), date inputs, magnitude presets, and slider feed the existing shared filter state. |
+| Hazard type | Dashboard controls rail | Earthquake, volcanic, and other-hazard checkboxes filter the same event collection for map and feed. |
+| Live WebSocket status and 30-second REST reconcile | Global dashboard header and existing data hooks | Hook/API behavior preserved; live status remains transport-dependent. |
 | Risk overlay | Dashboard map layer controls and map legend/status | UI toggle and legend preserved; inspect against local layer availability. |
 | Fault line layer | Dashboard map layer controls and `StaticLayerStatus` | API query returned features during review; layer control remains in the dashboard. |
 | Volcano-zone layer | Dashboard map layer controls and `StaticLayerStatus` | API returned no imported features; honest empty-layer status is retained. |
 | PHIVOLCS volcano raster overlays | Dashboard map layer controls and volcano overlay status | Existing provider overlay behavior and attribution retained. |
 | Volcano bulletins, alert level, stale cache and official links | Dashboard → Volcano bulletins view | View and existing status states preserved; data remains API dependent. |
 | Regional risk profiles and region lookup | Dashboard → Risk reports; profile list and filter in activity panel | Verified in browser with region cards, levels, confidence, drivers, and search. |
-| Summary counts and average magnitude | Map summary panel | Verified with live response; unimplemented classification/fault metrics still say “Coming soon.” |
+| Summary counts and average magnitude | Dashboard activity information panel; filtered count badge on map | Existing API states and retry are retained; detailed metrics still say “Coming soon” when unavailable. |
 | Historical earthquake browser | `/historical` | Deliberately unavailable; page explains the current state and links back to the live dashboard. |
 | About and methodology | `/about` and `/` How It Works content | Verified as informational pages with required disclaimers. |
 | Data source provenance | `/data-sources` and map attribution | Verified page and active map attribution. |
 | Settings panel | Global Settings control | Existing open/close behavior retained. |
 
-The redesigned UI preserves the old feature boundaries and API data paths. Runtime
-availability depends on the local database and upstream providers; the empty
-volcano-zone layer and “Coming soon” summary fields above reflect actual current
-coverage rather than redesigned placeholders.
+The redesigned UI preserves the existing API data paths. Browser review during this
+implementation used an offline local API, so live event, summary, fault, and volcano
+data could not be confirmed in that session. Mocked Vitest coverage verifies the
+loading, error, empty, retry, source, and hazard-filter interactions. The empty
+volcano-zone layer and “Coming soon” summary fields reflect the existing UI contract,
+not fabricated values.
 
 ### Active API and hook map
 
@@ -216,6 +219,20 @@ stacking.
 - **Pages:** `Hero`, `About`, `DataSources`, `HistoricalBrowser`.
 - **Styles:** shared tokens/base/utilities plus colocated CSS Modules. Do not introduce
   Tailwind or move API behavior into presentation components.
+
+## Dashboard activity and responsive rails
+
+- The right activity panel has **Recent events** and **Notifications** tabs. The
+  event feed continues to use the existing filtered query data and selection flow.
+- Notifications are created only from valid primary websocket `EventChange`
+  messages. They are deduplicated by `canonical_id`, capped at 50, and stored in
+  this browser under `geohazard.notifications.v1`; no server notification endpoint
+  or historical-query replay is implied. Read state is local to this browser.
+- Both dashboard side panels can collapse independently to icon rails at desktop
+  widths. Every icon-only action has an accessible name. The rails stay expanded
+  on small screens so their controls remain visible and usable.
+- The dashboard visual theme is shared by the informational and historical page
+  navigation. Page content and route behavior remain unchanged.
 
 ## States and copy
 

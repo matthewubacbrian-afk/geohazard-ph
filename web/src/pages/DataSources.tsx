@@ -12,7 +12,7 @@ type DataSourcesProps = {
 export default function DataSources({ onNavigate, onSettings }: DataSourcesProps) {
   return (
     <main className={styles.page}>
-      <TopNav items={navItems} activeItem="Data Sources" onNavigate={onNavigate} onSettings={onSettings} />
+      <TopNav items={navItems} activeItem="Data Sources" theme="dashboard" onNavigate={onNavigate} onSettings={onSettings} />
       <div className={styles.content}>
         <header className={styles.intro}>
           <p className={styles.eyebrow}>Provenance and attribution</p>
