@@ -153,9 +153,12 @@ When a spec or plan introduces a new concept:
 ## Epic 6 landslide reference layer
 
 - landslide susceptibility overlay: optional NASA Global Landslide Susceptibility Map
-  shown as a coarse, static global reference layer (about 1 km pixels; values 0–5).
-  It is planning context, not a live warning, event probability, site assessment, or
-  evidence that a location is safe; missing pixels do not mean low susceptibility.
+  credited and linked in the UI as a coarse, informational global susceptibility
+  reference (about 1 km pixels; values 0–5). NASA describes it as research-grade and
+  unsuitable for operational use. It is an awareness aid, not an early-warning
+  authority, live warning, event probability, site assessment, or evidence that a
+  location is safe; missing pixels do not mean low susceptibility. A higher-resolution
+  MGB reference may complement it later after reuse rights and coverage are confirmed.
 
 ## 7. Camera scene analysis
 
