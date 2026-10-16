@@ -55,6 +55,15 @@ describe('DashboardSidebar map layers', () => {
     expect(screen.getByRole('button', { name: 'Satellite' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('offers an independent landslide susceptibility toggle', () => {
+    const onToggleLayer = vi.fn();
+    renderSidebar({ onToggleLayer });
+
+    fireEvent.click(screen.getByLabelText('Landslide susceptibility'));
+
+    expect(onToggleLayer).toHaveBeenCalledWith('landslideSusceptibility');
+  });
+
   it('shows all four existing basemap options as connected controls', () => {
     renderSidebar();
 
@@ -91,7 +100,7 @@ describe('DashboardSidebar layers', () => {
     for (const label of ['Map', 'Seismic filters', 'Historical data', 'Volcano bulletins', 'Risk reports']) {
       expect(screen.getByRole('button', { name: new RegExp(`^${label}$`) })).toBeInTheDocument();
     }
-    for (const label of ['Live events', 'Risk overlay', 'Fault lines', 'Volcano zones']) {
+    for (const label of ['Live events', 'Risk overlay', 'Fault lines', 'Volcano zones', 'Landslide susceptibility']) {
       expect(screen.getByLabelText(label)).toBeInTheDocument();
     }
     for (const label of ['Critical events', 'Elevated events', 'Baseline events']) {

@@ -80,7 +80,21 @@ always require domain review before an export can be considered for staging.
 
 - GEM Global Active Faults Database: fault-line reference data.
 - PHIVOLCS Active Fault Atlas: manual or semi-manual digitization source.
-- Landslide susceptibility and InSAR datasets: stretch work, validate licensing before use.
+- NASA Global Landslide Susceptibility Map: remote global raster reference, approximately
+  1 km pixel size, with service values from 0 to 5. Credit NASA and link the map/service
+  in the UI. Label it as a **coarse, informational susceptibility reference**; NASA
+  warns it may be research-grade and unsuitable for operational use. It is an
+  awareness aid, not an early-warning authority, live warning, event probability, or
+  site-level assessment. Do not interpret missing pixels as low susceptibility. The
+  dashboard requests imagery from the [NASA ImageServer](https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/Global_Landslide_Susceptibility/ImageServer)
+  at runtime; the raster is not copied into project storage.
+- MGB detailed rainfall-induced landslide susceptibility polygons may be considered as
+  a separate higher-resolution reference after reuse rights and geographic coverage
+  are confirmed. Public service access alone does not establish those terms; do not
+  copy or display the polygons until reviewed. A future MGB layer can complement the
+  NASA global reference.
+- InSAR deformation datasets: future feasibility work; validate source terms, coverage,
+  revisit cadence, processing requirements, and operational limits before use.
 - Philippine administrative regions: the version-pinned geoBoundaries open ADM1
   derivative for the Philippines, sourced from NAMRIA, PSA, and OCHA Philippines.
   The web risk overlay uses the simplified WGS84 FeatureCollection from boundary
