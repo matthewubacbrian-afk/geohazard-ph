@@ -182,3 +182,13 @@ When a spec or plan introduces a new concept:
 | scene image quality warning | API error `scene_image_quality_warning`; advisory result for a low provisional sharpness score, with retake and explicit continue actions. |
 | result_status | `result_status`; `candidates_found` when candidate regions exist, otherwise `no_clear_candidate`. |
 | scene-analysis limitations | `limitations`; fixed caveats that visual cues do not determine safety, image conditions can hide cues, and one image cannot verify structural integrity, earthquake resistance, ground conditions, falling-glass or electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions. |
+
+## 8. Epic 6 landslide and InSAR
+
+| Term | Canonical field / meaning |
+| --- | --- |
+| InSAR | Interferometric synthetic aperture radar; compares radar phase observations from repeat acquisitions to estimate surface displacement after accounting for topography, orbit, atmosphere, and other phase contributions. |
+| line-of-sight displacement | Surface displacement component measured toward or away from the radar viewing direction; it is not a complete three-dimensional or slope-parallel motion vector. |
+| coherence | Similarity of radar phase between repeat acquisitions; low coherence or decorrelation can make an InSAR displacement estimate unavailable or unreliable. |
+| landslide susceptibility reference | A mapped, coarse indication of relative susceptibility; not measured ground motion, a site-specific assessment, forecast, or warning. |
+| research-grade ground-motion estimate | A sourced, date-bounded InSAR measurement with quality and maturity caveats; not an operational alert or safety determination. |

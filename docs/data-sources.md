@@ -95,6 +95,23 @@ always require domain review before an export can be considered for staging.
   NASA global reference.
 - InSAR deformation datasets: future feasibility work; validate source terms, coverage,
   revisit cadence, processing requirements, and operational limits before use.
+- Epic 6 Part 2 InSAR desk review (2026-10-16): NISAR L-band is the recommended
+  primary candidate for a bounded research pilot, with Sentinel-1 as a comparison.
+  ASF currently describes NISAR PROVISIONAL products as calibrated and partially
+  validated; each site's actual track/frame coverage, maturity, temporal sampling,
+  quality, latency, and product availability must be checked in the archive. The
+  recommendation is not evidence that any Philippine landslide site has usable
+  acquisitions or validated motion. Sentinel-1 on-demand InSAR is available through
+  ASF HyP3, subject to SLC-pair selection, Earthdata authentication, monthly Basic
+  credits/queue limits, and temporary product retention. InSAR can be affected by
+  decorrelation, atmosphere, DEM/orbit residuals, geometry, and unwrapping; do not
+  draw conclusions from one pair. Any later display must label LOS displacement as
+  research-grade and informational, show acquisition dates and quality gaps, and
+  must not present it as an early warning, forecast, or safety determination.
+  Credit NASA/ISRO and ASF for NISAR products, and ESA/Copernicus Sentinel-1 and ASF
+  for Sentinel-1 products according to the product citation and terms. See the
+  [Epic 6 InSAR feasibility spec](superpowers/specs/2026-10-16-epic6-insar-feasibility-design.md)
+  and its primary-source links before any pilot or product work.
 - Philippine administrative regions: the version-pinned geoBoundaries open ADM1
   derivative for the Philippines, sourced from NAMRIA, PSA, and OCHA Philippines.
   The web risk overlay uses the simplified WGS84 FeatureCollection from boundary
