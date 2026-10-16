@@ -18,7 +18,6 @@ class _Evaluation:
         self.label_schema_version = 2
         self.supported_labels = ("open_ground",)
         self.threshold_failures = ()
-        self.baseline_comparison = None
         self.unsupported_pixel_counts = {"glass_facade": 3}
         self.sample_counts = {
             "total": 2,
@@ -82,6 +81,27 @@ class _Evaluation:
             "minimum_prediction_score": 0.5,
             "minimum_samples_per_slice": 1,
         }
+        self.baseline_comparison = _passing_baseline_comparison(self)
+
+
+def _passing_baseline_comparison(report):
+    return {
+        "baseline_metrics": {
+            "per_label_iou": dict(report.per_label_iou),
+            "per_label_precision": dict(report.per_label_precision),
+            "per_label_recall": dict(report.per_label_recall),
+            "false_visual_cue_rate": report.false_visual_cue_rate,
+            "open_ground_component_coverage": report.open_ground_component_coverage,
+        },
+        "per_label_metric_deltas": {
+            label: {"iou": 0.0, "precision": 0.0, "recall": 0.0}
+            for label in report.supported_labels
+        },
+        "false_visual_cue_rate_delta": 0.0,
+        "open_ground_component_coverage_delta": 0.0,
+        "passed_required_non_regression": True,
+        "failures": [],
+    }
 
 
 def _training_metadata():
@@ -203,6 +223,30 @@ def test_export_rejects_failed_gate_evaluation_and_overwrite(tmp_path):
         export_artifact(**args)
 
 
+def test_export_rejects_evaluation_without_baseline_comparison(tmp_path):
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    (checkpoint / "config.json").write_text('{"model_type":"detr"}', encoding="utf-8")
+    (checkpoint / "preprocessor_config.json").write_text(
+        '{"image_processor_type":"DetrImageProcessor"}', encoding="utf-8"
+    )
+    (checkpoint / "model.safetensors").write_bytes(b"weights")
+    metadata = _training_metadata()
+    report = _Evaluation()
+    report.baseline_comparison = None
+    _bind_checkpoint(checkpoint, metadata, report)
+
+    with pytest.raises(ValueError, match="baseline comparison is required"):
+        export_artifact(
+            checkpoint_path=checkpoint,
+            evaluation_report=report,
+            training_metadata=metadata,
+            sufficiency_gate_passed=True,
+            version="v-without-baseline",
+            output_root=tmp_path / "artifacts",
+        )
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
@@ -258,6 +302,7 @@ def test_export_rejects_evaluation_provenance_mismatch(tmp_path, field, value):
                 for metric in ("iou", "precision", "recall")
             }
         }
+        report.baseline_comparison = _passing_baseline_comparison(report)
 
     with pytest.raises(ValueError, match="evaluation provenance must match training"):
         export_artifact(

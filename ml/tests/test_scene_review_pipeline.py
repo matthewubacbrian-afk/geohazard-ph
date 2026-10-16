@@ -1,5 +1,6 @@
 import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -9,7 +10,7 @@ from PIL import Image
 
 from ml.scene_review.artifacts import export_artifact
 from ml.scene_review.dataset import SceneReviewDataset
-from ml.scene_review.evaluate import EvaluationThresholds, evaluate_model
+from ml.scene_review.evaluate import EvaluationThresholds, compare_to_baseline, evaluate_model
 from ml.scene_review.manifest import SufficiencyPolicy, load_manifest, validate_dataset
 from ml.scene_review.splits import DatasetSplits
 from ml.scene_review.train import TrainingConfig, train_model
@@ -202,6 +203,10 @@ def test_synthetic_pipeline_trains_evaluates_and_exports_only_to_tmp_path(tmp_pa
         checkpoint_path=result.checkpoint_path,
     )
     assert evaluation.passed_thresholds, evaluation.threshold_failures
+    evaluation = replace(
+        evaluation,
+        baseline_comparison=compare_to_baseline(evaluation, evaluation),
+    )
     artifact_dir = export_artifact(
         checkpoint_path=result.checkpoint_path,
         evaluation_report=evaluation,

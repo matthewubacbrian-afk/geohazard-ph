@@ -412,7 +412,7 @@ Artifact export writes only under `ml/model_artifacts/scene_review/<version>/`, 
 - [x] **Step 8: Update project status** with the verified pipeline mechanics and the unresolved rights/threshold gates; do not claim model recognition.
 - [x] **Step 9: Commit** as `feat: export reviewed scene review model artifacts`.
 
-**Readiness status:** Tasks 1–8 implementation mechanics and synthetic checks are complete. Real-scene training/held-out evaluation and target-device artifact validation (including one-image CPU latency and peak memory) remain unchecked because no rights-approved scene images or predeclared numeric acceptance thresholds are available. Do not interpret the synthetic pipeline as evidence of scene recognition.
+**Readiness status:** Offline validation, training, evaluation, and artifact mechanics have synthetic checks. Export refuses reports without a passing baseline comparison. The current evaluation CLI produces candidate-only reports; the pinned baseline model's mapping to Scene Review labels and same-sample comparison workflow are not yet wired into the CLI. Real-scene training/held-out evaluation and target-device artifact validation (including one-image CPU latency and peak memory) remain unchecked because no rights-approved scene images or predeclared numeric acceptance thresholds are available. Do not interpret the synthetic pipeline as evidence of scene recognition.
 
 ## Completion Gate
 

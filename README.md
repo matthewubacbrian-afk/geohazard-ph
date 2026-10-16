@@ -312,8 +312,8 @@ The generated labels are descriptive statistical profiles based on historical re
 
 The optional Scene Review pipeline validates locally held, rights-approved
 image/mask records, creates source-group splits, trains from a local model cache,
-evaluates an explicitly held-out split, and exports an immutable version under
-`ml/model_artifacts/scene_review/<version>/`. Install its optional dependencies
+and evaluates an explicitly held-out split. Artifact export is fail-closed and
+requires a baseline non-regression comparison. Install its optional dependencies
 from `ml/`:
 
 ```powershell
@@ -337,9 +337,6 @@ scene-review evaluate --manifest data/manifest.json --data-root data --splits da
   --checkpoint model_artifacts/scene_review/runs/run-1/checkpoint-epoch-1 `
   --training-metadata model_artifacts/scene_review/runs/run-1/training_metadata.json `
   --thresholds data/evaluation-thresholds.json --output data/evaluation.json
-scene-review export --checkpoint model_artifacts/scene_review/runs/run-1/checkpoint-epoch-1 `
-  --evaluation data/evaluation.json `
-  --metadata model_artifacts/scene_review/runs/run-1/training_metadata.json --version v1
 Set-Location ..
 ```
 
@@ -349,8 +346,13 @@ prints aggregate counts, not per-image identifiers, source URLs, attribution,
 or local paths. Training and evaluation must pass their declared gates, and
 export requires training from a clean, committed code revision. Exports contain
 model weights, model/processor configuration, and scrubbed provenance; version
-directories cannot be overwritten. As of
-2026-10-15, no candidate image source is approved and no evaluation thresholds
+directories cannot be overwritten. The current `evaluate` command emits
+candidate metrics without a baseline comparison, so `export` rejects that report.
+Do not run the export command until the pinned baseline has been evaluated on the
+same held-out samples and the comparison is attached to the candidate report.
+The CLI does not yet generate this comparison; wiring the baseline model's label
+mapping and evaluation into the offline command is a follow-up. As of
+2026-10-16, no candidate image source is approved and no evaluation thresholds
 have been declared, so real-scene training and model-quality evaluation remain
 pending. Synthetic pipeline tests verify mechanics only and do not establish
 scene recognition.

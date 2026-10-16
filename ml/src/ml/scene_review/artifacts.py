@@ -530,7 +530,7 @@ def _validate_baseline_comparison(
 ) -> None:
     comparison = evaluation.get("baseline_comparison")
     if comparison is None:
-        return
+        raise ValueError("baseline comparison is required")
     if not isinstance(comparison, Mapping) or set(comparison) != {
         "baseline_metrics",
         "per_label_metric_deltas",
