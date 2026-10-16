@@ -95,6 +95,38 @@ always require domain review before an export can be considered for staging.
   NASA global reference.
 - InSAR deformation datasets: future feasibility work; validate source terms, coverage,
   revisit cadence, processing requirements, and operational limits before use.
+- Epic 6 Part 2 InSAR desk review (2026-10-16): NISAR L-band is the recommended
+  longer-wavelength candidate for comparison in a bounded research pilot. A
+  University of the Philippines Diliman Philippine Engineering Journal article
+  reports a Sentinel-1 persistent-scatterer InSAR study in Antipolo, 184,253
+  persistent-scatterer points, and LOS displacement correlation of 0.83 against a
+  stationary GNSS receiver. Its acquisition details, footprint, and underlying GNSS
+  series must be reviewed before treating the paper as a reproducible validation
+  benchmark. NISAR launched after that study, so it cannot reproduce that historical
+  observation period; it requires a current independent ground reference for any
+  direct comparison.
+  ASF currently describes NISAR PROVISIONAL products as calibrated and partially
+  validated; each site's actual track/frame coverage, maturity, temporal sampling,
+  quality, latency, and product availability must be checked in the archive. The
+  recommendation is not evidence that any Philippine landslide site has usable
+  acquisitions or validated motion. Sentinel-1 on-demand InSAR is available through
+  ASF HyP3, subject to SLC-pair selection, Earthdata authentication, monthly Basic
+  credits/queue limits, and temporary product retention. InSAR can be affected by
+  decorrelation, atmosphere, DEM/orbit residuals, geometry, and unwrapping; do not
+  draw conclusions from one pair. Any later display must label LOS displacement as
+  research-grade and informational, show acquisition dates and quality gaps, and
+  must not present it as an early warning, forecast, or safety determination.
+  Credit NASA/ISRO and ASF for NISAR products, and ESA/Copernicus Sentinel-1 and ASF
+  for Sentinel-1 products according to the product citation and terms. See the
+  [Epic 6 InSAR feasibility spec](superpowers/specs/2026-10-16-epic6-insar-feasibility-design.md)
+  and its primary-source links before any pilot or product work. A read-only ASF
+  metadata query on 2026-10-16 found 34 descending Sentinel-1B IW SLC records
+  (relative orbit 61) and 26 PROVISIONAL NISAR GUNW records intersecting only the
+  published Naga landslide event-centroid point. This does not establish coverage
+  of the source scarp or usable pixel quality. No scenes were downloaded, no HyP3
+  jobs were submitted, and no displacement was measured. The screening details,
+  reproducible catalog links, and source-area/validation review are in the
+  [Epic 6 InSAR pilot report](epic6-insar-pilot-report.md).
 - Philippine administrative regions: the version-pinned geoBoundaries open ADM1
   derivative for the Philippines, sourced from NAMRIA, PSA, and OCHA Philippines.
   The web risk overlay uses the simplified WGS84 FeatureCollection from boundary
