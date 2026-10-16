@@ -124,8 +124,8 @@ always require domain review before an export can be considered for staging.
   (relative orbit 61) and 26 PROVISIONAL NISAR GUNW records intersecting only the
   published Naga landslide event-centroid point. This does not establish coverage
   of the source scarp or usable pixel quality. No scenes were downloaded, no HyP3
-  jobs were submitted, and no displacement was measured. The screening details and
-  reproducible catalog links are in the
+  jobs were submitted, and no displacement was measured. The screening details,
+  reproducible catalog links, and source-area/validation review are in the
   [Epic 6 InSAR pilot report](epic6-insar-pilot-report.md).
 - Philippine administrative regions: the version-pinned geoBoundaries open ADM1
   derivative for the Philippines, sourced from NAMRIA, PSA, and OCHA Philippines.

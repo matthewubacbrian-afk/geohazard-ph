@@ -19,6 +19,14 @@ The paper is suitable as a retrospective research candidate, not as evidence of 
 
 The International Consortium on Landslides event record gives the event centroid as **10.208494 N, 123.759047 E** (converted from its published DMS coordinate). This point identifies the catalog query location; it is not the source-scarp boundary. The [MGB Region VII incident brief](https://r7.mgb.gov.ph/briefer-of-the-landslide-incident-in-barangay-tinaan-city-of-naga-cebu/) places the crown area in Sitio Tagaytay and the toe area in Sitio Sindulan, Barangay Tinaan. No MGB polygon was downloaded or reused.
 
+## Reproduction-design review
+
+The [UNOOSA presentation on Philippine space activities](https://www.unoosa.org/documents/pdf/copuos/2019/copuos2019tech21E.pdf) includes a Naga landslide outline identified as having been delineated from Planet imagery acquired on 2018-09-21. It credits building footprints to the UP Cebu Center for Environmental Informatics. The presentation supplies a map figure, but not a georeferenced outline or reuse terms for the Planet-derived delineation. The figure is evidence that a post-event mapped outline exists; it is not a redistributable source-area geometry suitable for this reproduction. No Planet imagery was accessed or digitized.
+
+The [MGB Region VII incident brief](https://r7.mgb.gov.ph/briefer-of-the-landslide-incident-in-barangay-tinaan-city-of-naga-cebu/) identifies crown and toe localities and documents pre-event crack investigations. The Naga PS-InSAR paper compares its reported result with field-mapped cracks, but the available materials do not provide a georeferenced crack dataset or an independent, time-aligned GNSS displacement series. Those sources support the event chronology and localities, not quantitative validation of a reproduced LOS time series.
+
+**Design-review outcome:** the source-area geometry and independent validation target are not sufficiently reproducible from the accessible, reusable materials reviewed. Keep the Naga case as a literature-screened candidate and stop before image download or processing. Reconsider only if a georeferenced source-area outline with usable terms and a suitable independent reference become accessible. This review did not contact agencies or authors, request restricted data, or create a digitized boundary.
+
 ### Antipolo, Rizal
 
 The [UP Diliman Philippine Engineering Journal abstract](https://www.journals.upd.edu.ph/index.php/pej/article/view/9482) reports 184,253 persistent-scatterer points and a LOS correlation of 0.83 against a stationary GNSS receiver. The journal page is currently inaccessible from the project environment: the article and PDF routes returned HTTP 404 on 2026-10-16. The abstract does not expose the exact study footprint, scene IDs, dates, or GNSS series. Treat this as promising published context, not a reproducible validation benchmark. Antipolo was not searched in the satellite archive.
@@ -65,7 +73,7 @@ Query filters: dataset `NISAR`, processing level `GUNW`, 2026-06-17 through 2026
 
 ## Recommendation
 
-**Proceed to a narrowly bounded reproduction-design review, not map implementation.** Resolve the scene-count and time-window mismatch in the Naga paper and obtain an exact source-area footprint before requesting a processing job. Review the Antipolo full paper through an accessible copy if it is to be considered as the GNSS-validated site. Require a current, time-aligned independent reference before evaluating NISAR as a validation candidate.
+**Remain at reproduction-design review; do not proceed to processing or map implementation.** The accessible evidence does not resolve the paper's scene-count and time-window mismatch, provide a reusable source-area footprint, or provide a time-aligned independent reference. Reconsider processing only after those prerequisites are met. Review the Antipolo full paper through an accessible copy if it is to be considered as the GNSS-validated site. Require a current, time-aligned independent reference before evaluating NISAR as a validation candidate.
 
 Do not download the full 67.8 GiB Sentinel-1 candidate stack or submit a HyP3 job until the paper inputs, source-area AOI, validation target, and no-cost processing allowance are confirmed. Do not pay for credits. Product quality and displacement remain unevaluated; no go decision for a user-facing layer has been reached.
 

@@ -39,6 +39,7 @@
 - [x] **Step 2: Review the Naga comparator.** The ISPRS Naga retrospective study was reviewed and its reported field-crack comparison, scene count, dates, inconsistencies, and missing point coordinate were recorded. Toledo was not selected for this bounded screen.
 - [x] **Step 3: Select the bounded screen site.** Naga was selected for metadata screening from the published study. The event centroid was used only as a reproducible catalog point, not as source-area geometry or a validated pilot AOI.
 - [x] **Step 4: Confirm report provenance.** Stable links, citations, access date `2026-10-16`, and the independent-review limitation are in the report.
+- [x] **Reproduction-design review follow-up.** Official incident and mapping materials confirm general crown/toe localities and show a Planet-derived post-event outline, but provide no redistributable georeferenced outline or stated reuse terms. The published field-crack comparison is not an independently accessible, time-aligned displacement reference. Processing remains gated.
 
 **Commit:** `docs: document epic 6 insar pilot sites`
 
