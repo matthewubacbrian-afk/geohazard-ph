@@ -150,6 +150,13 @@ When a spec or plan introduces a new concept:
   and lahar reference images used when local `VolcanoZone` vectors are absent.
   These are remotely rendered hazard maps, not imported polygons or live alert levels.
 
+## Epic 6 landslide reference layer
+
+- landslide susceptibility overlay: optional NASA Global Landslide Susceptibility Map
+  shown as a coarse, static global reference layer (about 1 km pixels; values 0–5).
+  It is planning context, not a live warning, event probability, site assessment, or
+  evidence that a location is safe; missing pixels do not mean low susceptibility.
+
 ## 7. Camera scene analysis
 
 | Term | Canonical field / meaning |
