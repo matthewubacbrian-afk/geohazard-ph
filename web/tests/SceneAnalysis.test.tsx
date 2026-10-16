@@ -212,6 +212,67 @@ describe('scene review capture screen', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /capture photo/i })).toBeEnabled());
   });
 
+  it('keeps zoom adjustable while hardware applies the latest requested value', async () => {
+    const finishZoom: Array<() => void> = [];
+    const applyConstraints = vi.fn(() => new Promise<void>((resolve) => { finishZoom.push(resolve); }));
+    const track = { stop: vi.fn(), getCapabilities: () => ({ zoom: { min: 1, max: 4, step: 0.1 } }), applyConstraints };
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [track], getVideoTracks: () => [track] }) },
+    });
+    vi.spyOn(HTMLVideoElement.prototype, 'play').mockResolvedValue();
+    render(<SceneAnalysis onExit={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /open camera/i }));
+    await waitFor(() => expect(screen.getByRole('slider', { name: /camera zoom/i })).toBeEnabled());
+    const zoomSlider = screen.getByRole('slider', { name: /camera zoom/i });
+    fireEvent.change(zoomSlider, { target: { value: '2' } });
+    fireEvent.change(zoomSlider, { target: { value: '3' } });
+
+    expect(zoomSlider).toBeEnabled();
+    expect(screen.getByRole('button', { name: /capture photo/i })).toBeDisabled();
+    expect(applyConstraints).toHaveBeenCalledTimes(1);
+    expect(applyConstraints).toHaveBeenNthCalledWith(1, { advanced: [{ zoom: 2 }] });
+
+    finishZoom.shift()?.();
+    await waitFor(() => expect(applyConstraints).toHaveBeenCalledTimes(2));
+    expect(applyConstraints).toHaveBeenNthCalledWith(2, { advanced: [{ zoom: 3 }] });
+    expect(screen.getByRole('button', { name: /capture photo/i })).toBeDisabled();
+
+    finishZoom.shift()?.();
+    await waitFor(() => expect(screen.getByRole('button', { name: /capture photo/i })).toBeEnabled());
+  });
+
+  it('keeps the newest zoom request when an older hardware request rejects', async () => {
+    let rejectFirstZoom: (() => void) | undefined;
+    let resolveSecondZoom: (() => void) | undefined;
+    const applyConstraints = vi.fn()
+      .mockImplementationOnce(() => new Promise<void>((_resolve, reject) => { rejectFirstZoom = () => reject(new Error('unsupported')); }))
+      .mockImplementationOnce(() => new Promise<void>((resolve) => { resolveSecondZoom = resolve; }));
+    const track = { stop: vi.fn(), getCapabilities: () => ({ zoom: { min: 1, max: 4, step: 0.1 } }), applyConstraints };
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [track], getVideoTracks: () => [track] }) },
+    });
+    vi.spyOn(HTMLVideoElement.prototype, 'play').mockResolvedValue();
+    render(<SceneAnalysis onExit={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /open camera/i }));
+    await waitFor(() => expect(screen.getByRole('slider', { name: /camera zoom/i })).toBeEnabled());
+    const zoomSlider = screen.getByRole('slider', { name: /camera zoom/i });
+    fireEvent.change(zoomSlider, { target: { value: '2' } });
+    fireEvent.change(zoomSlider, { target: { value: '3' } });
+
+    rejectFirstZoom?.();
+    await waitFor(() => expect(applyConstraints).toHaveBeenCalledTimes(2));
+    expect(applyConstraints).toHaveBeenNthCalledWith(2, { advanced: [{ zoom: 3 }] });
+    expect(screen.getByText(/adjusting camera zoom/i)).toBeInTheDocument();
+
+    resolveSecondZoom?.();
+    await waitFor(() => expect(screen.getByRole('button', { name: /capture photo/i })).toBeEnabled());
+    expect(screen.getByText(/device camera zoom/i)).toBeInTheDocument();
+  });
+
   it('falls back to digital zoom and captures that crop when hardware zoom rejects a setting', async () => {
     const track = { stop: vi.fn(), getCapabilities: () => ({ zoom: { min: 1, max: 4, step: 0.1 } }), applyConstraints: vi.fn().mockRejectedValue(new Error('unsupported')) };
     Object.defineProperty(navigator, 'mediaDevices', {
@@ -233,6 +294,30 @@ describe('scene review capture screen', () => {
     fireEvent.click(screen.getByRole('button', { name: /capture photo/i }));
 
     expect(drawImage).toHaveBeenCalledWith(expect.any(HTMLVideoElement), 600, 450, 1200, 900, 0, 0, 1600, 1200);
+  });
+
+  it('clamps a rejected native zoom value to the digital zoom range', async () => {
+    const track = {
+      stop: vi.fn(),
+      getCapabilities: () => ({ zoom: { min: 1, max: 5, step: 0.1 } }),
+      applyConstraints: vi.fn().mockRejectedValue(new Error('unsupported')),
+    };
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [track], getVideoTracks: () => [track] }) },
+    });
+    vi.spyOn(HTMLVideoElement.prototype, 'play').mockResolvedValue();
+    render(<SceneAnalysis onExit={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /open camera/i }));
+    await waitFor(() => expect(screen.getByRole('slider', { name: /camera zoom/i })).toBeEnabled());
+    fireEvent.change(screen.getByRole('slider', { name: /camera zoom/i }), { target: { value: '5' } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/digital zoom · included in captured image/i)).toBeInTheDocument();
+      expect(screen.getByRole('slider', { name: /camera zoom/i })).toHaveValue('3');
+      expect(screen.getByRole('slider', { name: /camera zoom/i })).toHaveAttribute('max', '3');
+    });
   });
   it('reports unsupported and denied camera states without claiming safety', async () => {
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: vi.fn().mockRejectedValue(new Error('denied')) } });

@@ -33,6 +33,9 @@ export default function SceneAnalysis({
   const streamRef = useRef<MediaStream | null>(null);
   const cameraOpeningRef = useRef(false);
   const zoomOperationRef = useRef(0);
+  const pendingZoomRef = useRef<{ stream: MediaStream; track: MediaStreamTrack; value: number; operation: number } | null>(null);
+  const zoomQueueRunningRef = useRef(false);
+  const zoomValueRef = useRef(1);
   const controllerRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const [capture, setCapture] = useState<SceneCapture | null>(initialCapture ?? null);
@@ -56,7 +59,9 @@ export default function SceneAnalysis({
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setCameraActive(false);
+    pendingZoomRef.current = null;
     setZoom(1);
+    zoomValueRef.current = 1;
     setNativeZoomMax(null);
     setDigitalZoom(false);
     setZoomBusy(false);
@@ -110,6 +115,7 @@ export default function SceneAnalysis({
       streamRef.current = stream;
       setFacingMode(nextFacing);
       setZoom(1);
+      zoomValueRef.current = 1;
       setNativeZoomMax(supportedZoom && supportedZoom.max > 1 ? supportedZoom.max : null);
       setDigitalZoom(!supportedZoom || supportedZoom.max <= 1);
       setCameraActive(true);
@@ -133,6 +139,7 @@ export default function SceneAnalysis({
     setCameraBusy(true);
     setFacingMode(nextFacing);
     setZoom(1);
+    zoomValueRef.current = 1;
     setNativeZoomMax(null);
     setDigitalZoom(false);
     await startCamera(nextFacing);
@@ -141,20 +148,39 @@ export default function SceneAnalysis({
   async function changeZoom(value: number) {
     const nextZoom = Math.min(nativeZoomMax ?? 3, Math.max(1, value));
     setZoom(nextZoom);
+    zoomValueRef.current = nextZoom;
     const activeStream = streamRef.current;
     const track = activeStream?.getVideoTracks?.()[0] ?? activeStream?.getTracks().find((item) => item.kind === 'video');
-    if (!track || digitalZoom) return;
-    const zoomOperation = ++zoomOperationRef.current;
+    if (!activeStream || !track || digitalZoom) return;
+    pendingZoomRef.current = { stream: activeStream, track, value: nextZoom, operation: zoomOperationRef.current };
     setZoomBusy(true);
+    void applyPendingZoom();
+  }
+
+  async function applyPendingZoom() {
+    if (zoomQueueRunningRef.current) return;
+    zoomQueueRunningRef.current = true;
     try {
-      await track.applyConstraints({ advanced: [{ zoom: nextZoom } as unknown as MediaTrackConstraintSet] });
-    } catch {
-      if (streamRef.current === activeStream) {
-        setDigitalZoom(true);
-        setNativeZoomMax(null);
+      while (pendingZoomRef.current) {
+        const request = pendingZoomRef.current;
+        pendingZoomRef.current = null;
+        if (request.operation !== zoomOperationRef.current || streamRef.current !== request.stream) continue;
+        try {
+          await request.track.applyConstraints({ advanced: [{ zoom: request.value } as unknown as MediaTrackConstraintSet] });
+        } catch {
+          if (request.operation === zoomOperationRef.current && streamRef.current === request.stream && !pendingZoomRef.current) {
+            const fallbackZoom = Math.min(3, zoomValueRef.current);
+            zoomValueRef.current = fallbackZoom;
+            setZoom(fallbackZoom);
+            setDigitalZoom(true);
+            setNativeZoomMax(null);
+          }
+        }
       }
     } finally {
-      if (mountedRef.current && zoomOperationRef.current === zoomOperation) setZoomBusy(false);
+      zoomQueueRunningRef.current = false;
+      if (mountedRef.current && !pendingZoomRef.current) setZoomBusy(false);
+      if (pendingZoomRef.current) void applyPendingZoom();
     }
   }
 
@@ -341,7 +367,7 @@ export default function SceneAnalysis({
                 </label>
                 <div className={styles.zoomControl}>
                   <div className={styles.zoomLabel}><label htmlFor="camera-zoom">Zoom</label><output htmlFor="camera-zoom">{zoom.toFixed(1)}×</output></div>
-                  <input id="camera-zoom" aria-label="Camera zoom" type="range" min="1" max={nativeZoomMax ?? 3} step="0.1" value={zoom} disabled={zoomBusy}
+                  <input id="camera-zoom" aria-label="Camera zoom" type="range" min="1" max={nativeZoomMax ?? 3} step="0.1" value={zoom}
                     onChange={(event) => void changeZoom(Number(event.target.value))} />
                   <div className={styles.zoomScale}><span>1×</span><span>{(nativeZoomMax ?? 3).toFixed(1)}×</span></div>
                   <small>{zoomBusy ? 'Adjusting camera zoom…' : digitalZoom ? 'Digital zoom · included in captured image' : 'Device camera zoom'}</small>
