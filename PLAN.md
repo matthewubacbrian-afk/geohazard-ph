@@ -35,8 +35,8 @@ current scope. No open GitHub issues were returned during this audit. PRs #32 an
 
 - [x] P0 tracking: published this assessment and corrected stale Epic 7/current-process claims in `docs/project-status.md`; PR #39 merged after all five CI checks passed (remote main `f53117e2`).
 - [x] P1 verification debt: PR #40 merged at `4004ad3f` after independent review and all five CI checks passed. Backend 148 tests, ML 65 tests, portable Ruff, web build/tests, mobile Jest/TypeScript/Android, and iOS simulator build are required in CI.
-- [ ] P0 web map dependency security: upgrade MapLibre GL beyond the affected `<=6.4.0` releases, adapt the Vite worker and imports, verify map behavior and production build, and record the WebGL2 compatibility requirement. This takes priority over the remaining integration queue because the current production dependency has a critical attribution XSS advisory.
-- [ ] P1 web development-tool security: separately upgrade vulnerable Vite/Vitest dependency paths after the map fix, with web tests/build and a fresh dependency audit. Keep this separate from the production map migration for reviewability.
+- [x] P0 web map dependency security: PR #41 merged at `59a0c75e` after the web suite (175 tests), production build, browser map smoke check, zero production audit findings, and five green CI checks. The patched MapLibre migration includes a WebGL2 fallback; its isolated worktree and branch were removed after merge verification.
+- [ ] P1 web development-tool security: the current isolated slice upgrades Vite, Vitest and their React plugin together, then verifies the full web suite/build, fresh full dependency audit and all CI checks. The baseline audit has eight development-tool findings; see the [focused plan](docs/superpowers/plans/2026-10-18-web-tooling-security.md).
 - [ ] P1 existing credential fix: review/integrate PR #32; correct its contradictory `docs/runbook.md` dotenv instructions. Preserve shell precedence and artifact hold.
 - [ ] P1 staging held-export mode: change `compose.staging.yml`, release packaging/checks and runbook so a deployment can omit a held profile export. Existing API empty-state behavior remains explicit; test both reviewed-export and no-export configurations.
 - [ ] P2 mobile cache isolation: scope `mobile/src/services/eventFeed.ts` cached events to normalized API URL and reject superseded results in `mobile/src/navigation/RootNavigator.tsx`. Test server switching, offline fallback and out-of-order responses.
@@ -90,6 +90,7 @@ untouched. New worktrees created by this session are archived only after verifyi
   define the current isolated slice. Local focused MapView tests passed 34/34;
   the full web suite passed 175/175 across 35 files; `npm run build` emitted a
   bundled worker asset; `npm audit --omit=dev` reported zero findings. The full
-  audit retains eight development-tool findings. Independent review and feature
-  PR CI/merge remain. No release, domain, permission, or device gate is cleared
-  by dependency or verification changes.
+  audit retains eight development-tool findings. Independent review, browser
+  smoke, and all five feature PR CI checks passed; PR #41 merged at `59a0c75e`.
+  No release, domain, permission, or device gate is cleared by dependency or
+  verification changes.

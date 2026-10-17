@@ -28,12 +28,13 @@ PostGIS and Redis), ML tests passed (65), both explicit package Ruff checks pass
 and mobile strict TypeScript checking passed. CI now requires Ruff and mobile
 TypeScript checking. Applied migrations have only exact legacy style exceptions.
 The [MapLibre security migration](superpowers/specs/2026-10-17-maplibre-security-design.md)
-pins a patched web map release and configures its Vite worker. On its isolated
-branch, the full web suite passed 175 tests, the production build succeeded,
-and `npm audit --omit=dev` reported zero findings. The full audit retains eight
-development-tool findings for the separate Vite/Vitest slice in the
-[plan](../PLAN.md). These engineering checks do not establish deployment health,
-device readiness, or data-quality approval.
+merged in [PR #41](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/41)
+after the full web suite passed 175 tests, the production build succeeded, a
+browser map smoke check rendered, `npm audit --omit=dev` reported zero findings,
+and all five CI checks passed. The full audit retains eight development-tool
+findings for the separate Vite/Vitest slice in the [plan](../PLAN.md). These
+engineering checks do not establish deployment health, device readiness, or
+data-quality approval.
 
 ## Next integration milestone
 
