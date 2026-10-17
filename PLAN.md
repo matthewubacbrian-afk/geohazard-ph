@@ -36,7 +36,7 @@ current scope. No open GitHub issues were returned during this audit. PRs #32 an
 - [x] P0 tracking: published this assessment and corrected stale Epic 7/current-process claims in `docs/project-status.md`; PR #39 merged after all five CI checks passed (remote main `f53117e2`).
 - [x] P1 verification debt: PR #40 merged at `4004ad3f` after independent review and all five CI checks passed. Backend 148 tests, ML 65 tests, portable Ruff, web build/tests, mobile Jest/TypeScript/Android, and iOS simulator build are required in CI.
 - [x] P0 web map dependency security: PR #41 merged at `59a0c75e` after the web suite (175 tests), production build, browser map smoke check, zero production audit findings, and five green CI checks. The patched MapLibre migration includes a WebGL2 fallback; its isolated worktree and branch were removed after merge verification.
-- [ ] P1 web development-tool security: the current isolated slice upgrades Vite, Vitest and their React plugin together, then verifies the full web suite/build, fresh full dependency audit and all CI checks. The baseline audit has eight development-tool findings; see the [focused plan](docs/superpowers/plans/2026-10-18-web-tooling-security.md).
+- [ ] P1 web development-tool security: the isolated branch upgrades Vite 8.3.4, Vitest 5.0.5 and React plugin 6.1.2. Local web tests passed 175/175, the build and clean `npm ci` passed, and full/production audits report zero findings (down from eight). Independent review found no actionable issue; PR CI/merge remain. See the [focused plan](docs/superpowers/plans/2026-10-18-web-tooling-security.md).
 - [ ] P1 existing credential fix: review/integrate PR #32; correct its contradictory `docs/runbook.md` dotenv instructions. Preserve shell precedence and artifact hold.
 - [ ] P1 staging held-export mode: change `compose.staging.yml`, release packaging/checks and runbook so a deployment can omit a held profile export. Existing API empty-state behavior remains explicit; test both reviewed-export and no-export configurations.
 - [ ] P2 mobile cache isolation: scope `mobile/src/services/eventFeed.ts` cached events to normalized API URL and reject superseded results in `mobile/src/navigation/RootNavigator.tsx`. Test server switching, offline fallback and out-of-order responses.
@@ -94,3 +94,8 @@ untouched. New worktrees created by this session are archived only after verifyi
   smoke, and all five feature PR CI checks passed; PR #41 merged at `59a0c75e`.
   No release, domain, permission, or device gate is cleared by dependency or
   verification changes.
+- The web development-tool branch passed a clean `npm ci`, 175/175 tests across
+  35 files, production build with bundled map worker, zero full and production
+  audit findings, structure verification, and whitespace check. Vitest 5 needed
+  one constructable MapView test mock; app behavior was unchanged. PR CI/merge
+  remain.

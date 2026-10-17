@@ -29,10 +29,10 @@
 - Consumes: existing `npm test`, `npm run build`, and Vite worker import from the MapLibre migration.
 - Produces: unchanged scripts and app behavior with patched tool versions.
 
-- [ ] **Step 1: Record failing baseline:** `npm audit --json` reports eight development-tool findings; production-only audit reports zero.
-- [ ] **Step 2: Implement:** upgrade Vite to 8.3.4, Vitest to 5.0.5 and `@vitejs/plugin-react` to a compatible 6.x release; update the lockfile with npm.
-- [ ] **Step 3: Verify:** run fresh full and production audits, full web tests, and production build. Diagnose and fix only migration regressions.
-- [ ] **Step 4: Commit:** commit the focused package change with a Conventional Commit.
+- [x] **Step 1: Record failing baseline:** `npm audit --json` reported eight development-tool findings; production-only audit reported zero.
+- [x] **Step 2: Implement:** pinned Vite 8.3.4, Vitest 5.0.5 and `@vitejs/plugin-react` 6.1.2; updated the lockfile. Vitest 5 required a constructable MapView test mock.
+- [x] **Step 3: Verify:** fresh full and production audits each reported zero; 175 web tests passed across 35 files; production build passed and emitted a worker asset; clean `npm ci` passed.
+- [x] **Step 4: Commit:** `61f7b571 fix: upgrade vulnerable web development tools`.
 
 ### Task 2: Record and integrate verified evidence
 
@@ -46,7 +46,7 @@
 - Consumes: Task 1 tests, audits and CI results.
 - Produces: accurate tracked project status and one reviewable PR.
 
-- [ ] **Step 1:** run remaining repository checks and `git diff --check`.
+- [x] **Step 1:** structure verification passed all 140 paths and `git diff --check` was clean.
 - [ ] **Step 2:** commit documentation evidence, push branch, and open a PR with actual test results.
 - [ ] **Step 3:** merge only after all five CI checks pass; verify exact PR head is in `origin/main`.
 - [ ] **Step 4:** archive this managed worktree and remove the merged branch.

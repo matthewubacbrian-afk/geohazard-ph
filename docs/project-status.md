@@ -32,9 +32,11 @@ merged in [PR #41](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/41)
 after the full web suite passed 175 tests, the production build succeeded, a
 browser map smoke check rendered, `npm audit --omit=dev` reported zero findings,
 and all five CI checks passed. The full audit retains eight development-tool
-findings for the separate Vite/Vitest slice in the [plan](../PLAN.md). These
-engineering checks do not establish deployment health, device readiness, or
-data-quality approval.
+findings for the separate Vite/Vitest slice in the [plan](../PLAN.md). That
+isolated branch now passes 175 web tests, a production build and a clean npm
+install; its full and production audits both report zero findings. PR CI/merge
+remain. These engineering checks do not establish deployment health, device
+readiness, or data-quality approval.
 
 ## Next integration milestone
 
