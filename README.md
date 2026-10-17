@@ -37,7 +37,7 @@ Install:
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it.
 - [Python 3.11](https://www.python.org/downloads/) with the Python launcher (`py`).
-- [Node.js LTS](https://nodejs.org/) (npm is included).
+- [Node.js 22.12+](https://nodejs.org/) (npm is included; current LTS recommended for the web toolchain).
 - Git, if you still need to clone the repository.
 
 Open PowerShell in the repository folder. Confirm Python and Node are available:
@@ -138,7 +138,7 @@ the database data too, use `docker compose down --volumes`.
 
 ### Linux/macOS
 
-Install Python 3.11, Node.js, Docker Compose, and Git. From the repository root, run
+Install Python 3.11, Node.js 22.12+, Docker Compose, and Git. From the repository root, run
 these setup commands (keep an existing `.env` file):
 
 ```bash

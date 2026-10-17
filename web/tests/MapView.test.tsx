@@ -52,7 +52,7 @@ const maplibreMock = vi.hoisted(() => ({
   workerUrl: undefined as string | undefined,
 }));
 vi.mock('maplibre-gl', () => {
-  const Map = vi.fn(() => mapInstance);
+  const Map = vi.fn(function Map() { return mapInstance; });
   const NavigationControl = vi.fn();
   return {
     default: { Map, NavigationControl },
