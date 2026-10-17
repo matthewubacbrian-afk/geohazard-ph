@@ -107,6 +107,10 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 
 Restart the web development server after changing its environment file.
 
+The interactive map requires browser and device support for WebGL2. When WebGL2
+is unavailable, the dashboard shows an explanation and the event list remains
+usable.
+
 ### Show live earthquake events (optional)
 
 The API and dashboard can start without the ingestion worker. To fetch live events,

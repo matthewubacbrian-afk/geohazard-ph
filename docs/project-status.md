@@ -22,14 +22,18 @@ The [project completion plan](../PLAN.md) records the 2026-10-17 audit, prioriti
 engineering fixes, epic acceptance gates, and session verification evidence.
 
 The [portable verification baseline slice](superpowers/plans/2026-10-17-verification-baseline.md)
-is ready for independent review. Backend tests passed (148, including PostGIS and
-Redis), ML tests passed (65), both explicit package Ruff checks passed, and mobile
-strict TypeScript checking passed. Source-identical frontend tests/build and mobile
-Jest/Android CI passed on PR #39 at `d4d9301e`; fresh feature-PR CI remains required.
-Ruff has only exact legacy migration style exceptions and a documented training CLI
-boundary exception. CI now requires Ruff and mobile TypeScript checking. Structure
-and whitespace checks passed. This unmerged engineering slice does not establish
-deployment health, device readiness, or data-quality approval.
+merged in [PR #40](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/40)
+after all five CI checks passed. Local backend tests passed (148, including
+PostGIS and Redis), ML tests passed (65), both explicit package Ruff checks passed,
+and mobile strict TypeScript checking passed. CI now requires Ruff and mobile
+TypeScript checking. Applied migrations have only exact legacy style exceptions.
+The [MapLibre security migration](superpowers/specs/2026-10-17-maplibre-security-design.md)
+pins a patched web map release and configures its Vite worker. On its isolated
+branch, the full web suite passed 175 tests, the production build succeeded,
+and `npm audit --omit=dev` reported zero findings. The full audit retains eight
+development-tool findings for the separate Vite/Vitest slice in the
+[plan](../PLAN.md). These engineering checks do not establish deployment health,
+device readiness, or data-quality approval.
 
 ## Next integration milestone
 

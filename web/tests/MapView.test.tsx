@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
+import * as maplibregl from 'maplibre-gl';
 import MapView from '../src/components/map/MapView';
 import { BASEMAPS, BASEMAP_IDS } from '../src/components/map/basemaps';
 import type { StaticLayer } from '../src/types/staticLayer';
@@ -47,9 +48,19 @@ const mapInstance = {
     source = undefined; layers.clear(); sources.clear();
   }),
 };
-vi.mock('maplibre-gl', () => ({
-  default: { Map: vi.fn(() => mapInstance), NavigationControl: vi.fn() },
+const maplibreMock = vi.hoisted(() => ({
+  workerUrl: undefined as string | undefined,
 }));
+vi.mock('maplibre-gl', () => {
+  const Map = vi.fn(() => mapInstance);
+  const NavigationControl = vi.fn();
+  return {
+    default: { Map, NavigationControl },
+    Map,
+    NavigationControl,
+    setWorkerUrl: vi.fn((url: string) => { maplibreMock.workerUrl = url; }),
+  };
+});
 const event: HazardEvent = {
   id: 'e1', hazard_type: 'earthquake', source: 'usgs', magnitude: 4.5,
   depth_km: 10, latitude: 14.6, longitude: 120.97, place_name: 'Luzon',
@@ -65,15 +76,31 @@ const riskProfile: RiskProfile = {
   generated_at: '2026-08-29T00:00:00Z',
   dataset_snapshot: 'fixture',
 };
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    getExtension: vi.fn(() => null),
+  } as unknown as WebGL2RenderingContext);
   handlers.clear(); layers.clear(); sources.clear(); source = undefined;
   layerHandlers.clear(); paintUpdates.length = 0;
   mapInstance.getZoom.mockReturnValue(5);
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
 });
 describe('MapView style lifecycle', () => {
+  it('configures the bundled map worker before constructing a map', () => {
+    expect(maplibreMock.workerUrl).toContain('maplibre-gl-worker');
+    render(<MapView events={[]} />);
+    expect(maplibregl.Map).toHaveBeenCalled();
+  });
+
+  it('explains missing WebGL2 without constructing a partial map', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    render(<MapView events={[]} />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/WebGL2/i);
+    expect(maplibregl.Map).not.toHaveBeenCalled();
+  });
+
   it('adds the NASA raster only when the landslide susceptibility layer is enabled', async () => {
     const { LANDSLIDE_LAYER_ID } = await import('../src/components/map/landslideOverlays');
     const view = render(<MapView events={[]} />);

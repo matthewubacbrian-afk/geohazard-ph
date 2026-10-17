@@ -34,7 +34,9 @@ current scope. No open GitHub issues were returned during this audit. PRs #32 an
 ## Prioritized delivery queue
 
 - [x] P0 tracking: published this assessment and corrected stale Epic 7/current-process claims in `docs/project-status.md`; PR #39 merged after all five CI checks passed (remote main `f53117e2`).
-- [ ] P1 verification debt: implementation verified in `codex/verification-baseline`; backend 148 tests and ML 65 tests pass, portable Ruff passes, blocking CI checks and strict mobile TypeScript config are added. Independent review and feature-PR CI/merge remain before delivery.
+- [x] P1 verification debt: PR #40 merged at `4004ad3f` after independent review and all five CI checks passed. Backend 148 tests, ML 65 tests, portable Ruff, web build/tests, mobile Jest/TypeScript/Android, and iOS simulator build are required in CI.
+- [ ] P0 web map dependency security: upgrade MapLibre GL beyond the affected `<=6.4.0` releases, adapt the Vite worker and imports, verify map behavior and production build, and record the WebGL2 compatibility requirement. This takes priority over the remaining integration queue because the current production dependency has a critical attribution XSS advisory.
+- [ ] P1 web development-tool security: separately upgrade vulnerable Vite/Vitest dependency paths after the map fix, with web tests/build and a fresh dependency audit. Keep this separate from the production map migration for reviewability.
 - [ ] P1 existing credential fix: review/integrate PR #32; correct its contradictory `docs/runbook.md` dotenv instructions. Preserve shell precedence and artifact hold.
 - [ ] P1 staging held-export mode: change `compose.staging.yml`, release packaging/checks and runbook so a deployment can omit a held profile export. Existing API empty-state behavior remains explicit; test both reviewed-export and no-export configurations.
 - [ ] P2 mobile cache isolation: scope `mobile/src/services/eventFeed.ts` cached events to normalized API URL and reject superseded results in `mobile/src/navigation/RootNavigator.tsx`. Test server switching, offline fallback and out-of-order responses.
@@ -64,64 +66,30 @@ untouched. New worktrees created by this session are archived only after verifyi
   failure discarding fresh network data (audit; regression reproduction pending).
 - Weak tests: missing mobile server-switch and rejected-storage cases; no physical
   camera coverage; synthetic scene tests do not establish recognition quality.
-- Technical debt: the verification-baseline slice resolves the original 18 backend and 11 ML findings under explicit package rules. Two applied migrations retain narrowly scoped style exceptions; independent review and feature-PR CI remain delivery gates.
+- Technical debt: PR #40 resolves the original 18 backend and 11 ML lint findings under explicit package rules. Two applied migrations retain narrowly scoped style exceptions. The baseline web audit reported nine findings; the MapLibre security branch removes the production finding and leaves eight development-tool findings (three moderate, three high, two critical) for the next slice.
 - External gates: OCI/DNS, source-owner permission, domain review, image reuse and
   real evaluation data, physical devices and platform-specific runtime evidence.
 - No paid infrastructure provisioning, contact with third parties, fabricated
   signoff, or relaxation of scientific/data-quality gates is implied by this plan.
 
-## Session evidence
+## Session evidence (2026-10-17)
 
-- Read repository standards, glossary, testing/git contracts, current remote
-  history, status, historical roadmap and the two open PRs.
-- Read-only GPT Astra audit identified the prioritized defects above.
-- Created isolated `codex/project-completion-plan` from current remote main.
-- Fresh baseline checks are in progress; no suite-pass claim is made yet.
-
-## Usage-limit handoff (2026-10-17)
-
-- Assessment/plan committed as `be99c53e`, pushed in PR #39; independent review
-  found no important issues. Structure and whitespace checks passed.
-- PR #39 backend, ML and web CI passed at the last check; native mobile jobs were
-  still pending. No feature or documentation PR was merged by this session.
-- The GPT Astra implementation agent hit its usage limit before making source
-  changes. `codex/verification-baseline` is clean at the plan commit.
-- Local baseline: backend collection failed because Pillow was absent. Declared
-  Pillow 12.3.0 and NumPy 2.2.6 are now installed; backend suite needs rerunning.
-- Local ML suite and web/mobile dependency installations were still running at
-  handoff. Do not report them as passed without collecting their final results.
-- Dedicated test containers: `geohazard-session-postgres` on port 55432 and
-  `geohazard-session-redis` on port 56379. These are session test services, not
-  staging deployment evidence. Stop/remove only these session containers when
-  no longer needed; do not touch existing project data or other chat services.
-- Resume with the portable lint/CI baseline slice, then existing PR integration,
-  staging held-export mode, and mobile cache defects in the queue above.
-- Existing quality holds and external gates remain unchanged. All authored
-  repository changes are committed and pushed; no implementation is claimed.
-
-Final collected baseline results: ML **63 passed**. Web and mobile dependency
-installation completed. Web installation reported nine dependency audit findings
-(three moderate, three high, three critical); investigate the dependency paths and
-compatible remediation before release, without applying force upgrades blindly.
-Web/mobile local test/build runs remain outstanding. These collected results
-supersede the pending-install/test observations above.
-
-## Verification baseline slice (2026-10-17, ready for review)
-
-The [focused implementation plan](docs/superpowers/plans/2026-10-17-verification-baseline.md)
-records this bounded slice. Backend `pytest -v` passed all 148 tests, including
-PostGIS and Redis integration (one upstream Starlette/httpx deprecation warning).
-ML `pytest -v` passed all 65 tests. Both package-directory
-`ruff check --config pyproject.toml .` commands passed. Mobile `npx tsc --noEmit`
-passed with the new strict application config. The parent verified passing web
-tests/build and mobile Jest/Android CI on PR #39 at `d4d9301e`, whose frontend
-application/test source is unchanged in this slice; redundant local frontend runs
-were stopped during memory pressure. Structure verification passed all 140 paths,
-`git diff --check` passed, and applied migration files are unchanged.
-
-The USGS HTTP regression requires `USGSFetchError` and the original HTTP cause.
-PHIVOLCS timezone semantics and training CLI short-stderr/nonzero behavior are
-preserved by existing fixtures and new expected/unexpected CLI failure coverage.
-Blocking Ruff and mobile TypeScript checks are configured in CI. Independent review
-and fresh feature-PR CI remain required before merge; this slice is not yet
-committed or delivered. No release or quality gate is cleared by these code changes.
+- PR #39 merged the assessment and corrected the Epic 7 status after five green
+  CI checks; its worktree and branch were removed after merge verification.
+- [Verification baseline plan](docs/superpowers/plans/2026-10-17-verification-baseline.md)
+  and PR #40 delivered portable backend/ML Ruff and blocking mobile TypeScript
+  checking. Local backend `pytest -v` passed 148 tests with dedicated PostGIS and
+  Redis; ML `pytest -v` passed 65 tests; package Ruff, mobile TypeScript,
+  structure verification and whitespace checks passed. Fresh PR #40 backend,
+  ML, web, mobile/Android and iOS simulator CI all passed before merge.
+- Dedicated local test containers `geohazard-session-postgres` (55432) and
+  `geohazard-session-redis` (56379) are session test services, not staging
+  evidence. Stop/remove only these when no further tests need them.
+- The [MapLibre security design](docs/superpowers/specs/2026-10-17-maplibre-security-design.md)
+  and [implementation plan](docs/superpowers/plans/2026-10-17-maplibre-security.md)
+  define the current isolated slice. Local focused MapView tests passed 34/34;
+  the full web suite passed 175/175 across 35 files; `npm run build` emitted a
+  bundled worker asset; `npm audit --omit=dev` reported zero findings. The full
+  audit retains eight development-tool findings. Independent review and feature
+  PR CI/merge remain. No release, domain, permission, or device gate is cleared
+  by dependency or verification changes.

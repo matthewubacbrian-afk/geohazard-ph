@@ -1,7 +1,8 @@
 import type { StaticLayer } from "../../types/staticLayer";
-import { useEffect, useId, useRef } from "react";
-import maplibregl from "maplibre-gl";
+import { useEffect, useId, useRef, useState } from "react";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { HazardEvent } from "../../types/hazard";
 import type { RiskProfile } from "../../types/hazard";
 import {
@@ -43,6 +44,25 @@ type MapViewProps = {
 };
 
 const PH_CENTER: [number, number] = [121.774, 12.8797]; // Philippines
+
+maplibregl.setWorkerUrl(workerUrl);
+
+function hasWebGL2(): boolean {
+  const context = document.createElement("canvas").getContext("webgl2", {
+    alpha: true,
+    antialias: false,
+    depth: true,
+    stencil: true,
+    premultipliedAlpha: true,
+    preserveDrawingBuffer: false,
+    powerPreference: "high-performance",
+    failIfMajorPerformanceCaveat: false,
+    desynchronized: false,
+  });
+  if (!context) return false;
+  context.getExtension("WEBGL_lose_context")?.loseContext();
+  return true;
+}
 
 // Resolve a CSS custom property from :root (single source of truth for tokens).
 // MapLibre paints need literal values, so we read the token at runtime instead
@@ -94,6 +114,7 @@ export default function MapView({
   showRiskLayer = false,
 }: MapViewProps) {
   const eventSummaryId = useId();
+  const [mapUnavailable, setMapUnavailable] = useState(false);
   const referenceLayers = useRef({
     faults,
     volcanoZones,
@@ -453,6 +474,11 @@ export default function MapView({
   // Keep the map and camera while replacing only its style.
   useEffect(() => {
     if (!mapContainer.current) return;
+    // MapLibre 6.4.1 returns a partial map when WebGL2 creation fails.
+    if (!hasWebGL2()) {
+      setMapUnavailable(true);
+      return;
+    }
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
@@ -650,6 +676,17 @@ export default function MapView({
       behavior: reducedMotion ? "auto" : "smooth",
     });
   }, [selectedEvent]);
+
+  if (mapUnavailable) {
+    return (
+      <div className={styles.canvas} role="region" aria-label="Hazard event map">
+        <p className={styles.unavailable} role="alert">
+          The interactive map needs a browser and device with WebGL2 support.
+          Event details remain available in the list.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
