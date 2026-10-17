@@ -61,10 +61,10 @@ def parse_features_with_report(
     for feature in features:
         source_feature_count += 1
         if not isinstance(feature, dict):
-            raise ValueError("Each feature must be an object")  # noqa: TRY004
+            raise ValueError("Each feature must be an object")
         geometry = feature.get("geometry") or {}
         if not isinstance(geometry, dict):
-            raise ValueError("Feature geometry must be an object")  # noqa: TRY004
+            raise ValueError("Feature geometry must be an object")
         if geometry.get("type") not in allowed:
             raise ValueError(f"Unsupported geometry for {kind}")
         _validate_coordinates(geometry.get("coordinates"), require_2d=False)
@@ -77,7 +77,7 @@ def parse_features_with_report(
         _validate_coordinates(geometry.get("coordinates"))
         properties = feature.get("properties") or {}
         if not isinstance(properties, dict):
-            raise ValueError("Feature properties must be an object")  # noqa: TRY004
+            raise ValueError("Feature properties must be an object")
         external_id = feature.get("id")
         if external_id is None:
             external_id = next(

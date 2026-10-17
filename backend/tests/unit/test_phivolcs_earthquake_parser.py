@@ -5,10 +5,9 @@ import pytest
 from app.config import get_settings
 from ingestion.sources.phivolcs_earthquake import (
     PhivolcsFetchError,
-    fetch_recent_events,
     _parse_bulletin_table,
+    fetch_recent_events,
 )
-
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 

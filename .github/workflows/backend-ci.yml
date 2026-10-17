@@ -37,6 +37,9 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e "backend[dev]"
+      - name: Check Python lint
+        run: ruff check --config pyproject.toml .
+        working-directory: backend
       - name: Create test database
         working-directory: backend
         run: |

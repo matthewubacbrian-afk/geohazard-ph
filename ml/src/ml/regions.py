@@ -87,7 +87,7 @@ def assign_regions(
         if inside:
             name = min(str(boundaries[index]["name"]) for index in inside)
         else:
-            # The asset covers 4–22° N; one degree spans at least 103 km there.
+            # The asset covers 4-22 degrees N; one degree spans at least 103 km there.
             radius_degrees = max_offshore_km / 100 + 0.1
             candidates = tree.query(
                 box(

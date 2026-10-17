@@ -48,7 +48,7 @@ def test_fit_kmeans_returns_labels_from_same_cluster_assignments():
     result = fit_kmeans(_rows(), k_values=[2], random_state=7)
 
     assert set(result.risk_labels) == set(result.assignments)
-    for region_name, cluster_id in result.assignments.items():
+    for cluster_id in result.assignments.values():
         same_cluster_regions = [
             other_region
             for other_region, other_cluster_id in result.assignments.items()

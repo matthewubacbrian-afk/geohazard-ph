@@ -4,7 +4,7 @@ import argparse
 import hashlib
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -156,7 +156,7 @@ def run_training(
                 "confidence": pred.confidence if pred else 0.0,
                 "feature_importances": rf_result.feature_importances,
                 "model_version": artifact_version,
-                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "generated_at": datetime.now(UTC).isoformat(),
                 "dataset_snapshot": ", ".join(dataset.title for dataset in DEFAULT_DATASETS),
             }
         )
@@ -166,7 +166,7 @@ def run_training(
         bundle,
         {
             "model_version": artifact_version,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "region_count": len(region_features_list),
             "datasets": dataset_entries,
             "input_files": input_files,
@@ -248,7 +248,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(f"Training complete: {result.profile_count} profiles written to {result.artifact_dir}")
         return 0
-    except Exception as exc:
+    # The command boundary reports every training failure briefly and exits nonzero.
+    except Exception as exc:  # noqa: BLE001
         print(f"Training failed: {exc}", file=sys.stderr)
         return 1
 

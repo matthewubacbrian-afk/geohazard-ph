@@ -111,7 +111,7 @@ def test_build_validation_report_rejects_missing_artifact(saved_bundle: tuple[Pa
     artifact_dir, phivolcs, usgs = saved_bundle
     (artifact_dir / "region_features.csv").unlink()
 
-    with pytest.raises(ValueError, match="region_features.csv"):
+    with pytest.raises(ValueError, match=r"region_features\.csv"):
         build_validation_report(artifact_dir, [phivolcs], [usgs])
 
 

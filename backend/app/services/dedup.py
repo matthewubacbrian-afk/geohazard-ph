@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from app.models import HazardEvent as HazardEventORM
 from app.schemas.hazard_event import HazardEvent
 
-
 MATCH_TIME_TOLERANCE_SECONDS = 120
 MATCH_DISTANCE_TOLERANCE_KM = 5.0
 MATCH_MAGNITUDE_TOLERANCE = 0.5

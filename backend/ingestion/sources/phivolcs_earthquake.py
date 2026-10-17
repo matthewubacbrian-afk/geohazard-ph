@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 import requests
 from bs4 import BeautifulSoup
@@ -99,5 +99,5 @@ def _extract_bulletin_id(date_cell) -> str | None:
 
 def _parse_datetime(value: str) -> datetime:
     normalized = re.sub(r"\s+", " ", value.strip())
-    local_dt = datetime.strptime(normalized, "%d %B %Y - %I:%M %p")
-    return local_dt.replace(tzinfo=PH_TZ).astimezone(timezone.utc)
+    local_dt = datetime.strptime(normalized, "%d %B %Y - %I:%M %p").replace(tzinfo=PH_TZ)
+    return local_dt.astimezone(UTC)
