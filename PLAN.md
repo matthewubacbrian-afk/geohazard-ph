@@ -77,3 +77,24 @@ untouched. New worktrees created by this session are archived only after verifyi
 - Read-only GPT Astra audit identified the prioritized defects above.
 - Created isolated `codex/project-completion-plan` from current remote main.
 - Fresh baseline checks are in progress; no suite-pass claim is made yet.
+
+## Usage-limit handoff (2026-10-17)
+
+- Assessment/plan committed as `be99c53e`, pushed in PR #39; independent review
+  found no important issues. Structure and whitespace checks passed.
+- PR #39 backend, ML and web CI passed at the last check; native mobile jobs were
+  still pending. No feature or documentation PR was merged by this session.
+- The GPT Astra implementation agent hit its usage limit before making source
+  changes. `codex/verification-baseline` is clean at the plan commit.
+- Local baseline: backend collection failed because Pillow was absent. Declared
+  Pillow 12.3.0 and NumPy 2.2.6 are now installed; backend suite needs rerunning.
+- Local ML suite and web/mobile dependency installations were still running at
+  handoff. Do not report them as passed without collecting their final results.
+- Dedicated test containers: `geohazard-session-postgres` on port 55432 and
+  `geohazard-session-redis` on port 56379. These are session test services, not
+  staging deployment evidence. Stop/remove only these session containers when
+  no longer needed; do not touch existing project data or other chat services.
+- Resume with the portable lint/CI baseline slice, then existing PR integration,
+  staging held-export mode, and mobile cache defects in the queue above.
+- Existing quality holds and external gates remain unchanged. All authored
+  repository changes are committed and pushed; no implementation is claimed.
