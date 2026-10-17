@@ -21,6 +21,16 @@ Status is based on the repository and its recorded history, reviewed on
 The [project completion plan](../PLAN.md) records the 2026-10-17 audit, prioritized
 engineering fixes, epic acceptance gates, and session verification evidence.
 
+The [portable verification baseline slice](superpowers/plans/2026-10-17-verification-baseline.md)
+is ready for independent review. Backend tests passed (148, including PostGIS and
+Redis), ML tests passed (65), both explicit package Ruff checks passed, and mobile
+strict TypeScript checking passed. Source-identical frontend tests/build and mobile
+Jest/Android CI passed on PR #39 at `d4d9301e`; fresh feature-PR CI remains required.
+Ruff has only exact legacy migration style exceptions and a documented training CLI
+boundary exception. CI now requires Ruff and mobile TypeScript checking. Structure
+and whitespace checks passed. This unmerged engineering slice does not establish
+deployment health, device readiness, or data-quality approval.
+
 ## Next integration milestone
 
 1. Complete the [Epic 5 domain review decision record](epic5-domain-review-decision-record.md)

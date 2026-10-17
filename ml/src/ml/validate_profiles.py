@@ -234,7 +234,7 @@ def _sparse_region_sensitivity(
 
         source_counts = region.get("shared_window_count_by_source")
         if not isinstance(source_counts, dict):
-            raise ValueError(  # noqa: TRY004
+            raise ValueError(
                 f"Coverage counts are missing for region: {name}"
             )
         values = [source_counts.get(source) for source in ("phivolcs", "usgs")]
@@ -330,7 +330,7 @@ def _read_json(path: Path, expected_type: type) -> object:
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ValueError(f"Invalid artifact JSON: {path}") from exc
     if not isinstance(value, expected_type):
-        raise ValueError(f"Unexpected artifact JSON shape: {path}")  # noqa: TRY004
+        raise ValueError(f"Unexpected artifact JSON shape: {path}")
     return value
 
 
@@ -365,7 +365,7 @@ def _load_verified_inputs(
 
     assignment_metadata = metadata.get("region_assignment")
     if not isinstance(assignment_metadata, dict):
-        raise ValueError("region_assignment metadata is missing or malformed.")  # noqa: TRY004
+        raise ValueError("region_assignment metadata is missing or malformed.")
     boundary_hash = hashlib.sha256(DEFAULT_REGIONS_PATH.read_bytes()).hexdigest()
     if assignment_metadata.get("boundary_sha256") != boundary_hash:
         raise ValueError("region_assignment.boundary_sha256 does not match the boundary asset.")

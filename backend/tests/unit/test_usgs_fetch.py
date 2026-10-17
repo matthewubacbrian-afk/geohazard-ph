@@ -1,3 +1,6 @@
+import pytest
+import requests
+
 from app.config import get_settings
 from ingestion.sources.usgs import USGSFetchError, fetch_recent_events
 
@@ -19,7 +22,7 @@ class FakeBadResponse:
     status_code = 500
 
     def raise_for_status(self) -> None:
-        raise RuntimeError("boom")
+        raise requests.HTTPError("500 Server Error")
 
 
 def test_fetch_recent_events_parses_fixture(monkeypatch):
@@ -66,9 +69,6 @@ def test_fetch_recent_events_raises_on_http_error(monkeypatch):
 
     monkeypatch.setattr(requests, "get", fake_get)
 
-    try:
+    with pytest.raises(USGSFetchError, match="USGS feed request failed") as error:
         fetch_recent_events(get_settings())
-    except Exception as exc:
-        assert "USGS" in str(exc) or isinstance(exc, USGSFetchError)
-    else:
-        raise AssertionError("expected an error")
+    assert isinstance(error.value.__cause__, requests.HTTPError)

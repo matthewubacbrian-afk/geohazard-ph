@@ -138,7 +138,7 @@ def assign_risk_labels(rows: list[RegionFeatures]) -> dict[str, str]:
         severity = _rank_severity(rows)
         labels: dict[str, str] = {}
         for name, score in severity.items():
-            idx = int(round(score * (len(available_labels) - 1)))
+            idx = round(score * (len(available_labels) - 1))
             labels[name] = available_labels[min(idx, len(available_labels) - 1)]
         return labels
 

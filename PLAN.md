@@ -33,8 +33,8 @@ current scope. No open GitHub issues were returned during this audit. PRs #32 an
 
 ## Prioritized delivery queue
 
-- [ ] P0 tracking: publish this assessment and correct stale Epic 7/current-process claims in `docs/project-status.md`.
-- [ ] P1 verification debt: resolve the 18 backend and 11 ML baseline Ruff findings and enforce lint plus mobile TypeScript checks in CI before behavioral merges. Preserve semantics and existing regression coverage.
+- [x] P0 tracking: published this assessment and corrected stale Epic 7/current-process claims in `docs/project-status.md`; PR #39 merged after all five CI checks passed (remote main `f53117e2`).
+- [ ] P1 verification debt: implementation verified in `codex/verification-baseline`; backend 148 tests and ML 65 tests pass, portable Ruff passes, blocking CI checks and strict mobile TypeScript config are added. Independent review and feature-PR CI/merge remain before delivery.
 - [ ] P1 existing credential fix: review/integrate PR #32; correct its contradictory `docs/runbook.md` dotenv instructions. Preserve shell precedence and artifact hold.
 - [ ] P1 staging held-export mode: change `compose.staging.yml`, release packaging/checks and runbook so a deployment can omit a held profile export. Existing API empty-state behavior remains explicit; test both reviewed-export and no-export configurations.
 - [ ] P2 mobile cache isolation: scope `mobile/src/services/eventFeed.ts` cached events to normalized API URL and reject superseded results in `mobile/src/navigation/RootNavigator.tsx`. Test server switching, offline fallback and out-of-order responses.
@@ -64,7 +64,7 @@ untouched. New worktrees created by this session are archived only after verifyi
   failure discarding fresh network data (audit; regression reproduction pending).
 - Weak tests: missing mobile server-switch and rejected-storage cases; no physical
   camera coverage; synthetic scene tests do not establish recognition quality.
-- Technical debt: fresh baseline Ruff checks found 18 backend findings and 11 ML findings. These must be resolved before claiming full lint compliance.
+- Technical debt: the verification-baseline slice resolves the original 18 backend and 11 ML findings under explicit package rules. Two applied migrations retain narrowly scoped style exceptions; independent review and feature-PR CI remain delivery gates.
 - External gates: OCI/DNS, source-owner permission, domain review, image reuse and
   real evaluation data, physical devices and platform-specific runtime evidence.
 - No paid infrastructure provisioning, contact with third parties, fabricated
@@ -105,3 +105,23 @@ installation completed. Web installation reported nine dependency audit findings
 compatible remediation before release, without applying force upgrades blindly.
 Web/mobile local test/build runs remain outstanding. These collected results
 supersede the pending-install/test observations above.
+
+## Verification baseline slice (2026-10-17, ready for review)
+
+The [focused implementation plan](docs/superpowers/plans/2026-10-17-verification-baseline.md)
+records this bounded slice. Backend `pytest -v` passed all 148 tests, including
+PostGIS and Redis integration (one upstream Starlette/httpx deprecation warning).
+ML `pytest -v` passed all 65 tests. Both package-directory
+`ruff check --config pyproject.toml .` commands passed. Mobile `npx tsc --noEmit`
+passed with the new strict application config. The parent verified passing web
+tests/build and mobile Jest/Android CI on PR #39 at `d4d9301e`, whose frontend
+application/test source is unchanged in this slice; redundant local frontend runs
+were stopped during memory pressure. Structure verification passed all 140 paths,
+`git diff --check` passed, and applied migration files are unchanged.
+
+The USGS HTTP regression requires `USGSFetchError` and the original HTTP cause.
+PHIVOLCS timezone semantics and training CLI short-stderr/nonzero behavior are
+preserved by existing fixtures and new expected/unexpected CLI failure coverage.
+Blocking Ruff and mobile TypeScript checks are configured in CI. Independent review
+and fresh feature-PR CI remain required before merge; this slice is not yet
+committed or delivered. No release or quality gate is cleared by these code changes.

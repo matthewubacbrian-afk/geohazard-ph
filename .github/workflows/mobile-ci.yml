@@ -19,6 +19,9 @@ jobs:
         working-directory: mobile
       - run: npm test -- --runInBand
         working-directory: mobile
+      - name: Check TypeScript
+        run: npx tsc --noEmit
+        working-directory: mobile
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

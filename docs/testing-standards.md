@@ -155,6 +155,7 @@ describe('MapView', () => {
 - [ ] Happy path and failure/offline path covered.
 - [ ] Mapping functions unit tested against fixture payloads that mirror the backend schema.
 - [ ] `npm test` passes from `mobile/`.
+- [ ] `npx tsc --noEmit` passes from `mobile/`; `tsconfig.json` checks `App.tsx` and application source with strict typing.
 
 ## 6. Fixtures And Mocking Principles
 
@@ -174,10 +175,10 @@ describe('MapView', () => {
 
 | Package | Command (run inside package dir) |
 | --- | --- |
-| backend | `pytest -v` |
-| ml | `pytest -v` |
-| web | `npm test` |
-| mobile | `npm test` |
+| backend | `pytest -v`; `ruff check --config pyproject.toml .` |
+| ml | `pytest -v`; `ruff check --config pyproject.toml .` |
+| web | `npm test`; `npm run build` |
+| mobile | `npm test -- --runInBand`; `npx tsc --noEmit` |
 
 ## 8. Known Deviations
 

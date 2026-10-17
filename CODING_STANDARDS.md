@@ -563,16 +563,18 @@ def parse_usgs_feature(feature: dict) -> HazardEvent:
 
 ### Required Commands
 
-Run backend tests from `backend/`:
+Run backend tests and lint from `backend/`:
 
 ```powershell
 pytest -v
+ruff check --config pyproject.toml .
 ```
 
-Run ML tests from `ml/`:
+Run ML tests and lint from `ml/`:
 
 ```powershell
 pytest -v
+ruff check --config pyproject.toml .
 ```
 
 Run web tests and build from `web/`:
@@ -582,10 +584,11 @@ npm test
 npm run build
 ```
 
-Run mobile tests from `mobile/`:
+Run mobile tests and strict application type checking from `mobile/`:
 
 ```powershell
 npm test
+npx tsc --noEmit
 ```
 
 Run structure verification from the repository root:
@@ -617,11 +620,20 @@ GitHub Actions workflows must live under `.github/workflows`.
 
 Current workflow responsibilities:
 
-- `backend-ci.yml`: install backend package and run backend pytest.
-- `ml-ci.yml`: install `ml[dev]` and run ML pytest (blocking); Ruff runs as a non-blocking report until the baseline is clean.
-- `web-ci.yml`: install web dependencies and run web build.
-- `mobile-ci.yml`: install mobile dependencies and run mobile tests.
+- `backend-ci.yml`: install backend package and run blocking Ruff and backend pytest against PostGIS and Redis.
+- `ml-ci.yml`: install `ml[dev]` and run blocking ML pytest and Ruff.
+- `web-ci.yml`: install web dependencies and run web tests and build.
+- `mobile-ci.yml`: install mobile dependencies, run mobile tests and strict TypeScript checking, and build Android debug and iOS simulator apps.
 - `deploy-staging.yml`: manually verifies and publishes versioned staging images and a portable deployment bundle.
+
+Run Ruff from the package directory with its explicit `pyproject.toml`. Both packages
+select syntax/error (`E4`, `E7`, `E9`, `F`), imports (`I`), modernization (`UP`),
+blind exceptions (`BLE`), datetimes (`DTZ`), Ruff (`RUF`), and performance (`PERF`)
+rules. First-party imports are configured explicitly. The two already-applied
+backend migrations retain only their existing `I001`, `UP007`, and `UP035`
+exceptions because applied migrations are immutable. The training CLI has one
+documented `BLE001` exception at its top-level failure boundary to preserve its
+short stderr message and nonzero return for unexpected training failures.
 
 Before opening or merging a PR:
 

@@ -24,3 +24,10 @@ pythonpath = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "BLE", "DTZ", "RUF", "PERF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ml"]

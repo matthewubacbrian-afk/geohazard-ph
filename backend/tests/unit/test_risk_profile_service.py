@@ -3,8 +3,12 @@ from pathlib import Path
 import pytest
 
 from app.schemas.risk_profile import RiskProfile
-from app.services.risk_profile import RiskProfileNotFound, get_profile, load_profiles, summarize_profiles
-
+from app.services.risk_profile import (
+    RiskProfileNotFound,
+    get_profile,
+    load_profiles,
+    summarize_profiles,
+)
 
 FIXTURE = Path("tests/fixtures/risk_profiles.json")
 
