@@ -51,11 +51,14 @@ Use a namespace or named ESM import in `MapView.tsx`; import the worker with
 Vite's `?worker&url` suffix and call `setWorkerUrl` once before the first map
 constructor. Preserve the current public map API, layers, and controls.
 
-When the constructor throws MapLibre's `GPUInitializationError`, show an
-accessible message in the map region explaining that this map needs a browser
-with WebGL2 support. Leave the rest of the dashboard usable. Other unexpected
-constructor errors remain visible to error reporting rather than being silently
-treated as device incompatibility. No configuration or data schema changes.
+Before construction, probe WebGL2 with the context attributes used by the
+pinned MapLibre release and release the probe context. MapLibre 6.4.1 emits an
+error and returns a partial map on context failure, so a constructor catch is
+insufficient. If the probe fails, do not construct a map; show an accessible
+message in the map region explaining the WebGL2 requirement. Leave the rest
+of the dashboard usable. Unexpected map errors remain visible to error
+reporting rather than being silently treated as device incompatibility. No
+configuration or data schema changes.
 
 ## Rollout
 
@@ -78,17 +81,18 @@ user-facing setup documentation.
 ## Testing Strategy
 
 In `web/tests/MapView.test.tsx`, first reproduce missing worker configuration
-and the unhandled GPU initialization failure on the old code. Keep all existing
+and the missing WebGL2 fallback on the old code. Assert that no partial map is
+constructed when the WebGL2 probe fails. Keep all existing
 interaction tests green after the migration. Run `npm test`, `npm run build`,
 `npm audit --omit=dev`, and repository structure/whitespace checks. Repository
 CI provides backend, ML, web, Android/mobile, and iOS simulator checks.
 
 ## Acceptance Criteria
 
-- [ ] Locked production MapLibre version is patched and production audit has no
+- [x] Locked production MapLibre version is patched and production audit has no
   MapLibre finding.
-- [ ] Web tests and production build pass; worker configuration is tested.
-- [ ] WebGL2 initialization failure renders an accessible explanation.
+- [x] Web tests and production build pass; worker configuration is tested.
+- [x] WebGL2 initialization failure renders an accessible explanation.
 - [ ] All five PR CI checks pass before merge; branch/worktree removed afterward.
 
 ## Out Of Scope (backlog)

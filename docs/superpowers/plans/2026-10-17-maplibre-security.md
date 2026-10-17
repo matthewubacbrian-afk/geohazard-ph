@@ -33,14 +33,15 @@ at `MapView`, and verify map behavior and the built worker asset.
 **Interfaces:**
 - Consumes: existing `MapView` props and mocked MapLibre boundary.
 - Produces: a test that requires worker URL setup before `Map` construction and
-  a test that requires an accessible WebGL2 failure message.
+  a test that requires an accessible WebGL2 failure message with no partial map.
 
-- [ ] **Step 1: Write the failing tests** with an explicit worker spy and a
-  `GPUInitializationError` constructor failure.
-- [ ] **Step 2: Run the focused test**, confirming the expected old-code failure.
-- [ ] **Step 3: Keep the tests in place** for the migration task.
-- [ ] **Step 4: Rerun focused tests** after Task 2.
-- [ ] **Step 5: Commit** together with the implementation as one logical fix.
+- [x] **Step 1: Write the failing tests** with an explicit worker spy and a
+  null WebGL2 context probe.
+- [x] **Step 2: Run the focused test**, confirming the expected old-code failure.
+- [x] **Step 3: Keep the tests in place** for the migration task.
+- [x] **Step 4: Rerun focused tests** after Task 2 (34 passed).
+- [x] **Step 5: Commit** together with the implementation as one logical fix
+  (`b1178a75`).
 
 ---
 
@@ -52,18 +53,20 @@ at `MapView`, and verify map behavior and the built worker asset.
 - Modify: `README.md`
 
 **Interfaces:**
-- Consumes: MapLibre v6 ESM exports, `GPUInitializationError`, and Vite's
+- Consumes: MapLibre v6 ESM exports and Vite's
   `maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url` asset import.
 - Produces: the same `MapView` props and map interactions, configured worker,
-  and an accessible fallback on unsupported WebGL2 devices.
+  and a pre-construction WebGL2 fallback on unsupported devices.
 
-- [ ] **Step 1: Pin a patched MapLibre release** and regenerate only the web
+- [x] **Step 1: Pin a patched MapLibre release** and regenerate only the web
   lockfile; do not use force audit fixes.
-- [ ] **Step 2: Implement v6 imports and worker setup**, and catch only
-  `GPUInitializationError` at construction.
-- [ ] **Step 3: Run focused tests**, then full `npm test` and `npm run build`.
-- [ ] **Step 4: Run `npm audit --omit=dev`** and inspect remaining findings.
-- [ ] **Step 5: Commit** with a `fix:` message after diff/structure checks.
+- [x] **Step 2: Implement v6 imports and worker setup**, and preflight WebGL2
+  before constructing the pinned MapLibre release.
+- [x] **Step 3: Run focused tests**, then full `npm test` (175 passed) and
+  `npm run build` (bundled worker emitted).
+- [x] **Step 4: Run `npm audit --omit=dev`** (zero findings) and inspect
+  remaining findings (eight development-tool findings).
+- [x] **Step 5: Commit** with a `fix:` message after diff/structure checks.
 
 ---
 
@@ -76,9 +79,10 @@ at `MapView`, and verify map behavior and the built worker asset.
 - Consumes: verification output and PR CI status.
 - Produces: accurate security and epic status, PR with test evidence.
 
-- [ ] **Step 1: Record actual local results and remaining audit findings**.
-- [ ] **Step 2: Request independent review**, fix material issues, and rerun
-  affected checks.
+- [x] **Step 1: Record actual local results and remaining audit findings**.
+- [x] **Step 2: Request independent review**, fix the 6.4.1 WebGL2
+  initialization issue, rerun the full web suite/build and focused test, and
+  obtain a clean focused re-review.
 - [ ] **Step 3: Push/open PR** with Summary, Testing, Notes; wait for five CI
   checks to pass.
 - [ ] **Step 4: Merge, verify exact head is in `origin/main`, archive the

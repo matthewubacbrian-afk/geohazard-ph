@@ -27,11 +27,13 @@ after all five CI checks passed. Local backend tests passed (148, including
 PostGIS and Redis), ML tests passed (65), both explicit package Ruff checks passed,
 and mobile strict TypeScript checking passed. CI now requires Ruff and mobile
 TypeScript checking. Applied migrations have only exact legacy style exceptions.
-The production web map dependency has a critical attribution XSS advisory; the
-[security migration](superpowers/specs/2026-10-17-maplibre-security-design.md)
-is next in the [plan](../PLAN.md), followed by separate Vite/Vitest dependency
-remediation. These engineering checks do not establish deployment health, device
-readiness, or data-quality approval.
+The [MapLibre security migration](superpowers/specs/2026-10-17-maplibre-security-design.md)
+pins a patched web map release and configures its Vite worker. On its isolated
+branch, the full web suite passed 175 tests, the production build succeeded,
+and `npm audit --omit=dev` reported zero findings. The full audit retains eight
+development-tool findings for the separate Vite/Vitest slice in the
+[plan](../PLAN.md). These engineering checks do not establish deployment health,
+device readiness, or data-quality approval.
 
 ## Next integration milestone
 

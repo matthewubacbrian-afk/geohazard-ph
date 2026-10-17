@@ -66,7 +66,7 @@ untouched. New worktrees created by this session are archived only after verifyi
   failure discarding fresh network data (audit; regression reproduction pending).
 - Weak tests: missing mobile server-switch and rejected-storage cases; no physical
   camera coverage; synthetic scene tests do not establish recognition quality.
-- Technical debt: PR #40 resolves the original 18 backend and 11 ML lint findings under explicit package rules. Two applied migrations retain narrowly scoped style exceptions. The web dependency audit still reports nine findings (three moderate, three high, three critical); the production MapLibre path is first, followed by the development-tool path.
+- Technical debt: PR #40 resolves the original 18 backend and 11 ML lint findings under explicit package rules. Two applied migrations retain narrowly scoped style exceptions. The baseline web audit reported nine findings; the MapLibre security branch removes the production finding and leaves eight development-tool findings (three moderate, three high, two critical) for the next slice.
 - External gates: OCI/DNS, source-owner permission, domain review, image reuse and
   real evaluation data, physical devices and platform-specific runtime evidence.
 - No paid infrastructure provisioning, contact with third parties, fabricated
@@ -87,5 +87,9 @@ untouched. New worktrees created by this session are archived only after verifyi
   evidence. Stop/remove only these when no further tests need them.
 - The [MapLibre security design](docs/superpowers/specs/2026-10-17-maplibre-security-design.md)
   and [implementation plan](docs/superpowers/plans/2026-10-17-maplibre-security.md)
-  define the next isolated slice. No release, domain, permission, or device gate
-  is cleared by dependency or verification changes.
+  define the current isolated slice. Local focused MapView tests passed 34/34;
+  the full web suite passed 175/175 across 35 files; `npm run build` emitted a
+  bundled worker asset; `npm audit --omit=dev` reported zero findings. The full
+  audit retains eight development-tool findings. Independent review and feature
+  PR CI/merge remain. No release, domain, permission, or device gate is cleared
+  by dependency or verification changes.
