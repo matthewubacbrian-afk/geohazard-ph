@@ -98,3 +98,10 @@ untouched. New worktrees created by this session are archived only after verifyi
   staging held-export mode, and mobile cache defects in the queue above.
 - Existing quality holds and external gates remain unchanged. All authored
   repository changes are committed and pushed; no implementation is claimed.
+
+Final collected baseline results: ML **63 passed**. Web and mobile dependency
+installation completed. Web installation reported nine dependency audit findings
+(three moderate, three high, three critical); investigate the dependency paths and
+compatible remediation before release, without applying force upgrades blindly.
+Web/mobile local test/build runs remain outstanding. These collected results
+supersede the pending-install/test observations above.
