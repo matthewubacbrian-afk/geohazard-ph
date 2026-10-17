@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from ml import ingest_kaggle
 from ml.ingest_kaggle import (
     KaggleCredentialError,
     KaggleDataset,
@@ -12,6 +13,105 @@ from ml.ingest_kaggle import (
     _read_dataset_version,
     download_datasets,
 )
+
+
+def test_repository_root_points_to_project_root():
+    assert ingest_kaggle.REPOSITORY_ROOT == Path(ingest_kaggle.__file__).resolve().parents[3]
+
+
+def test_download_datasets_loads_credentials_from_repository_dotenv(monkeypatch, tmp_path):
+    monkeypatch.delenv("KAGGLE_USERNAME", raising=False)
+    monkeypatch.delenv("KAGGLE_KEY", raising=False)
+    monkeypatch.setattr(ingest_kaggle, "REPOSITORY_ROOT", tmp_path)
+    (tmp_path / ".env").write_text(
+        "# Kaggle credentials\nKAGGLE_USERNAME='dotenv-user'\nKAGGLE_KEY=\"dotenv-key\"\n",
+        encoding="utf-8",
+    )
+    calls: list[tuple[str | None, str | None]] = []
+
+    def fake_downloader(slug: str, output_dir: Path) -> tuple[str, int]:
+        calls.append((os.getenv("KAGGLE_USERNAME"), os.getenv("KAGGLE_KEY")))
+        return str(output_dir), 7
+
+    downloaded = download_datasets(
+        tmp_path / "raw",
+        datasets=[KaggleDataset("owner/example", "Example", "License")],
+        downloader=fake_downloader,
+    )
+
+    assert calls == [("dotenv-user", "dotenv-key")]
+    assert downloaded[0].version == 7
+
+
+def test_download_datasets_preserves_nonempty_environment_credentials(monkeypatch, tmp_path):
+    monkeypatch.setenv("KAGGLE_USERNAME", "shell-user")
+    monkeypatch.setenv("KAGGLE_KEY", "")
+    monkeypatch.setattr(ingest_kaggle, "REPOSITORY_ROOT", tmp_path)
+    (tmp_path / ".env").write_text(
+        "KAGGLE_USERNAME=dotenv-user\nKAGGLE_KEY=dotenv-key\n", encoding="utf-8"
+    )
+    calls: list[tuple[str | None, str | None]] = []
+
+    def fake_downloader(slug: str, output_dir: Path) -> tuple[str, int]:
+        calls.append((os.getenv("KAGGLE_USERNAME"), os.getenv("KAGGLE_KEY")))
+        return str(output_dir), 7
+
+    download_datasets(
+        tmp_path / "raw",
+        datasets=[KaggleDataset("owner/example", "Example", "License")],
+        downloader=fake_downloader,
+    )
+
+    assert calls == [("shell-user", "dotenv-key")]
+
+
+def test_download_datasets_ignores_unrelated_and_blank_dotenv_values(monkeypatch, tmp_path):
+    monkeypatch.delenv("KAGGLE_USERNAME", raising=False)
+    monkeypatch.delenv("KAGGLE_KEY", raising=False)
+    monkeypatch.setattr(ingest_kaggle, "REPOSITORY_ROOT", tmp_path)
+    (tmp_path / ".env").write_text(
+        "OTHER_SECRET=unrelated\nKAGGLE_USERNAME=\nKAGGLE_KEY=\nmalformed\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+
+    with pytest.raises(KaggleCredentialError):
+        download_datasets(tmp_path / "raw", datasets=[])
+
+    assert os.getenv("OTHER_SECRET") is None
+
+
+def test_download_datasets_missing_dotenv_keeps_kaggle_config_fallback(
+    monkeypatch, tmp_path
+):
+    monkeypatch.delenv("KAGGLE_USERNAME", raising=False)
+    monkeypatch.delenv("KAGGLE_KEY", raising=False)
+    monkeypatch.setattr(ingest_kaggle, "REPOSITORY_ROOT", tmp_path / "missing-root")
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    config = tmp_path / ".kaggle" / "kaggle.json"
+    config.parent.mkdir()
+    config.touch()
+
+    assert download_datasets(tmp_path / "raw", datasets=[]) == []
+
+
+@pytest.mark.parametrize("contents", [b"KAGGLE_USERNAME=\xff", None])
+def test_download_datasets_reports_dotenv_read_errors_safely(
+    monkeypatch, tmp_path, contents
+):
+    monkeypatch.delenv("KAGGLE_USERNAME", raising=False)
+    monkeypatch.delenv("KAGGLE_KEY", raising=False)
+    monkeypatch.setattr(ingest_kaggle, "REPOSITORY_ROOT", tmp_path)
+    env_file = tmp_path / ".env"
+    if contents is not None:
+        env_file.write_bytes(contents)
+    else:
+        env_file.mkdir()
+
+    with pytest.raises(KaggleCredentialError) as exc:
+        download_datasets(tmp_path / "raw", datasets=[])
+
+    assert str(exc.value) == "Could not read Kaggle credentials from the repository .env file."
+    assert "\xff" not in str(exc.value)
 
 
 def test_download_datasets_requires_credentials_when_config_missing(monkeypatch, tmp_path):
