@@ -17,7 +17,7 @@ def render(*files: str, export_file: str | None = None) -> dict:
     command = ["docker", "compose", "--env-file", ".env.staging.example"]
     for file in files:
         command.extend(("-f", file))
-    command.extend(("config", "--format", "json"))
+    command.extend(("config", "--no-normalize", "--format", "json"))
     result = subprocess.run(
         command, cwd=ROOT, env=environment, capture_output=True, text=True, check=False
     )
