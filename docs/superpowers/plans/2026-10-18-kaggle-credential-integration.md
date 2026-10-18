@@ -45,12 +45,12 @@
 - Produces: one consistent credential setup path across README, data-source notes, and runbook.
 
 - [x] **Step 1:** corrected the contradictory runbook paragraph to match the loader's shell, root `.env`, and Kaggle config precedence.
-- [ ] **Step 2:** run all package verification, structure and whitespace checks; obtain independent review.
-- [ ] **Step 3:** commit docs, push, and open a replacement PR with actual evidence; close PR #32 only after the replacement has merged.
-- [ ] **Step 4:** require five green CI checks, merge, verify exact head in remote main, and remove this worktree/branch.
+- [x] **Step 2:** local ML suite, Ruff, structure and whitespace checks passed; independent review's test-isolation finding was fixed; PR CI passed for backend, ML, web, mobile/Android, and iOS.
+- [x] **Step 3:** committed docs in `57548fbf`, pushed, and opened PR #43 with verification evidence. GitHub marked PR #32 merged automatically when its history landed through PR #43.
+- [x] **Step 4:** all five checks passed; PR #43 merged at `5877a0c8`, exact head `57548fbf` was verified in remote main, and both merged worktrees/branches were removed.
 
 ## Notes for the executor
 
-- PR #32 is open at `62fb24a5` and its existing worktree belongs to another feature stream. This branch starts at main `a31197b0` and will merge that history without rewriting or force-pushing PR #32.
-- The current `docs/runbook.md` says the trainer does not load `.env`; that sentence will be false after integration.
+- PR #32 at `62fb24a5` was incorporated into PR #43's merge history. Its branch and worktree were removed only after merge and clean-state verification.
+- The runbook's old claim that the trainer does not load `.env` was corrected in the integration merge.
 - No OCI host, PHIVOLCS permission, domain-reviewed risk-profile policy, or device evidence was newly supplied. Preserve all external holds.

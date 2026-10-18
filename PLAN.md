@@ -20,7 +20,7 @@ scientific validation, device evidence, or deployed-state verification.
 | 2: PHIVOLCS/realtime | Canonical deduplication, committed-event publishing, volcano feed | Operational source/TLS and realtime smoke checks on deployment |
 | 3: reference layers | Importer/API/toggles; recorded 155-feature GEM import | PHIVOLCS reuse permission, reviewed vectors, national coverage evidence |
 | 4: mobile | Saved locations, foreground nearby alerts, offline cache, native CI | Fix cache isolation/races/storage failures; device-flow evidence; background push and store release remain deferred |
-| 5: regional profiles | Historical pipeline, validation/sensitivity reports, API/UI | Integrate credential fix; domain-approved sparse-region policy and new validated artifact; current export remains held |
+| 5: regional profiles | Historical pipeline, validation/sensitivity reports, API/UI; Kaggle `.env` credential loader merged | Domain-approved sparse-region policy and new validated artifact; current export remains held |
 | 6: stretch | NASA reference overlay merged; InSAR metadata research recorded | InSAR footprint/reuse and independent reference gates; no production deformation claim |
 | 7: scene review | Transient API, camera clients, warnings and provisional blur handling merged | Integrate training PR; same-sample baseline evaluation CLI; approved image data, thresholds, real-scene and device/resource validation |
 | Staging | Multi-architecture release workflow and published historical bundle | Make held-export mode deployable; host/DNS/configuration and live verification |
@@ -28,8 +28,8 @@ scientific validation, device evidence, or deployed-state verification.
 A single percentage would obscure these independent gates. The monitoring code is
 substantially implemented; the complete operational product is not yet evidenced.
 Historical plans are context, not proof that every unchecked historical item is
-current scope. No open GitHub issues were returned during this audit. PRs #32 and
-#36 are open; #36 conflicts with current main.
+current scope. No open GitHub issues were returned during the initial audit.
+PR #32 was incorporated through PR #43; PR #36 remains in the integration queue.
 
 ## Prioritized delivery queue
 
@@ -37,7 +37,7 @@ current scope. No open GitHub issues were returned during this audit. PRs #32 an
 - [x] P1 verification debt: PR #40 merged at `4004ad3f` after independent review and all five CI checks passed. Backend 148 tests, ML 65 tests, portable Ruff, web build/tests, mobile Jest/TypeScript/Android, and iOS simulator build are required in CI.
 - [x] P0 web map dependency security: PR #41 merged at `59a0c75e` after the web suite (175 tests), production build, browser map smoke check, zero production audit findings, and five green CI checks. The patched MapLibre migration includes a WebGL2 fallback; its isolated worktree and branch were removed after merge verification.
 - [x] P1 web development-tool security: PR #42 merged at `a31197b0` after a clean `npm ci`, 175 web tests, production build, zero full/production audit findings (down from eight), independent review and five green CI checks. Its isolated worktree and branch were removed after merge verification.
-- [ ] P1 existing credential fix: the new isolated branch integrates PR #32's loader, corrects `docs/runbook.md`, and isolates tests from a developer's real `.env`. Local ML tests passed 72/72, focused tests 12/12, Ruff, structure and whitespace checks passed; independent review's test-isolation finding was fixed. Replacement PR CI/merge remain. See the [focused integration plan](docs/superpowers/plans/2026-10-18-kaggle-credential-integration.md).
+- [x] P1 existing credential fix: PR #43 merged at `5877a0c8`, incorporating PR #32's loader, correcting `docs/runbook.md`, and isolating tests from a developer's real `.env`. Local ML tests passed 72/72, focused tests 12/12, Ruff, structure and whitespace checks passed; independent review's finding was fixed and all five CI checks passed. Both merged branches and worktrees were removed. See the [focused integration plan](docs/superpowers/plans/2026-10-18-kaggle-credential-integration.md).
 - [ ] P1 staging held-export mode: change `compose.staging.yml`, release packaging/checks and runbook so a deployment can omit a held profile export. Existing API empty-state behavior remains explicit; test both reviewed-export and no-export configurations.
 - [ ] P2 mobile cache isolation: scope `mobile/src/services/eventFeed.ts` cached events to normalized API URL and reject superseded results in `mobile/src/navigation/RootNavigator.tsx`. Test server switching, offline fallback and out-of-order responses.
 - [ ] P2 mobile persistence resilience: return freshly fetched events even when local cache writes fail, with a separate persistence warning; test rejected writes and usable fresh results.
@@ -99,9 +99,10 @@ untouched. New worktrees created by this session are archived only after verifyi
   audit findings, structure verification, and whitespace check. Vitest 5 needed
   one constructable MapView test mock; app behavior was unchanged. Independent
   review and all five CI checks passed; PR #42 merged at `a31197b0`.
-- The Kaggle credential integration branch merges PR #32 without changing its
-  worktree, corrects the contrary runbook statement, and passes 72 ML tests,
-  ML Ruff, structure and whitespace checks. Independent review found and the
-  branch fixed two tests' dependence on the developer's real `.env`. The
-  imported loader has not downloaded data or changed the held profile export.
-  Replacement PR CI/merge remain.
+- PR #43 merged the Kaggle credential loader at `5877a0c8`, and GitHub marked
+  PR #32 merged through that history. The branch corrected the contrary runbook
+  statement and passed 72 ML tests, ML Ruff, structure and whitespace checks.
+  Independent review found and the branch fixed two tests' dependence on the
+  developer's real `.env`; all five CI checks passed. Both merged worktrees and
+  branches were removed. The loader has not downloaded data or changed the held
+  profile export.
