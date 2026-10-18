@@ -80,13 +80,17 @@ class DeployStagingTests(unittest.TestCase):
                 result = self.run_deploy(response, "--with-profile")
                 self.assertNotEqual(result.returncode, 0)
 
-    def test_reviewed_mode_rejects_missing_or_empty_export_before_pull(self) -> None:
-        for state in ("missing", "empty"):
+    def test_reviewed_mode_rejects_invalid_export_before_pull(self) -> None:
+        for state in ("missing", "empty", "malformed", "object"):
             with self.subTest(state=state):
                 if state == "missing":
                     self.export_file.unlink(missing_ok=True)
-                else:
+                elif state == "empty":
                     self.export_file.write_text("", encoding="utf-8")
+                elif state == "malformed":
+                    self.export_file.write_text("not-json", encoding="utf-8")
+                else:
+                    self.export_file.write_text("{}", encoding="utf-8")
                 result = self.run_deploy('[{"region_name":"NCR"}]', "--with-profile")
                 self.assertNotEqual(result.returncode, 0)
                 calls = (self.root / "docker_calls.txt").read_text(encoding="utf-8")
