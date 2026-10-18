@@ -38,12 +38,13 @@ production audit findings, independent review, and five green CI checks. These
 engineering checks do not establish deployment health, device readiness, or
 data-quality approval.
 
-The separate Kaggle credential integration branch incorporates the existing
-[PR #32](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/32) loader,
-corrects the contrary `.env` instruction in the runbook, and isolates downloader
-tests from a developer's real credentials. Its local ML suite passed 72 tests and
-ML Ruff passed. A replacement PR and CI/merge remain; no Kaggle source refresh
-or held risk-profile export was performed.
+The Kaggle credential loader from
+[PR #32](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/32) merged
+through [PR #43](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/43).
+The runbook now agrees with the downloader's repository-root `.env` support,
+and downloader tests are isolated from a developer's real credentials. Local ML
+tests passed 72/72 with Ruff, and all five CI checks passed. No Kaggle source
+refresh or held risk-profile export was performed.
 
 ## Next integration milestone
 
