@@ -31,12 +31,19 @@ The [MapLibre security migration](superpowers/specs/2026-10-17-maplibre-security
 merged in [PR #41](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/41)
 after the full web suite passed 175 tests, the production build succeeded, a
 browser map smoke check rendered, `npm audit --omit=dev` reported zero findings,
-and all five CI checks passed. The full audit retains eight development-tool
-findings for the separate Vite/Vitest slice in the [plan](../PLAN.md). That
-isolated branch now passes 175 web tests, a production build and a clean npm
-install; its full and production audits both report zero findings. PR CI/merge
-remain. These engineering checks do not establish deployment health, device
-readiness, or data-quality approval.
+and all five CI checks passed. The separate Vite/Vitest upgrade in the
+[plan](../PLAN.md) merged in [PR #42](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/42)
+after 175 web tests, a production build, a clean npm install, zero full and
+production audit findings, independent review, and five green CI checks. These
+engineering checks do not establish deployment health, device readiness, or
+data-quality approval.
+
+The separate Kaggle credential integration branch incorporates the existing
+[PR #32](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/32) loader,
+corrects the contrary `.env` instruction in the runbook, and isolates downloader
+tests from a developer's real credentials. Its local ML suite passed 72 tests and
+ML Ruff passed. A replacement PR and CI/merge remain; no Kaggle source refresh
+or held risk-profile export was performed.
 
 ## Next integration milestone
 

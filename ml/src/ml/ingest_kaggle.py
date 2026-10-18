@@ -7,10 +7,44 @@ from pathlib import Path
 
 PHIVOLCS_DATASET = "bwandowando/philippine-earthquakes-from-phivolcs"
 USGS_DATASET = "bwandowando/philippine-earthquakes-1900-2025-from-usgs"
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+_KAGGLE_CREDENTIAL_KEYS = ("KAGGLE_USERNAME", "KAGGLE_KEY")
 
 
 class KaggleCredentialError(RuntimeError):
     pass
+
+
+def _load_dotenv_credentials(env_path: Path | None = None) -> None:
+    dotenv_path = env_path or REPOSITORY_ROOT / ".env"
+    try:
+        lines = dotenv_path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return
+    except (OSError, UnicodeError) as exc:
+        raise KaggleCredentialError(
+            "Could not read Kaggle credentials from the repository .env file."
+        ) from exc
+
+    parsed_credentials: dict[str, str] = {}
+    for line in lines:
+        stripped_line = line.strip()
+        if not stripped_line or stripped_line.startswith("#") or "=" not in stripped_line:
+            continue
+
+        key, value = stripped_line.split("=", maxsplit=1)
+        key = key.strip()
+        if key not in _KAGGLE_CREDENTIAL_KEYS:
+            continue
+
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1].strip()
+        parsed_credentials[key] = value
+
+    for key in _KAGGLE_CREDENTIAL_KEYS:
+        if not os.getenv(key) and parsed_credentials.get(key):
+            os.environ[key] = parsed_credentials[key]
 
 
 @dataclass(frozen=True)
@@ -77,10 +111,11 @@ def download_datasets(
     datasets: tuple[KaggleDataset, ...] | list[KaggleDataset] = DEFAULT_DATASETS,
     downloader: Callable[[str, Path], tuple[str, int]] | None = None,
 ) -> list[DownloadedDataset]:
+    _load_dotenv_credentials()
     if not _has_credentials():
         raise KaggleCredentialError(
             "Kaggle credentials are required. Set KAGGLE_USERNAME and KAGGLE_KEY, "
-            "or create ~/.kaggle/kaggle.json."
+            "add them to the repository .env file, or create ~/.kaggle/kaggle.json."
         )
 
     raw_dir.mkdir(parents=True, exist_ok=True)

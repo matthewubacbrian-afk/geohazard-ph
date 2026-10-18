@@ -36,8 +36,8 @@ current scope. No open GitHub issues were returned during this audit. PRs #32 an
 - [x] P0 tracking: published this assessment and corrected stale Epic 7/current-process claims in `docs/project-status.md`; PR #39 merged after all five CI checks passed (remote main `f53117e2`).
 - [x] P1 verification debt: PR #40 merged at `4004ad3f` after independent review and all five CI checks passed. Backend 148 tests, ML 65 tests, portable Ruff, web build/tests, mobile Jest/TypeScript/Android, and iOS simulator build are required in CI.
 - [x] P0 web map dependency security: PR #41 merged at `59a0c75e` after the web suite (175 tests), production build, browser map smoke check, zero production audit findings, and five green CI checks. The patched MapLibre migration includes a WebGL2 fallback; its isolated worktree and branch were removed after merge verification.
-- [ ] P1 web development-tool security: the isolated branch upgrades Vite 8.3.4, Vitest 5.0.5 and React plugin 6.1.2. Local web tests passed 175/175, the build and clean `npm ci` passed, and full/production audits report zero findings (down from eight). Independent review found no actionable issue; PR CI/merge remain. See the [focused plan](docs/superpowers/plans/2026-10-18-web-tooling-security.md).
-- [ ] P1 existing credential fix: review/integrate PR #32; correct its contradictory `docs/runbook.md` dotenv instructions. Preserve shell precedence and artifact hold.
+- [x] P1 web development-tool security: PR #42 merged at `a31197b0` after a clean `npm ci`, 175 web tests, production build, zero full/production audit findings (down from eight), independent review and five green CI checks. Its isolated worktree and branch were removed after merge verification.
+- [ ] P1 existing credential fix: the new isolated branch integrates PR #32's loader, corrects `docs/runbook.md`, and isolates tests from a developer's real `.env`. Local ML tests passed 72/72, focused tests 12/12, Ruff, structure and whitespace checks passed; independent review's test-isolation finding was fixed. Replacement PR CI/merge remain. See the [focused integration plan](docs/superpowers/plans/2026-10-18-kaggle-credential-integration.md).
 - [ ] P1 staging held-export mode: change `compose.staging.yml`, release packaging/checks and runbook so a deployment can omit a held profile export. Existing API empty-state behavior remains explicit; test both reviewed-export and no-export configurations.
 - [ ] P2 mobile cache isolation: scope `mobile/src/services/eventFeed.ts` cached events to normalized API URL and reject superseded results in `mobile/src/navigation/RootNavigator.tsx`. Test server switching, offline fallback and out-of-order responses.
 - [ ] P2 mobile persistence resilience: return freshly fetched events even when local cache writes fail, with a separate persistence warning; test rejected writes and usable fresh results.
@@ -66,7 +66,7 @@ untouched. New worktrees created by this session are archived only after verifyi
   failure discarding fresh network data (audit; regression reproduction pending).
 - Weak tests: missing mobile server-switch and rejected-storage cases; no physical
   camera coverage; synthetic scene tests do not establish recognition quality.
-- Technical debt: PR #40 resolves the original 18 backend and 11 ML lint findings under explicit package rules. Two applied migrations retain narrowly scoped style exceptions. The baseline web audit reported nine findings; the MapLibre security branch removes the production finding and leaves eight development-tool findings (three moderate, three high, two critical) for the next slice.
+- Technical debt: PR #40 resolves the original 18 backend and 11 ML lint findings under explicit package rules. Two applied migrations retain narrowly scoped style exceptions. The baseline web audit reported nine findings; PR #41 removed the production finding and PR #42 removed the remaining eight development-tool findings in their respective audited lockfiles.
 - External gates: OCI/DNS, source-owner permission, domain review, image reuse and
   real evaluation data, physical devices and platform-specific runtime evidence.
 - No paid infrastructure provisioning, contact with third parties, fabricated
@@ -97,5 +97,11 @@ untouched. New worktrees created by this session are archived only after verifyi
 - The web development-tool branch passed a clean `npm ci`, 175/175 tests across
   35 files, production build with bundled map worker, zero full and production
   audit findings, structure verification, and whitespace check. Vitest 5 needed
-  one constructable MapView test mock; app behavior was unchanged. PR CI/merge
-  remain.
+  one constructable MapView test mock; app behavior was unchanged. Independent
+  review and all five CI checks passed; PR #42 merged at `a31197b0`.
+- The Kaggle credential integration branch merges PR #32 without changing its
+  worktree, corrects the contrary runbook statement, and passes 72 ML tests,
+  ML Ruff, structure and whitespace checks. Independent review found and the
+  branch fixed two tests' dependence on the developer's real `.env`. The
+  imported loader has not downloaded data or changed the held profile export.
+  Replacement PR CI/merge remain.
