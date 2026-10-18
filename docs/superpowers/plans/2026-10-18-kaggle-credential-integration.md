@@ -29,10 +29,10 @@
 - Consumes: `download_datasets` in `ml/src/ml/ingest_kaggle.py` and the existing repository-root `.env` format.
 - Produces: the PR #32 `_load_dotenv_credentials(env_path: Path | None = None) -> None` behavior without changing training/export contracts.
 
-- [ ] **Step 1:** inspect the PR #32 diff and branch history for conflicts and secrets.
-- [ ] **Step 2:** merge the existing feature branch without editing its other worktree; resolve conflicts with current main.
-- [ ] **Step 3:** run focused credential tests, full ML tests, and Ruff; fix integration regressions only.
-- [ ] **Step 4:** commit any required conflict or compatibility fix.
+- [x] **Step 1:** inspected PR #32's diff and history; no secrets entered the tracked diff.
+- [x] **Step 2:** merged the feature branch without editing its other worktree; the README auto-merged with current main.
+- [x] **Step 3:** focused credential tests passed 12/12, full ML tests 72/72, and ML Ruff passed. Independent review found two older tests depended on the developer's real `.env`; both now use a temporary root.
+- [x] **Step 4:** committed the integration and compatibility fix in `4ebba4d9 feat: integrate kaggle dotenv credentials`.
 
 ### Task 2: Correct operator guidance and deliver
 
@@ -44,7 +44,7 @@
 - Consumes: integrated loader behavior and current staging quality hold.
 - Produces: one consistent credential setup path across README, data-source notes, and runbook.
 
-- [ ] **Step 1:** correct the contradictory runbook paragraph and check it against the loader behavior.
+- [x] **Step 1:** corrected the contradictory runbook paragraph to match the loader's shell, root `.env`, and Kaggle config precedence.
 - [ ] **Step 2:** run all package verification, structure and whitespace checks; obtain independent review.
 - [ ] **Step 3:** commit docs, push, and open a replacement PR with actual evidence; close PR #32 only after the replacement has merged.
 - [ ] **Step 4:** require five green CI checks, merge, verify exact head in remote main, and remove this worktree/branch.

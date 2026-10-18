@@ -38,6 +38,13 @@ production audit findings, independent review, and five green CI checks. These
 engineering checks do not establish deployment health, device readiness, or
 data-quality approval.
 
+The separate Kaggle credential integration branch incorporates the existing
+[PR #32](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/32) loader,
+corrects the contrary `.env` instruction in the runbook, and isolates downloader
+tests from a developer's real credentials. Its local ML suite passed 72 tests and
+ML Ruff passed. A replacement PR and CI/merge remain; no Kaggle source refresh
+or held risk-profile export was performed.
+
 ## Next integration milestone
 
 1. Complete the [Epic 5 domain review decision record](epic5-domain-review-decision-record.md)

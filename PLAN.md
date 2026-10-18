@@ -37,7 +37,7 @@ current scope. No open GitHub issues were returned during this audit. PRs #32 an
 - [x] P1 verification debt: PR #40 merged at `4004ad3f` after independent review and all five CI checks passed. Backend 148 tests, ML 65 tests, portable Ruff, web build/tests, mobile Jest/TypeScript/Android, and iOS simulator build are required in CI.
 - [x] P0 web map dependency security: PR #41 merged at `59a0c75e` after the web suite (175 tests), production build, browser map smoke check, zero production audit findings, and five green CI checks. The patched MapLibre migration includes a WebGL2 fallback; its isolated worktree and branch were removed after merge verification.
 - [x] P1 web development-tool security: PR #42 merged at `a31197b0` after a clean `npm ci`, 175 web tests, production build, zero full/production audit findings (down from eight), independent review and five green CI checks. Its isolated worktree and branch were removed after merge verification.
-- [ ] P1 existing credential fix: integrate PR #32's tested loader in a new isolated branch, correct the contradictory `docs/runbook.md` dotenv instructions, preserve shell precedence and the artifact hold, then verify all suites and CI. See the [focused integration plan](docs/superpowers/plans/2026-10-18-kaggle-credential-integration.md).
+- [ ] P1 existing credential fix: the new isolated branch integrates PR #32's loader, corrects `docs/runbook.md`, and isolates tests from a developer's real `.env`. Local ML tests passed 72/72, focused tests 12/12, Ruff, structure and whitespace checks passed; independent review's test-isolation finding was fixed. Replacement PR CI/merge remain. See the [focused integration plan](docs/superpowers/plans/2026-10-18-kaggle-credential-integration.md).
 - [ ] P1 staging held-export mode: change `compose.staging.yml`, release packaging/checks and runbook so a deployment can omit a held profile export. Existing API empty-state behavior remains explicit; test both reviewed-export and no-export configurations.
 - [ ] P2 mobile cache isolation: scope `mobile/src/services/eventFeed.ts` cached events to normalized API URL and reject superseded results in `mobile/src/navigation/RootNavigator.tsx`. Test server switching, offline fallback and out-of-order responses.
 - [ ] P2 mobile persistence resilience: return freshly fetched events even when local cache writes fail, with a separate persistence warning; test rejected writes and usable fresh results.
@@ -99,3 +99,9 @@ untouched. New worktrees created by this session are archived only after verifyi
   audit findings, structure verification, and whitespace check. Vitest 5 needed
   one constructable MapView test mock; app behavior was unchanged. Independent
   review and all five CI checks passed; PR #42 merged at `a31197b0`.
+- The Kaggle credential integration branch merges PR #32 without changing its
+  worktree, corrects the contrary runbook statement, and passes 72 ML tests,
+  ML Ruff, structure and whitespace checks. Independent review found and the
+  branch fixed two tests' dependence on the developer's real `.env`. The
+  imported loader has not downloaded data or changed the held profile export.
+  Replacement PR CI/merge remain.
