@@ -41,7 +41,7 @@
 
 **Interfaces:**
 - `bash scripts/deploy_staging.sh <sha> <https-url>` deploys without an export and requires the profile endpoint's JSON to equal `[]`.
-- `bash scripts/deploy_staging.sh <sha> <https-url> --with-profile` adds the override and requires a non-empty JSON list.
+- `bash scripts/deploy_staging.sh <sha> <https-url> --with-profile` adds the override, checks the resolved host export is a readable non-empty JSON list before pulling images, and requires a non-empty API list.
 - Invalid flags and response shapes fail the deployment check; tests use stub `docker` and `curl`, with no live host or image pulls.
 
 - [x] **Step 1: Write script tests for default mode, opt-in mode, invalid flag, and mismatched profile response.**

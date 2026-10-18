@@ -21,6 +21,30 @@ if [[ $# -eq 3 ]]; then
 fi
 
 "${compose[@]}" config --quiet
+if [[ "$profile_mode" == reviewed ]]; then
+  "${compose[@]}" config --format json | python3 -c '
+import json
+import sys
+from pathlib import Path
+
+config = json.load(sys.stdin)
+mounts = [
+    mount for mount in config["services"]["api"].get("volumes", [])
+    if mount.get("target") == "/data/risk_profiles.json"
+]
+if len(mounts) != 1:
+    raise SystemExit("reviewed staging mode requires one profile bind mount")
+path = Path(mounts[0]["source"])
+if not path.is_file() or not path.stat().st_size:
+    raise SystemExit("reviewed profile export must be a non-empty host file")
+try:
+    profiles = json.loads(path.read_text(encoding="utf-8"))
+except (OSError, UnicodeError, json.JSONDecodeError):
+    raise SystemExit("reviewed profile export must be readable JSON")
+if not isinstance(profiles, list) or not profiles:
+    raise SystemExit("reviewed profile export must be a non-empty list")
+'
+fi
 "${compose[@]}" pull
 "${compose[@]}" up -d --wait --wait-timeout 180
 curl --fail --silent --show-error --retry 8 --retry-delay 5 --retry-all-errors \

@@ -20,8 +20,15 @@ class DeployStagingTests(unittest.TestCase):
         (self.root / "scripts").mkdir()
         shutil.copyfile(SCRIPT, self.root / "scripts/deploy_staging.sh")
         (self.root / ".env.staging").write_text("IMAGE_TAG=example\n", encoding="utf-8")
+        self.export_file = self.root / "approved.json"
+        self.export_file.write_text('[{"region_name":"NCR"}]', encoding="utf-8")
         (self.root / "stubs.sh").write_text(
-            "docker() { printf '%s\\n' \"$*\" >> docker_calls.txt; }\n"
+            "docker() {\n"
+            "  printf '%s\\n' \"$*\" >> docker_calls.txt\n"
+            "  if [[ \"$*\" == *'config --format json'* ]]; then\n"
+            "    printf '{\"services\":{\"api\":{\"volumes\":[{\"source\":\"%s\",\"target\":\"/data/risk_profiles.json\"}]}}}' \"$PROFILE_SOURCE\"\n"
+            "  fi\n"
+            "}\n"
             "curl() {\n"
             "  case \"$*\" in\n"
             "    */api/v1/risk-profile/clusters*) printf '%s' \"$PROFILE_RESPONSE\" ;;\n"
@@ -37,7 +44,11 @@ class DeployStagingTests(unittest.TestCase):
             bash = r"C:\Program Files\Git\bin\bash.exe"
         assert bash is not None
         environment = os.environ.copy()
-        environment.update(BASH_ENV="./stubs.sh", PROFILE_RESPONSE=response)
+        environment.update(
+            BASH_ENV="./stubs.sh",
+            PROFILE_RESPONSE=response,
+            PROFILE_SOURCE=self.export_file.as_posix(),
+        )
         return subprocess.run(
             [bash, "scripts/deploy_staging.sh", RELEASE_SHA, "https://staging.example.com", *extra],
             cwd=self.root,
@@ -68,6 +79,19 @@ class DeployStagingTests(unittest.TestCase):
             with self.subTest(response=response):
                 result = self.run_deploy(response, "--with-profile")
                 self.assertNotEqual(result.returncode, 0)
+
+    def test_reviewed_mode_rejects_missing_or_empty_export_before_pull(self) -> None:
+        for state in ("missing", "empty"):
+            with self.subTest(state=state):
+                if state == "missing":
+                    self.export_file.unlink(missing_ok=True)
+                else:
+                    self.export_file.write_text("", encoding="utf-8")
+                result = self.run_deploy('[{"region_name":"NCR"}]', "--with-profile")
+                self.assertNotEqual(result.returncode, 0)
+                calls = (self.root / "docker_calls.txt").read_text(encoding="utf-8")
+                self.assertNotIn(" pull", calls)
+                (self.root / "docker_calls.txt").unlink()
 
     def test_unknown_flag_is_rejected_before_docker(self) -> None:
         result = self.run_deploy("[]", "--unknown")

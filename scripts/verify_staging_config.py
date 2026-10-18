@@ -52,7 +52,10 @@ def main() -> None:
     assert volume["type"] == "bind"
     assert volume["target"] == EXPORT_TARGET
     assert volume["read_only"] is True
-    assert volume["bind"]["create_host_path"] is False
+    # Older Compose releases omit explicit false bind options from rendered JSON.
+    assert volume.get("bind", {}).get("create_host_path", False) is False
+    override = (ROOT / "compose.staging.profile.yml").read_text(encoding="utf-8")
+    assert any(line.strip() == "create_host_path: false" for line in override.splitlines())
     assert Path(volume["source"]).name == "verification.json"
     print("Staging held and reviewed Compose modes verified.")
 

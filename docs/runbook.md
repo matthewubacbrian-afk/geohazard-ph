@@ -417,8 +417,9 @@ and the event sources.
    bash scripts/deploy_staging.sh <40-character-release-sha> https://<site-domain> --with-profile
    ```
 
-   The reviewed mode adds `compose.staging.profile.yml`, refuses a missing host
-   file, and verifies a non-empty profile list. Both modes validate Compose, pull
+   The reviewed mode adds `compose.staging.profile.yml`, checks that the resolved
+   host export is a readable, non-empty JSON list before pulling images, and
+   verifies a non-empty profile list from the API. Both modes validate Compose, pull
    immutable images, start services, wait for health, and check the health and
    events endpoints. Confirm the selected release afterward:
 
