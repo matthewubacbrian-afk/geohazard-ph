@@ -281,10 +281,10 @@ and the event sources.
    Replace `owner` and `<sha>` with the workflow's image prefix and release SHA;
    each manifest must list `linux/arm64` and `linux/amd64`.
 4. Generate the ML export from the repository root on your Windows
-   development machine. Normal training requires `KAGGLE_USERNAME` and
-   `KAGGLE_KEY` environment variables or credentials in
-   `%USERPROFILE%\.kaggle\kaggle.json`. The trainer does not load credentials from
-   the repository `.env`; do not rely on that file for Kaggle authentication.
+   development machine. Normal training reads `KAGGLE_USERNAME` and
+   `KAGGLE_KEY` from non-empty shell variables first, then fills missing values
+   from the repository-root `.env`. Kaggle's
+   `%USERPROFILE%\.kaggle\kaggle.json` configuration is also supported.
    The `-Offline` option skips Kaggle downloads and requires explicit paths
    for both saved source snapshots. Replace the example paths with your files:
 
