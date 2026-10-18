@@ -30,9 +30,9 @@
 - `loadCachedEventFeed(baseUrl: string): Promise<HazardEvent[]>` returns only validated rows from that URL's cache, or an empty list when unconfigured or missing.
 - `loadEventFeed(baseUrl)` writes to and falls back from that scoped key. The legacy `mobile.latestEvents` key is never read.
 
-- [ ] **Step 1: Write failing tests** for equivalent URL spellings, server A/B isolation, offline fallback, invalid cached rows, and no legacy-key reuse.
-- [ ] **Step 2: Run focused Jest and verify the expected failures.**
-- [ ] **Step 3: Implement** the shared normalization and scoped cache access without changing wire mapping.
+- [x] **Step 1: Write failing tests** for equivalent URL spellings, server A/B isolation, offline fallback, invalid cached rows, and no legacy-key reuse.
+- [x] **Step 2: Run focused Jest and verify the expected failures.**
+- [x] **Step 3: Implement** the shared normalization and scoped cache access without changing wire mapping.
 - [ ] **Step 4: Run focused Jest and TypeScript.**
 - [ ] **Step 5: Commit** with a focused Conventional Commit message.
 
@@ -47,10 +47,11 @@
 **Interfaces:**
 - Initial restoration loads the API URL before reading event data, then calls `loadCachedEventFeed(restoredUrl)`.
 - If URL or event storage fails, existing storage-warning behavior remains; an unconfigured URL does not restore another server's events.
+- Changing the selected API URL clears the previous server's visible events immediately. A superseded request for the previous URL cannot repopulate them; same-URL manual refresh ordering remains a separate slice.
 
-- [ ] **Step 1: Add the restoration service regression** with server switching and malformed cache cases.
-- [ ] **Step 2: Verify the focused test fails before implementation.**
-- [ ] **Step 3: Connect initial restoration** to the scoped read; avoid parallel reading before the URL is known.
+- [x] **Step 1: Add the restoration service regression** with server switching and malformed cache cases; exercise URL-switch invalidation where possible.
+- [x] **Step 2: Verify the focused test fails before implementation.**
+- [x] **Step 3: Connect initial restoration** to the scoped read; avoid parallel reading before the URL is known.
 - [ ] **Step 4: Run focused Jest and TypeScript.**
 - [ ] **Step 5: Commit** with a focused Conventional Commit message.
 
@@ -69,3 +70,5 @@
 ## Notes for the executor
 
 The old key is not safe to migrate because it does not identify the API server. A user may see no offline events until the selected server has been fetched once. Keep refresh ordering and cache-write-failure handling in their separate planned slices.
+
+Local focused Jest passed 18 tests after the red regressions. A clean Windows `npm ci` stalled twice; the existing local dependency tree lacks `react-native-image-picker` and `react-native-svg`, so the full local mobile suite and TypeScript check could not complete. CI must run a clean install, full Jest, TypeScript, Android, and iOS simulator builds before merge.

@@ -1,5 +1,5 @@
 import { ApiError } from '../src/services/api';
-import { loadEventFeed } from '../src/services/eventFeed';
+import { eventFeedCacheKey, loadCachedEventFeed, loadEventFeed } from '../src/services/eventFeed';
 import { readOfflineValue, saveOfflineValue } from '../src/services/offlineCache';
 import type { HazardEvent } from '../src/types/hazard';
 
@@ -44,7 +44,14 @@ describe('mobile event feed', () => {
       events,
       isOffline: false,
     });
-    expect(mockSaveOfflineValue).toHaveBeenCalledWith('mobile.latestEvents', events);
+    expect(mockSaveOfflineValue).toHaveBeenCalledWith(
+      'mobile.latestEvents:https://example.org/api/v1', events,
+    );
+  });
+
+  it('uses one cache key for equivalent API URL spellings', () => {
+    expect(eventFeedCacheKey(' https://example.org/api/v1/ '))
+      .toBe(eventFeedCacheKey('https://example.org/api/v1'));
   });
 
   it('returns cached events after an API failure', async () => {
@@ -55,6 +62,60 @@ describe('mobile event feed', () => {
       events,
       isOffline: true,
     });
+    expect(mockReadOfflineValue).toHaveBeenCalledWith(
+      'mobile.latestEvents:https://example.org/api/v1',
+    );
+  });
+
+  it('does not reuse server A or legacy events after switching to server B', async () => {
+    mockFetchEvents.mockRejectedValue(new ApiError('unavailable', 503, 'unavailable'));
+    mockReadOfflineValue.mockImplementation(async (key) => (
+      key === 'mobile.latestEvents:https://server-a.example/api/v1' || key === 'mobile.latestEvents'
+        ? events : undefined
+    ));
+
+    await expect(loadEventFeed('https://server-b.example/api/v1'))
+      .rejects.toMatchObject({ code: 'unavailable' });
+    expect(mockReadOfflineValue).toHaveBeenCalledTimes(1);
+    expect(mockReadOfflineValue).toHaveBeenCalledWith(
+      'mobile.latestEvents:https://server-b.example/api/v1',
+    );
+  });
+
+  it('returns server B cached events when server B is offline', async () => {
+    mockFetchEvents.mockRejectedValue(new ApiError('unavailable', 503, 'unavailable'));
+    mockReadOfflineValue.mockImplementation(async (key) => (
+      key === 'mobile.latestEvents:https://server-b.example/api/v1' ? events : undefined
+    ));
+
+    await expect(loadEventFeed(' https://server-b.example/api/v1/ ')).resolves.toEqual({
+      events,
+      isOffline: true,
+    });
+  });
+
+  it('treats a cached empty list as a valid offline result', async () => {
+    mockFetchEvents.mockRejectedValue(new ApiError('unavailable', 503, 'unavailable'));
+    mockReadOfflineValue.mockResolvedValue([]);
+
+    await expect(loadEventFeed('https://example.org/api/v1')).resolves.toEqual({
+      events: [],
+      isOffline: true,
+    });
+  });
+
+  it('restores only valid cached rows for the selected server', async () => {
+    mockReadOfflineValue.mockImplementation(async (key) => (
+      key === 'mobile.latestEvents:https://server-a.example/api/v1'
+        ? [events[0], {}] : undefined
+    ));
+
+    await expect(loadCachedEventFeed('https://server-a.example/api/v1/'))
+      .resolves.toEqual(events);
+    await expect(loadCachedEventFeed('https://server-b.example/api/v1'))
+      .resolves.toEqual([]);
+    await expect(loadCachedEventFeed('')).resolves.toEqual([]);
+    expect(mockReadOfflineValue).toHaveBeenCalledTimes(2);
   });
 
   it('rethrows the API failure when no cached event list exists', async () => {

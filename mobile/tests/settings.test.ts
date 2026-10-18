@@ -17,6 +17,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 
 import { API_BASE_URL } from '../src/config';
 import {
+  shouldClearEventFeedForApiUrl,
   loadApiBaseUrl,
   saveApiBaseUrl,
   validateApiBaseUrl,
@@ -46,5 +47,14 @@ describe('mobile API settings', () => {
 
   it('accepts an HTTP URL with the versioned API path', () => {
     expect(validateApiBaseUrl('http://192.168.1.20:8000/api/v1')).toBeNull();
+  });
+
+  it('keeps the feed when the saved URL still selects the same server', () => {
+    expect(shouldClearEventFeedForApiUrl(
+      'https://example.org/api/v1', ' https://example.org/api/v1/ ',
+    )).toBe(false);
+    expect(shouldClearEventFeedForApiUrl(
+      'https://example.org/api/v1', 'https://other.example/api/v1',
+    )).toBe(true);
   });
 });
