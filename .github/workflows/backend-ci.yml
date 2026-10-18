@@ -40,6 +40,11 @@ jobs:
       - name: Check Python lint
         run: ruff check --config pyproject.toml .
         working-directory: backend
+      - name: Verify staging release modes
+        run: |
+          ruff check scripts/verify_staging_config.py scripts/tests/test_deploy_staging.py
+          python scripts/verify_staging_config.py
+          python -m unittest discover -s scripts/tests -p 'test_deploy_staging.py' -v
       - name: Create test database
         working-directory: backend
         run: |

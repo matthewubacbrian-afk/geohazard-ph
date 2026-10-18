@@ -156,7 +156,8 @@ command does not publish WebSocket messages. Rows without a stable source
 The manual **Prepare Staging Release** workflow runs backend and web checks,
 publishes API and web images to GHCR under the commit SHA, and uploads a deployment
 bundle. It does not connect to a host. The bundle contains `compose.staging.yml`,
-the Caddyfile, the deploy script, and `.env.staging.example`.
+the optional `compose.staging.profile.yml`, the Caddyfile, the deploy script, and
+`.env.staging.example`.
 
 The 2026-10-14 release for commit `5ada21049808c51f080da1e0080d3ee7577ec32b`
 is available from [its successful workflow run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/38516440460).
@@ -246,8 +247,8 @@ and the event sources.
 1. On the repository's `main` branch, run the manual **Prepare Staging Release**
    workflow. Record the 40-character commit SHA and download the artifact named
    `staging-release-<sha>` from that same workflow run. The artifact contains
-   `compose.staging.yml`, `infra/caddy/Caddyfile`, `scripts/deploy_staging.sh`,
-   and `.env.staging.example`; extract all files together into one directory on
+   `compose.staging.yml`, `compose.staging.profile.yml`, `infra/caddy/Caddyfile`,
+   `scripts/deploy_staging.sh`, and `.env.staging.example`; extract all files together into one directory on
    the VM, preserving the `infra/caddy` and `scripts` paths.
 2. If the GHCR packages are private, authenticate with a GitHub token that has only
    `read:packages` access. Do not put the token in a command argument, shell
@@ -279,9 +280,18 @@ and the event sources.
    ```
 
    Replace `owner` and `<sha>` with the workflow's image prefix and release SHA;
-   each manifest must list `linux/arm64` and `linux/amd64`.
-4. Generate the ML export from the repository root on your Windows
-   development machine. Normal training reads `KAGGLE_USERNAME` and
+   each manifest must list `linux/arm64` and `linux/amd64`. Change into the
+   extracted bundle directory before creating `.env.staging` or deploying:
+
+   ```bash
+   cd /home/ubuntu/geohazard-release
+   ```
+4. **Skip this step while the current export is on hold.** Deploy the base stack
+   without any risk-profile file; the API's profile list must return `[]`.
+   Only after the Epic 5 domain review records an approved sparse-region policy,
+   a replacement export passes validation, and the release is authorized, generate
+   that export from the repository root on your Windows development machine.
+   Normal training reads `KAGGLE_USERNAME` and
    `KAGGLE_KEY` from non-empty shell variables first, then fills missing values
    from the repository-root `.env`. Kaggle's
    `%USERPROFILE%\.kaggle\kaggle.json` configuration is also supported.
@@ -298,7 +308,9 @@ and the event sources.
 
    The output is `ml/model_artifacts/v1/risk_profiles.json`. Offline metadata
    has unknown Kaggle versions but records input-file hashes and the pinned
-   region-boundary hash. Check both source-assignment counts before transfer.
+   region-boundary hash. Check both source-assignment counts before transfer, and
+   follow the [quality review](risk-profile-quality-review-2026-10-14.md) for the
+   additional release gates. A schema check alone is not approval.
    Keep each trained export immutable and versioned with its release SHA on the
    VM. Transfer it from PowerShell to a release-specific filename; replace `RELEASESHA` below with the
    same 40-character SHA used for the images:
@@ -306,14 +318,6 @@ and the event sources.
    ```powershell
    ssh -i "$env:USERPROFILE\.ssh\oci_geohazard" ubuntu@<public-ip> "mkdir -p -m 700 /home/ubuntu/geohazard-release/deploy-data"
    scp -i "$env:USERPROFILE\.ssh\oci_geohazard" .\ml\model_artifacts\v1\risk_profiles.json "ubuntu@<public-ip>:/home/ubuntu/geohazard-release/deploy-data/risk_profiles_RELEASESHA.json"
-   ```
-
-   The extracted bundle directory must be `/home/ubuntu/geohazard-release` in
-   this example. Connect to the VM and, in its terminal, change into that directory
-   before validating the export:
-
-   ```bash
-   cd /home/ubuntu/geohazard-release
    ```
 
    Keep this directory as the working directory for the remaining `.env.staging`,
@@ -371,26 +375,32 @@ and the event sources.
    all placeholders: set `IMAGE_PREFIX` to the workflow's GHCR prefix, `IMAGE_TAG`
    to the exact commit SHA, `SITE_DOMAIN` to the DNS hostname, a strong
    `POSTGRES_PASSWORD`, a matching URL-encoded password in `DATABASE_URL`, and
-   `CORS_ORIGINS` to a JSON array containing `https://<site-domain>`. Set
-   `RISK_PROFILE_EXPORT_FILE` to the host export path (for example
-   `./deploy-data/risk_profiles_RELEASESHA.json`) and set
-   `INGEST_POLL_INTERVAL_SECONDS` as desired. Compose resolves a relative host
-   path from the directory containing `compose.staging.yml`. Restrict permissions
-   on deployment secrets and exports:
+   `CORS_ORIGINS` to a JSON array containing `https://<site-domain>`, and set
+   `INGEST_POLL_INTERVAL_SECONDS` as desired. Leave `RISK_PROFILE_EXPORT_FILE`
+   unset while the export is held. After approval and step 4's validation, set it
+   to the host export path (for example
+   `./deploy-data/risk_profiles_RELEASESHA.json`). Compose resolves a relative
+   host path from the directory containing `compose.staging.yml`. Restrict
+   permissions on deployment secrets:
 
    ```bash
    chmod 600 .env.staging
+   ```
+
+   Only when using a reviewed export, also restrict its directory and file:
+
+   ```bash
    chmod 700 ./deploy-data
    chmod 600 ./deploy-data/risk_profiles_RELEASESHA.json
    ```
 
    Keep `.env.staging`, database backups, and model exports private and out of
    version control. The web bundle uses same-origin `/api/v1` and derives `wss://`
-   from its public HTTPS origin. For rollback, update `.env.staging` so
-   `IMAGE_TAG` and `RISK_PROFILE_EXPORT_FILE` point to the matching prior release
-   SHA together, and pass that same SHA to the deploy script. The script argument
-   sets the effective `IMAGE_TAG`. Keep each versioned export until no release or
-   rollback needs it.
+   from its public HTTPS origin. For rollback, pass the prior release SHA to the
+   deploy script; its argument sets the effective `IMAGE_TAG`. If that prior
+   release had an approved export, also set `RISK_PROFILE_EXPORT_FILE` to its
+   matching versioned file and use `--with-profile`. Keep each reviewed export
+   until no release or rollback needs it.
 6. Ensure the deployment URL, `SITE_DOMAIN`, Caddy's site hostname, and DNS name
    all match. From the extracted bundle directory, deploy with the exact interface:
 
@@ -398,14 +408,25 @@ and the event sources.
    bash scripts/deploy_staging.sh <40-character-release-sha> https://<site-domain>
    ```
 
-   The script validates Compose, pulls immutable images, starts services, waits
-   for health, and checks the health, events, and risk-profile endpoints. Confirm
-   the release afterward:
+   This default mode never mounts a profile file and verifies that
+   `/api/v1/risk-profile/clusters` returns `[]`. Only after the domain review and
+   replacement export approval, set `RISK_PROFILE_EXPORT_FILE` and explicitly
+   choose the reviewed mode:
+
+   ```bash
+   bash scripts/deploy_staging.sh <40-character-release-sha> https://<site-domain> --with-profile
+   ```
+
+   The reviewed mode adds `compose.staging.profile.yml`, checks that the resolved
+   host export is a readable, non-empty JSON list before pulling images, and
+   verifies a non-empty profile list from the API. Both modes validate Compose, pull
+   immutable images, start services, wait for health, and check the health and
+   events endpoints. Confirm the selected release afterward:
 
    ```bash
    curl --fail https://SITE_DOMAIN/health
    curl --fail https://SITE_DOMAIN/api/v1/events
-   curl --fail https://SITE_DOMAIN/api/v1/risk-profile/clusters
+   curl --fail https://SITE_DOMAIN/api/v1/risk-profile/clusters # [] while held
    docker compose --env-file .env.staging -f compose.staging.yml ps
    docker compose --env-file .env.staging -f compose.staging.yml logs --tail=100 api worker web proxy postgres redis migrate
    ```
@@ -414,10 +435,10 @@ and the event sources.
    authentication errors, log in as above and retry
    `docker compose --env-file .env.staging -f compose.staging.yml pull`. For DNS,
    TLS, or connection failures, confirm the A record, public IP, OCI ingress rules,
-   and host firewall allow ports 80/443. For a missing model export, inspect
-   `docker compose --env-file .env.staging -f compose.staging.yml config` and run
+   and host firewall allow ports 80/443. In reviewed mode, append
+   `-f compose.staging.profile.yml` to inspection commands and run
    `test -s ./deploy-data/risk_profiles_RELEASESHA.json` after replacing
-   `RELEASESHA` with the active release SHA. For disk pressure, inspect `df -h`
+   `RELEASESHA` with the approved release SHA. For disk pressure, inspect `df -h`
    and `docker system df`. For unhealthy services, use the `ps` and `logs`
    commands above and resolve the first failing dependency before retrying.
 
@@ -466,19 +487,27 @@ covered by Oracle Always Free allowances.
 Restore a database dump only when intentionally replacing the current database.
 This overwrites current database contents. First capture a fresh backup using the
 commands above, stop API and worker services, then drop and recreate the database
-and restore the chosen custom-format dump:
+and restore the chosen custom-format dump. Preserve the mode already serving this
+release: use the base Compose file while the export is held, or add the override
+only for a release with an approved export and a matching
+`RISK_PROFILE_EXPORT_FILE` in `.env.staging`:
 
 ```bash
-docker compose --env-file .env.staging -f compose.staging.yml stop api worker
-docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres dropdb -U geohazard --if-exists geohazard
-docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres createdb -U geohazard -O geohazard geohazard
-docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_restore --no-owner -U geohazard -d geohazard < backups/geohazard-YYYYMMDDTHHMMSSZ.dump
-docker compose --env-file .env.staging -f compose.staging.yml up -d --wait
+compose=(docker compose --env-file .env.staging -f compose.staging.yml)
+# For an approved profile release, uncomment the next line:
+# compose+=(-f compose.staging.profile.yml)
+"${compose[@]}" stop api worker
+"${compose[@]}" exec -T postgres dropdb -U geohazard --if-exists geohazard
+"${compose[@]}" exec -T postgres createdb -U geohazard -O geohazard geohazard
+"${compose[@]}" exec -T postgres pg_restore --no-owner -U geohazard -d geohazard < backups/geohazard-YYYYMMDDTHHMMSSZ.dump
+"${compose[@]}" up -d --wait
 curl --fail https://SITE_DOMAIN/health
+curl --fail https://SITE_DOMAIN/api/v1/risk-profile/clusters
 ```
 
 Replace the dump placeholder with the chosen backup filename and `SITE_DOMAIN`
-with the actual hostname. Restore Caddy's saved state, if needed, using a temporary
+with the actual hostname. The profile response must be `[]` in held mode and a
+non-empty list for an approved profile release. Restore Caddy's saved state, if needed, using a temporary
 Compose container attached to the same named volumes:
 
 ```bash
@@ -491,6 +520,8 @@ Never run `down -v` during routine updates or recovery; it deletes named volumes
 
 To roll back application images, verify database migration compatibility and
 rerun `bash scripts/deploy_staging.sh <prior-40-character-release-sha> https://<site-domain>`.
+Append `--with-profile` and point `RISK_PROFILE_EXPORT_FILE` to the matching
+approved export only if that prior release included it.
 Image rollback alone does not reverse database migrations. Restore the database
 only using the explicit procedure above if schema or data changes must also be
 reverted.
@@ -530,7 +561,8 @@ bash scripts/deploy_staging.sh <release-commit-sha> https://staging.example.com
 
 The script validates Compose, pulls the immutable images, starts the stack,
 waits for health, and checks `/health`, `/api/v1/events`, and
-`/api/v1/risk-profile/clusters`. Caddy obtains and
+`/api/v1/risk-profile/clusters` (which must return `[]` while the export is held).
+Caddy obtains and
 renews TLS certificates for `SITE_DOMAIN` and forwards `/api/` and `/ws/` to
 the API. Its certificate state and Postgres data use persistent Docker volumes.
 The old release SHA is the rollback target: rerun the script with that SHA after

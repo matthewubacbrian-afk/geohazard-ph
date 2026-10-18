@@ -1,6 +1,6 @@
 # Project completion plan
 
-Reviewed: 2026-10-17 (Asia/Manila). Baseline: origin/main `173f21be`.
+Reviewed: 2026-10-18 (Asia/Manila). Initial audit baseline: origin/main `173f21be`.
 
 ## Goal and completion rule
 
@@ -23,7 +23,7 @@ scientific validation, device evidence, or deployed-state verification.
 | 5: regional profiles | Historical pipeline, validation/sensitivity reports, API/UI; Kaggle `.env` credential loader merged | Domain-approved sparse-region policy and new validated artifact; current export remains held |
 | 6: stretch | NASA reference overlay merged; InSAR metadata research recorded | InSAR footprint/reuse and independent reference gates; no production deformation claim |
 | 7: scene review | Transient API, camera clients, warnings and provisional blur handling merged | Integrate training PR; same-sample baseline evaluation CLI; approved image data, thresholds, real-scene and device/resource validation |
-| Staging | Multi-architecture release workflow and published historical bundle | Make held-export mode deployable; host/DNS/configuration and live verification |
+| Staging | Multi-architecture release workflow; held-export default and reviewed-export override implemented | Prepare a new bundle, then host/DNS/configuration and live verification; profile publication still needs Epic 5 approval |
 
 A single percentage would obscure these independent gates. The monitoring code is
 substantially implemented; the complete operational product is not yet evidenced.
@@ -38,7 +38,7 @@ PR #32 was incorporated through PR #43; PR #36 remains in the integration queue.
 - [x] P0 web map dependency security: PR #41 merged at `59a0c75e` after the web suite (175 tests), production build, browser map smoke check, zero production audit findings, and five green CI checks. The patched MapLibre migration includes a WebGL2 fallback; its isolated worktree and branch were removed after merge verification.
 - [x] P1 web development-tool security: PR #42 merged at `a31197b0` after a clean `npm ci`, 175 web tests, production build, zero full/production audit findings (down from eight), independent review and five green CI checks. Its isolated worktree and branch were removed after merge verification.
 - [x] P1 existing credential fix: PR #43 merged at `5877a0c8`, incorporating PR #32's loader, correcting `docs/runbook.md`, and isolating tests from a developer's real `.env`. Local ML tests passed 72/72, focused tests 12/12, Ruff, structure and whitespace checks passed; independent review's finding was fixed and all five CI checks passed. Both merged branches and worktrees were removed. See the [focused integration plan](docs/superpowers/plans/2026-10-18-kaggle-credential-integration.md).
-- [ ] P1 staging held-export mode: change `compose.staging.yml`, release packaging/checks and runbook so a deployment can omit a held profile export. Existing API empty-state behavior remains explicit; test both reviewed-export and no-export configurations.
+- [x] P1 staging held-export mode: the base Compose deployment omits the held export and verifies an empty profile list; a separate, explicit reviewed-export override verifies a non-empty list. Release packaging, CI checks, deploy-script tests, and the runbook cover both modes. See the [focused plan](docs/superpowers/plans/2026-10-18-staging-held-export.md). Live deployment remains gated by a host and DNS, and profile publication remains gated by Epic 5 review.
 - [ ] P2 mobile cache isolation: scope `mobile/src/services/eventFeed.ts` cached events to normalized API URL and reject superseded results in `mobile/src/navigation/RootNavigator.tsx`. Test server switching, offline fallback and out-of-order responses.
 - [ ] P2 mobile persistence resilience: return freshly fetched events even when local cache writes fail, with a separate persistence warning; test rejected writes and usable fresh results.
 - [ ] P2 scene training integration: review PR #36, resolve documentation conflicts while preserving Epic 6 records, rerun all checks and merge only after fresh CI.
@@ -60,8 +60,9 @@ untouched. New worktrees created by this session are archived only after verifyi
 
 ## Known gaps and constraints
 
-- Documentation: stale Epic 7 branch status and present-tense runtime claims;
-  Windows quick-start virtual-environment path mismatch; staging/export conflict.
+- Documentation: some historical Epic 7 and runtime descriptions and the Windows
+  quick-start virtual-environment path still need reconciliation. The staging/export
+  conflict is addressed by the held-export deployment mode.
 - Bugs: API-independent mobile cache key, out-of-order refresh race, cache-write
   failure discarding fresh network data (audit; regression reproduction pending).
 - Weak tests: missing mobile server-switch and rejected-storage cases; no physical

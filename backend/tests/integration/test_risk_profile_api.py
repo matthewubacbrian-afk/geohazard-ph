@@ -14,6 +14,16 @@ def test_risk_profile_clusters_endpoint_returns_profiles(monkeypatch):
     assert response.json()[0]["region_name"] == "ARMM"
 
 
+def test_risk_profile_clusters_endpoint_is_empty_without_export(monkeypatch, tmp_path):
+    get_settings.cache_clear()
+    monkeypatch.setenv("RISK_PROFILE_EXPORT_PATH", str(tmp_path / "held-export.json"))
+
+    response = TestClient(app).get("/api/v1/risk-profile/clusters")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
 def test_risk_profile_detail_endpoint_returns_region(monkeypatch):
     get_settings.cache_clear()
     monkeypatch.setenv("RISK_PROFILE_EXPORT_PATH", "tests/fixtures/risk_profiles.json")

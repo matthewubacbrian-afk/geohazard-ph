@@ -31,6 +31,10 @@ def test_load_profiles_reads_generated_artifact():
     assert profiles[1].feature_importances["event_count"] == 0.2957
 
 
+def test_load_profiles_returns_empty_list_for_held_export(tmp_path):
+    assert load_profiles(tmp_path / "held-export.json") == []
+
+
 def test_get_profile_is_case_insensitive():
     profile = get_profile("bicol region", load_profiles(FIXTURE))
 
