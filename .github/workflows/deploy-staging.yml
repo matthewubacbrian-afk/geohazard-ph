@@ -59,7 +59,10 @@ jobs:
       - run: npm run build
         working-directory: web
       - run: python scripts/verify_structure.py
-      - run: docker compose --env-file .env.staging.example -f compose.staging.yml config --quiet
+      - run: |
+          ruff check scripts/verify_staging_config.py scripts/tests/test_deploy_staging.py
+          python scripts/verify_staging_config.py
+      - run: python -m unittest discover -s scripts/tests -p 'test_deploy_staging.py' -v
 
   publish:
     if: github.ref == 'refs/heads/main'
@@ -107,6 +110,7 @@ jobs:
           include-hidden-files: true
           path: |
             compose.staging.yml
+            compose.staging.profile.yml
             infra/caddy/Caddyfile
             scripts/deploy_staging.sh
             .env.staging.example
