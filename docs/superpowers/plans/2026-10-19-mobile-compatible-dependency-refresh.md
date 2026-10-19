@@ -60,9 +60,9 @@
 - Keep React Native platform-minimum and new-architecture migration, navigation API migration, Android/iOS device-flow evidence, and shipped-code reachability as separate acceptance gates.
 
 - [x] **Step 1: Write the evidence and prioritized follow-up slices** using exact audit counts and source links.
-- [ ] **Step 2: Run package suites, linters, structure, and whitespace checks**; document any local limit.
+- [x] **Step 2: Run package suites, linters, structure, and whitespace checks**; document any local limit.
 - [x] **Step 3: Request independent review** of lockfile scope and audit claims.
-- [ ] **Step 4: Push and open a PR**; merge only after all five CI checks pass, verify tested head on remote main, and remove this worktree and branch.
+- [x] **Step 4: Push and open a PR**; merge only after all five CI checks pass, verify tested head on remote main, and remove this worktree and branch.
 
 ## Notes for the executor
 
@@ -73,3 +73,5 @@ The non-forced refresh updated only `brace-expansion` 1.1.18 → 1.1.21, `compre
 Local Windows `npm ci --no-audit --no-fund` was stopped after remaining incomplete for several minutes; Jest and TypeScript did not become runnable in that worktree. Backend's full suite was started but the first database integration fixture could not run because Docker Desktop was unavailable; the 128 backend unit tests passed. ML's full 72-test suite, backend and ML Ruff, and the 140-path structure check passed. Clean CI must establish the full backend/web/mobile suites, TypeScript, and Android/iOS native builds before merge.
 
 Independent review found no actionable issue: registry integrity and metadata match, parent version ranges permit all three updates, a fresh audit confirmed the 38/27/4/7 counts, and the unused-navigation and `image-size` notes match source and lockfile evidence. The reviewer did not rerun clean installation or native builds.
+
+[PR #51](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/51) merged at `f59a6881` after backend, ML, web, mobile Android, and iOS simulator CI all passed. Clean mobile CI completed `npm ci`, Jest, TypeScript, and the Android debug build; iOS CI completed `npm ci`, CocoaPods installation, and a simulator build. The tested head `6c7ef589` is on remote main, and the feature worktree and branches were removed.

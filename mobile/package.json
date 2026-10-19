@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.24.0",
-    "@react-navigation/native": "^6.1.18",
     "react": "^18.3.1",
     "react-native": "^0.75.0",
     "react-native-image-picker": "8.2.1",
