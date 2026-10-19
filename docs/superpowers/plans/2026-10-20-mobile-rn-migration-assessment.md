@@ -28,9 +28,9 @@
 - Consumes: current `mobile/package.json`, `mobile/package-lock.json`, Android/iOS project files, CI workflows, and npm audit output.
 - Produces: a reproducible table of advisory chains, observed package roles, current platform minimums, and evidence gaps.
 
-- [ ] **Step 1: Inspect the current lockfile, native project, and CI configuration** on the isolated branch.
-- [ ] **Step 2: Run the current production audit and classify findings** without equating dependency presence with runtime reachability.
-- [ ] **Step 3: Record a concise baseline** with exact versions, paths, commands, counts, and unresolved evidence.
+- [x] **Step 1: Inspect the current lockfile, native project, and CI configuration** on the isolated branch.
+- [x] **Step 2: Attempt the current production audit and classify available findings** without equating dependency presence with runtime reachability. Two local attempts returned no output; the dated 2026-10-19 snapshot remains the only count.
+- [x] **Step 3: Record a concise baseline** with exact versions, paths, commands, counts, and unresolved evidence.
 - [ ] **Step 4: Commit** the baseline with a `docs:` Conventional Commit.
 
 ---
@@ -44,9 +44,9 @@
 - Consumes: official React Native release and upgrade guidance, package compatibility information, the current platform baseline, and `docs/mobile-runtime-smoke-test.md`.
 - Produces: prioritized feature slices, each with exact scope, CI/device checks, and release/rollback conditions.
 
-- [ ] **Step 1: Verify platform and toolchain requirements** against primary sources for candidate React Native releases.
-- [ ] **Step 2: Separate migration slices** by dependency and native impact; put platform-policy and real-device decisions at explicit gates.
-- [ ] **Step 3: Update the prioritized queue and Epic 4 status** to match the assessment and remaining external evidence.
+- [x] **Step 1: Verify platform and toolchain requirements** against primary sources for candidate React Native releases.
+- [x] **Step 2: Separate migration slices** by dependency and native impact; put platform-policy and real-device decisions at explicit gates.
+- [x] **Step 3: Update the prioritized queue and Epic 4 status** to match the assessment and remaining external evidence.
 - [ ] **Step 4: Run structure and whitespace verification** and request independent technical review.
 - [ ] **Step 5: Commit, push, and open a PR**; merge only after five green CI checks, verify the tested head on remote main, and remove the feature worktree and branches.
 
