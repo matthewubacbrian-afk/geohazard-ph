@@ -28,6 +28,10 @@ export function validateApiBaseUrl(value: string): string | null {
   return null;
 }
 
-function normalizeApiBaseUrl(value: string): string {
+export function normalizeApiBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, '');
+}
+
+export function shouldClearEventFeedForApiUrl(currentUrl: string, nextUrl: string): boolean {
+  return normalizeApiBaseUrl(currentUrl) !== normalizeApiBaseUrl(nextUrl);
 }

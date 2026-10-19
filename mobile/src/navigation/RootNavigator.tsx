@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import AlertsScreen from '../screens/AlertsScreen';
@@ -6,10 +6,11 @@ import NearbyHazardsScreen from '../screens/NearbyHazardsScreen';
 import SavedLocationsScreen from '../screens/SavedLocationsScreen';
 import SceneAnalysisScreen from '../screens/SceneAnalysisScreen';
 import { API_BASE_URL } from '../config';
-import { isHazardEvent, loadEventFeed } from '../services/eventFeed';
+import { loadCachedEventFeed, loadEventFeed } from '../services/eventFeed';
 import { loadSavedLocations, saveSavedLocations } from '../services/savedLocations';
-import { loadApiBaseUrl, saveApiBaseUrl } from '../services/settings';
-import { readOfflineValue } from '../services/offlineCache';
+import {
+  loadApiBaseUrl, normalizeApiBaseUrl, saveApiBaseUrl, shouldClearEventFeedForApiUrl,
+} from '../services/settings';
 import { findNearbyHazards } from '../services/proximity';
 import { ApiError } from '../services/api';
 import { styles } from '../styles';
@@ -17,7 +18,6 @@ import type { HazardEvent, SavedLocation } from '../types/hazard';
 
 type AppTab = 'Nearby' | 'Saved locations' | 'Alerts' | 'Scene review';
 const TABS: AppTab[] = ['Nearby', 'Saved locations', 'Alerts', 'Scene review'];
-const LATEST_EVENTS_KEY = 'mobile.latestEvents';
 
 export default function RootNavigator() {
   const [selectedTab, setSelectedTab] = useState<AppTab>('Nearby');
@@ -29,6 +29,7 @@ export default function RootNavigator() {
   const [isOffline, setIsOffline] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [storageWarning, setStorageWarning] = useState<string | null>(null);
+  const activeApiUrl = useRef(normalizeApiBaseUrl(API_BASE_URL));
 
   useEffect(() => {
     let isActive = true;
@@ -37,22 +38,23 @@ export default function RootNavigator() {
       const results = await Promise.allSettled([
         loadApiBaseUrl(),
         loadSavedLocations(),
-        readOfflineValue<unknown>(LATEST_EVENTS_KEY),
       ]);
       if (!isActive) return;
 
-      const [apiUrlResult, locationsResult, eventsResult] = results;
+      const [apiUrlResult, locationsResult] = results;
       const restoredUrl = apiUrlResult.status === 'fulfilled' ? apiUrlResult.value : API_BASE_URL;
       const restoredLocations = locationsResult.status === 'fulfilled' ? locationsResult.value : [];
-      const restoredEvents = eventsResult.status === 'fulfilled' && Array.isArray(eventsResult.value)
-        ? eventsResult.value.filter(isHazardEvent)
-        : [];
+      const [eventsResult] = await Promise.allSettled([loadCachedEventFeed(restoredUrl)]);
+      if (!isActive) return;
+      const restoredEvents = eventsResult.status === 'fulfilled' ? eventsResult.value : [];
 
+      activeApiUrl.current = normalizeApiBaseUrl(restoredUrl);
       setApiBaseUrl(restoredUrl);
       setLocations(restoredLocations);
       setEvents(restoredEvents);
       setIsOffline(restoredEvents.length > 0);
-      if (results.some((result) => result.status === 'rejected')) {
+      if (results.some((result) => result.status === 'rejected')
+        || eventsResult.status === 'rejected') {
         setStorageWarning('Some saved mobile data could not be read from this device.');
       }
       setIsReady(true);
@@ -65,21 +67,24 @@ export default function RootNavigator() {
   }, []);
 
   const refreshEvents = useCallback(async (url = apiBaseUrl) => {
-    if (!url.trim()) return;
+    const requestedUrl = normalizeApiBaseUrl(url);
+    if (!requestedUrl) return;
     setIsLoading(true);
     setErrorMessage(null);
 
     try {
-      const feed = await loadEventFeed(url);
+      const feed = await loadEventFeed(requestedUrl);
+      if (activeApiUrl.current !== requestedUrl) return;
       setEvents(feed.events);
       setIsOffline(feed.isOffline);
     } catch (error) {
+      if (activeApiUrl.current !== requestedUrl) return;
       setIsOffline(true);
       setErrorMessage(error instanceof ApiError
         ? error.message
         : 'Could not save recent hazard data on this device.');
     } finally {
-      setIsLoading(false);
+      if (activeApiUrl.current === requestedUrl) setIsLoading(false);
     }
   }, [apiBaseUrl]);
 
@@ -119,7 +124,14 @@ export default function RootNavigator() {
   async function persistApiBaseUrl(value: string) {
     try {
       await saveApiBaseUrl(value);
-      const normalized = value.trim().replace(/\/+$/, '');
+      const normalized = normalizeApiBaseUrl(value);
+      if (shouldClearEventFeedForApiUrl(activeApiUrl.current, normalized)) {
+        activeApiUrl.current = normalized;
+        setEvents([]);
+        setIsOffline(false);
+        setIsLoading(false);
+        setErrorMessage(null);
+      }
       setApiBaseUrl(normalized);
       setStorageWarning(null);
     } catch {
