@@ -27,9 +27,9 @@
 - `createEventFeedRefreshController(loadFeed)` returns `refresh(baseUrl, handlers)` and `invalidate()`.
 - `handlers` receive start, success, error, and finish only for the current request; superseded success and error results never call state callbacks.
 
-- [ ] **Step 1: Add deferred-promise tests** for older success arriving after newer success, older error arriving after newer success, and invalidation on server switch.
-- [ ] **Step 2: Run focused Jest and verify expected failures.**
-- [ ] **Step 3: Implement the controller** with a monotonically increasing request token.
+- [x] **Step 1: Add deferred-promise tests** for older success arriving after newer success, older error arriving after newer success, and invalidation on server switch.
+- [x] **Step 2: Run focused Jest and verify expected failures.**
+- [x] **Step 3: Implement the controller** with a monotonically increasing request token.
 - [ ] **Step 4: Run focused Jest and strict TypeScript.**
 - [ ] **Step 5: Commit** with a focused Conventional Commit message.
 
@@ -45,7 +45,7 @@
 - `refreshEvents` passes the current normalized URL and callbacks that update `events`, `isOffline`, `errorMessage`, and `isLoading`.
 - A changed API URL invalidates the old request before clearing the previous server's events. Saving the unchanged URL preserves the current feed.
 
-- [ ] **Step 1: Connect `RootNavigator` to the controller.**
+- [x] **Step 1: Connect `RootNavigator` to the controller.**
 - [ ] **Step 2: Run focused Jest, full mobile Jest, and strict TypeScript.**
 - [ ] **Step 3: Commit** with a focused Conventional Commit message.
 
@@ -64,3 +64,5 @@
 ## Notes for the executor
 
 Keep this slice limited to refresh ordering. A cache write failure still rejects a fresh load and is planned separately. No API schema, persistence format, or source-data behavior changes here.
+
+Local focused Jest passed four controller tests; the available broader mobile suite passed 41 tests across nine suites. The local dependency tree lacks native React Native packages, so the scene-analysis suite and strict TypeScript cannot complete locally. CI must run a clean install, all mobile tests, TypeScript, Android, and iOS before merge.

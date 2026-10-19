@@ -6,7 +6,8 @@ import NearbyHazardsScreen from '../screens/NearbyHazardsScreen';
 import SavedLocationsScreen from '../screens/SavedLocationsScreen';
 import SceneAnalysisScreen from '../screens/SceneAnalysisScreen';
 import { API_BASE_URL } from '../config';
-import { loadCachedEventFeed, loadEventFeed } from '../services/eventFeed';
+import { loadCachedEventFeed } from '../services/eventFeed';
+import { createEventFeedRefreshController } from '../services/eventFeedRefresh';
 import { loadSavedLocations, saveSavedLocations } from '../services/savedLocations';
 import {
   loadApiBaseUrl, normalizeApiBaseUrl, saveApiBaseUrl, shouldClearEventFeedForApiUrl,
@@ -30,6 +31,7 @@ export default function RootNavigator() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [storageWarning, setStorageWarning] = useState<string | null>(null);
   const activeApiUrl = useRef(normalizeApiBaseUrl(API_BASE_URL));
+  const refreshController = useRef(createEventFeedRefreshController());
 
   useEffect(() => {
     let isActive = true;
@@ -63,29 +65,34 @@ export default function RootNavigator() {
     void restoreSavedState();
     return () => {
       isActive = false;
+      refreshController.current.invalidate();
     };
   }, []);
 
   const refreshEvents = useCallback(async (url = apiBaseUrl) => {
     const requestedUrl = normalizeApiBaseUrl(url);
     if (!requestedUrl) return;
-    setIsLoading(true);
-    setErrorMessage(null);
-
-    try {
-      const feed = await loadEventFeed(requestedUrl);
-      if (activeApiUrl.current !== requestedUrl) return;
-      setEvents(feed.events);
-      setIsOffline(feed.isOffline);
-    } catch (error) {
-      if (activeApiUrl.current !== requestedUrl) return;
-      setIsOffline(true);
-      setErrorMessage(error instanceof ApiError
-        ? error.message
-        : 'Could not save recent hazard data on this device.');
-    } finally {
-      if (activeApiUrl.current === requestedUrl) setIsLoading(false);
-    }
+    await refreshController.current.refresh(requestedUrl, {
+      onStart: () => {
+        setIsLoading(true);
+        setErrorMessage(null);
+      },
+      onSuccess: (feed) => {
+        if (activeApiUrl.current !== requestedUrl) return;
+        setEvents(feed.events);
+        setIsOffline(feed.isOffline);
+      },
+      onError: (error) => {
+        if (activeApiUrl.current !== requestedUrl) return;
+        setIsOffline(true);
+        setErrorMessage(error instanceof ApiError
+          ? error.message
+          : 'Could not save recent hazard data on this device.');
+      },
+      onFinish: () => {
+        if (activeApiUrl.current === requestedUrl) setIsLoading(false);
+      },
+    });
   }, [apiBaseUrl]);
 
   useEffect(() => {
@@ -126,6 +133,7 @@ export default function RootNavigator() {
       await saveApiBaseUrl(value);
       const normalized = normalizeApiBaseUrl(value);
       if (shouldClearEventFeedForApiUrl(activeApiUrl.current, normalized)) {
+        refreshController.current.invalidate();
         activeApiUrl.current = normalized;
         setEvents([]);
         setIsOffline(false);
