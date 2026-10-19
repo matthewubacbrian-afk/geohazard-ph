@@ -43,10 +43,10 @@
 - Keep `mobile/package.json` direct dependency versions unchanged.
 - Resolve `shell-quote` to a non-vulnerable 1.x version supported by the two parent ranges; avoid unrelated lockfile churn.
 
-- [ ] **Step 1: Update the lockfile using npm** and inspect exact dependency changes.
-- [ ] **Step 2: Run the production audit** and verify zero critical findings, recording the remaining counts.
+- [x] **Step 1: Update the lockfile using npm** and inspect exact dependency changes.
+- [x] **Step 2: Run the production audit** and verify zero critical findings, recording the remaining counts.
 - [ ] **Step 3: Run clean mobile tests and TypeScript** where the local environment permits; CI is authoritative for native builds.
-- [ ] **Step 4: Commit** the bounded patch with a Conventional Commit message.
+- [x] **Step 4: Commit** the bounded patch with a Conventional Commit message.
 
 ---
 
@@ -63,3 +63,5 @@
 ## Notes for the executor
 
 The [React Native 0.76 release notes](https://reactnative.dev/blog/2024/10/23/release-0.76-new-architecture) document new default architecture and raised Android/iOS minimums; a direct upgrade is not a safe lockfile-only follow-up. The audit includes CLI/dev-tool packages under `--omit=dev` because React Native declares them in its production dependency graph. Confirming whether a vulnerable function is reachable in a distributed app requires a separate code-path assessment, so this patch makes only the version and audit-count claim.
+
+`npm update shell-quote --package-lock-only` changed exactly the `shell-quote` lockfile entry from 1.10.0 to 1.12.0, leaving direct package versions unchanged. `npm ls shell-quote --package-lock-only --all` resolves 1.12.0 under both React Native CLI tools and React DevTools. The refreshed production audit reports 41 findings: 10 moderate, 31 high, zero critical, with no `shell-quote` finding. A local Windows `npm ci --no-audit --no-fund` was stopped after remaining incomplete for several minutes; it produced only deprecation notices and no completed install result. Clean CI must establish install, tests, TypeScript, and native builds before merge.
