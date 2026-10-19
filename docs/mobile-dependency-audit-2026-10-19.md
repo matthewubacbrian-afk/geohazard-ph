@@ -33,3 +33,9 @@ The remaining 34 npm findings are a dependency-chain count, including packages t
 The React Native/Metro upgrade needs its own design and platform/device acceptance criteria. Background push and store release remain outside the current Epic 4 scope.
 
 The [2026-10-20 migration assessment](mobile-rn-migration-assessment-2026-10-20.md) records the repository's native/toolchain baseline, official release constraints, artifact-evidence gap, and prioritized implementation features. Two fresh audit attempts on that date produced no result in the local Windows environment, so the 34-finding count above remains a dated 2026-10-19 snapshot rather than a newly verified count.
+
+## Release-artifact inventory follow-up
+
+The current feature branch adds `scripts/mobile_artifact_inventory.py` and non-published Android/iOS Release builds to mobile CI. Each build will save a short `mobile-artifact-report-<platform>.json` CI artifact for seven days. The report contains hashes, the observed source-map package names, native library or framework paths, and each fresh npm advisory's lockfile paths. It deliberately omits raw source maps, code, audit payloads, APKs, and `.app` output. Every advisory disposition remains `undetermined`, including packages not listed in the JavaScript source map, because packaged native code and affected API reachability need separate assessment.
+
+The script requires `--platform android|ios`, `--source-map`, `--artifact`, `--audit-json`, and `--output`. Android uses the Release APK and its generated Hermes source map; iOS uses an unsigned Release simulator `.app` and source map from the same build. The script fails closed on missing bundles, malformed audit JSON, or a map without package paths. CI reports are pending for this branch; do not treat the dated table above as a new build result.

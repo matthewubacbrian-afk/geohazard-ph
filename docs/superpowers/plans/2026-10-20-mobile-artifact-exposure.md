@@ -41,6 +41,7 @@
 
 **Files:**
 - Modify: `.github/workflows/mobile-ci.yml`
+- Modify: `.github/workflows/backend-ci.yml` (run the standard-library inventory tests with the existing Python test environment)
 - Modify: `scripts/tests/test_mobile_ci_workflow.py`
 - Modify: `docs/mobile-dependency-audit-2026-10-19.md`, `docs/mobile-rn-migration-assessment-2026-10-20.md`, `PLAN.md`, `docs/project-status.md`, this plan
 
@@ -50,10 +51,10 @@
 - npm audit: run once per native job into a runner-temp JSON file; accept npm's finding exit code but reject invalid/empty JSON in the inventory script.
 - Reports: write runner-temp JSON and upload only reports as CI artifacts with a short retention period.
 
-- [ ] **Step 1: Add failing workflow-contract tests** for release builds, source-map inputs, and report upload without raw build products.
-- [ ] **Step 2: Run the focused tests and verify the expected failure**.
-- [ ] **Step 3: Add Android and iOS release inventory steps** while preserving the existing debug/test gates.
-- [ ] **Step 4: Update the audit and status docs** with the exact evidence boundary and commands; do not claim a new audit count before CI reports exist.
+- [x] **Step 1: Add failing workflow-contract tests** for release builds, source-map inputs, and report upload without raw build products.
+- [x] **Step 2: Run the focused tests and verify the expected failure**.
+- [x] **Step 3: Add Android and iOS release inventory steps** while preserving the existing debug/test gates.
+- [x] **Step 4: Update the audit and status docs** with the exact evidence boundary and commands; do not claim a new audit count before CI reports exist.
 - [ ] **Step 5: Run focused tests, package verification, structure and whitespace checks; request independent review**.
 - [ ] **Step 6: Commit, push, and open a PR**; require all five green CI checks and inspect generated report artifacts before merge, verify the tested head on remote main, then remove worktree and branches.
 
