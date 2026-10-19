@@ -22,8 +22,8 @@ function handlers() {
   };
 }
 
-const olderFeed: EventFeedResult = { events: [], isOffline: true };
-const newerFeed: EventFeedResult = { events: [], isOffline: false };
+const olderFeed: EventFeedResult = { events: [], isOffline: true, cacheWriteFailed: false };
+const newerFeed: EventFeedResult = { events: [], isOffline: false, cacheWriteFailed: false };
 
 describe('mobile event-feed refresh ordering', () => {
   it('applies only the newest success when responses arrive out of order', async () => {
@@ -98,6 +98,20 @@ describe('mobile event-feed refresh ordering', () => {
 
     expect(callbacks.onError).toHaveBeenCalledWith(error);
     expect(callbacks.onSuccess).not.toHaveBeenCalled();
+    expect(callbacks.onFinish).toHaveBeenCalledTimes(1);
+  });
+
+  it('delivers an unsaved fresh feed as a success with a cache warning signal', async () => {
+    const unsavedFeed: EventFeedResult = {
+      events: [], isOffline: false, cacheWriteFailed: true,
+    };
+    const controller = createEventFeedRefreshController(async () => unsavedFeed);
+    const callbacks = handlers();
+
+    await controller.refresh('https://example.org/api/v1', callbacks);
+
+    expect(callbacks.onSuccess).toHaveBeenCalledWith(unsavedFeed);
+    expect(callbacks.onError).not.toHaveBeenCalled();
     expect(callbacks.onFinish).toHaveBeenCalledTimes(1);
   });
 });

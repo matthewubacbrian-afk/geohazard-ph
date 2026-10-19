@@ -60,10 +60,29 @@ describe('mobile event feed', () => {
     await expect(loadEventFeed('https://example.org/api/v1')).resolves.toEqual({
       events,
       isOffline: false,
+      cacheWriteFailed: false,
     });
     expect(mockSaveOfflineValue).toHaveBeenCalledWith(
       'mobile.latestEvents:https://example.org/api/v1', events,
     );
+  });
+
+  it('returns fresh events with an offline-cache warning when saving fails', async () => {
+    mockFetchEvents.mockResolvedValue(events);
+    mockSaveOfflineValue.mockRejectedValue(new Error('device storage unavailable'));
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    try {
+      await expect(loadEventFeed('https://example.org/api/v1')).resolves.toEqual({
+        events,
+        isOffline: false,
+        cacheWriteFailed: true,
+      });
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith('Could not save mobile event feed for offline use');
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('uses one cache key for equivalent API URL spellings', () => {
@@ -78,6 +97,7 @@ describe('mobile event feed', () => {
     await expect(loadEventFeed('https://example.org/api/v1')).resolves.toEqual({
       events,
       isOffline: true,
+      cacheWriteFailed: false,
     });
     expect(mockReadOfflineValue).toHaveBeenCalledWith(
       'mobile.latestEvents:https://example.org/api/v1',
@@ -108,6 +128,7 @@ describe('mobile event feed', () => {
     await expect(loadEventFeed(' https://server-b.example/api/v1/ ')).resolves.toEqual({
       events,
       isOffline: true,
+      cacheWriteFailed: false,
     });
   });
 
@@ -118,6 +139,7 @@ describe('mobile event feed', () => {
     await expect(loadEventFeed('https://example.org/api/v1')).resolves.toEqual({
       events: [],
       isOffline: true,
+      cacheWriteFailed: false,
     });
   });
 
@@ -224,11 +246,21 @@ describe('mobile event feed', () => {
     const olderLoad = loadEventFeed('https://example.org/api/v1');
     await olderWriteStarted.promise;
     const newerLoad = loadEventFeed('https://example.org/api/v1');
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     failOlderWrite.reject(new Error('device storage unavailable'));
 
-    await expect(olderLoad).rejects.toThrow('device storage unavailable');
-    await expect(newerLoad).resolves.toEqual({ events: newerEvents, isOffline: false });
-    await expect(loadCachedEventFeed('https://example.org/api/v1'))
-      .resolves.toEqual(newerEvents);
+    try {
+      await expect(olderLoad).resolves.toEqual({
+        events, isOffline: false, cacheWriteFailed: true,
+      });
+      await expect(newerLoad).resolves.toEqual({
+        events: newerEvents, isOffline: false, cacheWriteFailed: false,
+      });
+      await expect(loadCachedEventFeed('https://example.org/api/v1'))
+        .resolves.toEqual(newerEvents);
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

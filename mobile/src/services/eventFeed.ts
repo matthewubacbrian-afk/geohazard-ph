@@ -26,6 +26,7 @@ export async function loadCachedEventFeed(baseUrl: string): Promise<HazardEvent[
 export type EventFeedResult = {
   events: HazardEvent[];
   isOffline: boolean;
+  cacheWriteFailed: boolean;
 };
 
 async function saveCurrentEvents(
@@ -64,12 +65,18 @@ export async function loadEventFeed(baseUrl: string): Promise<EventFeedResult> {
       events = await fetchEvents(normalizedUrl);
     } catch (error) {
       const cachedEvents = await readCachedEvents(normalizedUrl);
-      if (cachedEvents) return { events: cachedEvents, isOffline: true };
+      if (cachedEvents) return { events: cachedEvents, isOffline: true, cacheWriteFailed: false };
       throw error;
     }
 
-    await saveCurrentEvents(normalizedUrl, requestToken, events);
-    return { events, isOffline: false };
+    let cacheWriteFailed = false;
+    try {
+      await saveCurrentEvents(normalizedUrl, requestToken, events);
+    } catch {
+      console.warn('Could not save mobile event feed for offline use');
+      cacheWriteFailed = true;
+    }
+    return { events, isOffline: false, cacheWriteFailed };
   } finally {
     if (latestRequestByUrl.get(normalizedUrl) === requestToken) {
       latestRequestByUrl.delete(normalizedUrl);

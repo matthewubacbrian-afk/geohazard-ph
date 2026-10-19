@@ -29,9 +29,9 @@
 - A rejected cache save after a successful fetch resolves with the fetched events, `isOffline: false`, and `cacheWriteFailed: true`.
 - A network failure without a valid cache still rejects; an offline fallback reports `cacheWriteFailed: false`.
 
-- [ ] **Step 1: Add rejected-save and network-failure assertions.**
-- [ ] **Step 2: Run focused Jest and verify the expected failure.**
-- [ ] **Step 3: Update controller test fixtures for the new internal result shape.**
+- [x] **Step 1: Add rejected-save and network-failure assertions.**
+- [x] **Step 2: Run focused Jest and verify the expected failure.**
+- [x] **Step 3: Update controller test fixtures for the new internal result shape.**
 
 ---
 
@@ -44,10 +44,10 @@
 
 **Interfaces:**
 - `loadEventFeed(baseUrl): Promise<EventFeedResult>` catches only cache-write errors after a successful network fetch, logs the operation once, and returns fresh events with `cacheWriteFailed: true`.
-- `RootNavigator` keeps an event-cache warning separate from its existing settings/location `storageWarning`. A subsequent successfully saved result or changed API URL clears the event-cache warning.
+- `RootNavigator` keeps an event-cache warning separate from its existing settings/location `storageWarning`. A subsequent successfully saved result or changed API URL clears the event-cache warning. An error without a new feed preserves the displayed list's existing offline provenance.
 - Non-API refresh errors use a load-failure message; a cache-write failure is delivered through `onSuccess`, not `onError`.
 
-- [ ] **Step 1: Implement service result and warning wiring.**
+- [x] **Step 1: Implement service result and warning wiring.**
 - [ ] **Step 2: Run focused Jest, full mobile Jest, and strict TypeScript.**
 - [ ] **Step 3: Commit** the behavior with a focused Conventional Commit message.
 
@@ -59,10 +59,12 @@
 - Modify: `PLAN.md`, `docs/project-status.md`, this plan as evidence changes
 
 - [ ] **Step 1: Run all package suites and linters** listed above; document any local environment limitation accurately.
-- [ ] **Step 2: Request independent review** and address actionable findings.
+- [x] **Step 2: Request independent review** and address actionable findings.
 - [ ] **Step 3: Push and open a PR** with actual verification evidence.
 - [ ] **Step 4: Merge after all five CI checks pass**; verify the head on remote main and remove the worktree and branch.
 
 ## Notes for the executor
 
-The warning describes offline availability, not network freshness. Do not conflate a write failure with `isOffline: true`; the user can still see the newly fetched events. A failure to read the cache after a network failure remains a load failure. The separate event-cache warning must not erase an unrelated saved-location or API-setting warning. Verify the current screen result is not superseded before applying either events or the warning.
+The warning describes offline availability, not network freshness. Do not conflate a write failure with `isOffline: true`; the user can still see the newly fetched events. A later failed refresh with no cache must not relabel that in-memory feed as previously saved. A failure to read the cache after a network failure remains a load failure. The separate event-cache warning must not erase an unrelated saved-location or API-setting warning. Verify the current screen result is not superseded before applying either events or the warning.
+
+The rejected-write regression failed against the old code, then focused Jest passed 19 tests. The available broader mobile run passed 46 tests across nine suites after the final UI change. The local dependency tree lacks `react-native-image-picker`, so its scene-analysis suite cannot load, and this isolated worktree lacks React Native packages for local TypeScript resolution. Backend and ML Ruff, structure, and whitespace checks passed. Independent Astra review found no actionable issue; its review was source-level. Clean-install CI must confirm the full mobile suite, TypeScript, both native builds, and all other package checks before merge.
