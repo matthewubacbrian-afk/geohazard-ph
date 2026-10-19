@@ -63,6 +63,6 @@
 
 ## Notes for the executor
 
-Keep this slice limited to refresh ordering. A cache write failure still rejects a fresh load and is planned separately. No API schema, persistence format, or source-data behavior changes here.
+Keep this slice limited to screen refresh ordering. Older same-server requests can still overwrite newer values in AsyncStorage; cache-write ordering is a separate queued fix. A cache write failure still rejects a fresh load and is also planned separately. No API schema, persistence format, or source-data behavior changes here.
 
 Local focused Jest passed four controller tests; the available broader mobile suite passed 41 tests across nine suites. The local dependency tree lacks native React Native packages, so the scene-analysis suite and strict TypeScript cannot complete locally. CI must run a clean install, all mobile tests, TypeScript, Android, and iOS before merge.
