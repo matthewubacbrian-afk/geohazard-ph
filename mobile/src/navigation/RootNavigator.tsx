@@ -30,6 +30,7 @@ export default function RootNavigator() {
   const [isOffline, setIsOffline] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [storageWarning, setStorageWarning] = useState<string | null>(null);
+  const [eventCacheWarning, setEventCacheWarning] = useState<string | null>(null);
   const activeApiUrl = useRef(normalizeApiBaseUrl(API_BASE_URL));
   const refreshController = useRef(createEventFeedRefreshController());
 
@@ -81,13 +82,15 @@ export default function RootNavigator() {
         if (activeApiUrl.current !== requestedUrl) return;
         setEvents(feed.events);
         setIsOffline(feed.isOffline);
+        setEventCacheWarning(feed.cacheWriteFailed
+          ? 'Recent hazard data could not be saved for offline use. It may be unavailable after you close the app.'
+          : null);
       },
       onError: (error) => {
         if (activeApiUrl.current !== requestedUrl) return;
-        setIsOffline(true);
         setErrorMessage(error instanceof ApiError
           ? error.message
-          : 'Could not save recent hazard data on this device.');
+          : 'Could not load recent hazard data. Please try again.');
       },
       onFinish: () => {
         if (activeApiUrl.current === requestedUrl) setIsLoading(false);
@@ -139,6 +142,7 @@ export default function RootNavigator() {
         setIsOffline(false);
         setIsLoading(false);
         setErrorMessage(null);
+        setEventCacheWarning(null);
       }
       setApiBaseUrl(normalized);
       setStorageWarning(null);
@@ -162,6 +166,7 @@ export default function RootNavigator() {
   return (
     <View style={styles.root}>
       {storageWarning ? <Text accessibilityRole="alert" style={styles.error}>{storageWarning}</Text> : null}
+      {eventCacheWarning ? <Text accessibilityRole="alert" style={styles.error}>{eventCacheWarning}</Text> : null}
       {!isReady ? <Text style={styles.muted}>Loading saved mobile data…</Text> : null}
       {isReady && selectedTab === 'Nearby' ? <NearbyHazardsScreen {...screenProps} /> : null}
       {isReady && selectedTab === 'Saved locations' ? (
