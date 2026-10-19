@@ -13,6 +13,7 @@
 - Follow `AGENTS.md`, `CODING_STANDARDS.md`, `docs/git-workflow.md`, and `docs/glossary.md`.
 - This feature changes documentation only. Do not modify package manifests, lockfiles, native files, app behavior, or generated output.
 - Use primary release and package sources for upgrade requirements; distinguish verified facts from proposed policy and unknown device coverage.
+- Require each later code-changing implementation plan to specify its rollback triggers and how to restore the preceding coherent dependency and native configuration.
 - Run `python scripts/verify_structure.py` and `git diff --check`; require all five CI checks before merge.
 - Use Conventional Commits and keep this assessment in its own worktree, branch, and PR.
 
@@ -31,7 +32,7 @@
 - [x] **Step 1: Inspect the current lockfile, native project, and CI configuration** on the isolated branch.
 - [x] **Step 2: Attempt the current production audit and classify available findings** without equating dependency presence with runtime reachability. Two local attempts returned no output; the dated 2026-10-19 snapshot remains the only count.
 - [x] **Step 3: Record a concise baseline** with exact versions, paths, commands, counts, and unresolved evidence.
-- [ ] **Step 4: Commit** the baseline with a `docs:` Conventional Commit.
+- [x] **Step 4: Commit** the baseline with a `docs:` Conventional Commit (`d33899a2`).
 
 ---
 
@@ -47,7 +48,7 @@
 - [x] **Step 1: Verify platform and toolchain requirements** against primary sources for candidate React Native releases.
 - [x] **Step 2: Separate migration slices** by dependency and native impact; put platform-policy and real-device decisions at explicit gates.
 - [x] **Step 3: Update the prioritized queue and Epic 4 status** to match the assessment and remaining external evidence.
-- [ ] **Step 4: Run structure and whitespace verification** and request independent technical review.
+- [x] **Step 4: Run structure and whitespace verification** and request independent technical review; no critical or important issue was found, and both minor documentation gaps were corrected.
 - [ ] **Step 5: Commit, push, and open a PR**; merge only after five green CI checks, verify the tested head on remote main, and remove the feature worktree and branches.
 
 ## Notes for the executor
