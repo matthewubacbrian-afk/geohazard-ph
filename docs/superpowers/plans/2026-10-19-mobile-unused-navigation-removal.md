@@ -42,10 +42,10 @@
 - Use `npm uninstall @react-navigation/native --package-lock-only --ignore-scripts --no-audit --no-fund`.
 - Require `npm ls @react-navigation/native --package-lock-only --all` to show it absent, and require the lockfile to retain React Native 0.75.5 and unrelated direct resolutions.
 
-- [ ] **Step 1: Remove the dependency** and inspect every lockfile change for related pruning only.
-- [ ] **Step 2: Rerun `npm audit --omit=dev --json`** and record exact before/after counts, including any findings that remain.
-- [ ] **Step 3: Verify navigation behavior** through the existing mobile suite and TypeScript where the local environment permits; native CI is required.
-- [ ] **Step 4: Commit** package changes with a Conventional Commit message.
+- [x] **Step 1: Remove the dependency** and inspect every lockfile change for related pruning only.
+- [x] **Step 2: Rerun `npm audit --omit=dev --json`** and record exact before/after counts, including any findings that remain.
+- [x] **Step 3: Verify navigation behavior** through the existing mobile suite and TypeScript where the local environment permits; native CI is required.
+- [x] **Step 4: Commit** package changes with a Conventional Commit message.
 
 ---
 
@@ -57,11 +57,15 @@
 **Interfaces:**
 - Replace the prospective navigation-removal claim with measured audit and source evidence. Keep React Native/Metro migration and physical-device flow checks open.
 
-- [ ] **Step 1: Update the audit record and project tracking** with exact results.
+- [x] **Step 1: Update the audit record and project tracking** with exact results.
 - [ ] **Step 2: Run all package suites, linters, structure, and whitespace checks**; document any local limit.
-- [ ] **Step 3: Request independent review** of the package graph and behavior claim.
+- [x] **Step 3: Request independent review** of the package graph and behavior claim.
 - [ ] **Step 4: Push and open a PR**; merge only after five green CI checks, verify the tested head on remote main, and remove this worktree and branch.
 
 ## Notes for the executor
 
 This is dependency removal, not a navigation rewrite. Do not add a test that merely asserts a package is absent; the relevant behavior checks are the existing tab-flow tests, TypeScript resolution, and native builds. The [audit record](../../mobile-dependency-audit-2026-10-19.md) explains why the larger React Native/Metro advisory cluster remains a separate migration.
+
+`npm uninstall --package-lock-only` removed the direct declaration and 12 orphaned lockfile packages, with no other dependency resolution or native file change. `npm ls @react-navigation/native --package-lock-only --all` reports an empty tree; React Native remains 0.75.5. The production audit fell from 38 findings (10 moderate, 28 high, zero critical) to 34 (six moderate, 28 high, zero critical). Clean CI must verify that navigation behavior and native builds remain intact.
+
+Local Windows `npm ci --no-audit --no-fund` remained incomplete and was stopped before Jest or TypeScript became runnable. Backend and ML Ruff, the 140-path structure check, and `git diff --check` passed; the full package suites and native builds remain CI gates. Independent read-only review found no actionable issue, independently confirmed the exact 12-package prune and 38-to-34 audit change, and found no mobile source/configuration imports. The reviewer did not rerun installation, tests, or native builds.
