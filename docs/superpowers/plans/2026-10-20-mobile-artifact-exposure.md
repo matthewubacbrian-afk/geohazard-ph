@@ -29,11 +29,11 @@
 - CLI: `python scripts/mobile_artifact_inventory.py --platform android|ios --source-map PATH --artifact PATH --audit-json PATH --output PATH`.
 - Output: deterministic JSON with `platform`, `artifact_sha256` (APK bytes or iOS `main.jsbundle` bytes), `source_map_sha256`, `bundle_path`, `native_entries`, `source_packages`, and `advisories`. Each advisory has `package`, `severity`, `source_map_observation` (`listed` or `not_listed`), `matched_source_count`, `dependency_paths`, and `disposition: undetermined`.
 
-- [ ] **Step 1: Write synthetic tests** for a Metro source map, audit entries, an APK zip with a Hermes asset/native file, and an iOS `.app` with `main.jsbundle`/Frameworks.
-- [ ] **Step 2: Run the focused test and verify it fails** because the inventory script does not yet exist.
-- [ ] **Step 3: Implement source-map, audit, and artifact readers** with clear failures for missing/malformed inputs and no network or external packages.
-- [ ] **Step 4: Run the focused test and verify it passes**; inspect the JSON for accidental source content or raw audit payload.
-- [ ] **Step 5: Commit** tests and script with a Conventional Commit message.
+- [x] **Step 1: Write synthetic tests** for a Metro source map, audit entries, an APK zip with a Hermes asset/native file, and an iOS `.app` with `main.jsbundle`/Frameworks.
+- [x] **Step 2: Run the focused test and verify it fails** because the inventory script does not yet exist.
+- [x] **Step 3: Implement source-map, audit, and artifact readers** with clear failures for missing/malformed inputs and no network or external packages.
+- [x] **Step 4: Run the focused test and verify it passes**; inspect the JSON for accidental source content or raw audit payload.
+- [x] **Step 5: Commit** tests and script with a Conventional Commit message.
 
 ---
 
