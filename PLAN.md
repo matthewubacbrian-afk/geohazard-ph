@@ -19,7 +19,7 @@ scientific validation, device evidence, or deployed-state verification.
 | 1: feed/API/map | USGS ingestion, persisted events, interactive dashboard | Reverify suites and deployed feed/health; staging host absent in recorded evidence |
 | 2: PHIVOLCS/realtime | Canonical deduplication, committed-event publishing, volcano feed | Operational source/TLS and realtime smoke checks on deployment |
 | 3: reference layers | Importer/API/toggles; recorded 155-feature GEM import | PHIVOLCS reuse permission, reviewed vectors, national coverage evidence |
-| 4: mobile | Saved locations, foreground nearby alerts, offline cache, native CI | Fix cache isolation/races/storage failures; device-flow evidence; background push and store release remain deferred |
+| 4: mobile | Saved locations, foreground nearby alerts, URL-scoped offline cache, native CI | Fix cache-write ordering/storage failures; device-flow evidence; background push and store release remain deferred |
 | 5: regional profiles | Historical pipeline, validation/sensitivity reports, API/UI; Kaggle `.env` credential loader merged | Domain-approved sparse-region policy and new validated artifact; current export remains held |
 | 6: stretch | NASA reference overlay merged; InSAR metadata research recorded | InSAR footprint/reuse and independent reference gates; no production deformation claim |
 | 7: scene review | Transient API, camera clients, warnings and provisional blur handling merged | Integrate training PR; same-sample baseline evaluation CLI; approved image data, thresholds, real-scene and device/resource validation |
@@ -68,7 +68,7 @@ untouched. New worktrees created by this session are archived only after verifyi
   conflict is addressed by the held-export deployment mode.
 - Bugs: same-server cache-write race and cache-write failure discarding fresh
   network data (audit; regression reproduction pending).
-- Weak tests: missing mobile server-switch and rejected-storage cases; no physical
+- Weak tests: missing mobile rejected-storage cases; no physical
   camera coverage; synthetic scene tests do not establish recognition quality.
 - Technical debt: PR #40 resolves the original 18 backend and 11 ML lint findings under explicit package rules. Two applied migrations retain narrowly scoped style exceptions. The baseline web audit reported nine findings; PR #41 removed the production finding and PR #42 removed the remaining eight development-tool findings in their respective audited lockfiles.
 - External gates: OCI/DNS, source-owner permission, domain review, image reuse and

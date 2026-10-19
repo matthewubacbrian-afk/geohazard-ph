@@ -27,10 +27,10 @@
 - Two `loadEventFeed(baseUrl)` calls against the same normalized URL can settle in either order.
 - `loadCachedEventFeed(baseUrl)` must restore the newer request's events after both calls settle.
 
-- [ ] **Step 1: Add deferred-fetch regression** with a newer network response before an older response; assert the older response does not write the cache and offline restoration returns the newer list.
-- [ ] **Step 2: Run focused Jest and verify the stale-cache failure.**
-- [ ] **Step 3: Add a deferred-write regression** where an older write has started before a newer response; assert the newer write runs after it and offline restoration returns the newer list.
-- [ ] **Step 4: Run focused Jest and verify the out-of-order write failure.**
+- [x] **Step 1: Add deferred-fetch regression** with a newer network response before an older response; assert the older response does not write the cache and offline restoration returns the newer list.
+- [x] **Step 2: Run focused Jest and verify the stale-cache failure.**
+- [x] **Step 3: Add a deferred-write regression** where an older write has started before a newer response; assert the newer write runs after it and offline restoration returns the newer list.
+- [x] **Step 4: Run focused Jest and verify the out-of-order write failure.**
 
 ---
 
@@ -45,7 +45,7 @@
 - A per-normalized-URL token identifies the newest started load. A per-cache-key promise chain serializes writes, skips a token that is no longer current, and recovers after a rejected prior write.
 - State for a URL is removed once its latest load finishes; completed write queues are removed.
 
-- [ ] **Step 1: Implement token tracking and per-key write serialization.**
+- [x] **Step 1: Implement token tracking and per-key write serialization.**
 - [ ] **Step 2: Run focused Jest, full mobile Jest, and strict TypeScript.**
 - [ ] **Step 3: Commit** the behavior with a focused Conventional Commit message.
 
@@ -57,10 +57,12 @@
 - Modify: `PLAN.md`, `docs/project-status.md`, this plan as evidence changes
 
 - [ ] **Step 1: Run all package suites and linters** listed above; document any local environment limitation accurately.
-- [ ] **Step 2: Request independent review** and address actionable findings.
+- [x] **Step 2: Request independent review** and address actionable findings.
 - [ ] **Step 3: Push and open a PR** with actual verification evidence.
 - [ ] **Step 4: Merge after all five CI checks pass**; verify the head on remote main and remove the worktree and branch.
 
 ## Notes for the executor
 
-The request token is scoped by normalized API URL, matching the cache key. A newer request that fails does not make an older response authoritative again. The queue must serialize actual AsyncStorage calls, not only the promises returned by `loadEventFeed`. Avoid global ordering between different API servers. Cache-write failure handling remains a separate feature, so tests must not imply that a failed write returns a fresh feed here.
+The request token is scoped by normalized API URL, matching the cache key. A superseded fetch that has not started writing cannot become authoritative after a newer request fails; a write already in progress may still finish, and a later successful write follows it. The queue must serialize actual AsyncStorage calls, not only the promises returned by `loadEventFeed`. Avoid global ordering between different API servers. Cache-write failure handling remains a separate feature, so tests must not imply that a failed write returns a fresh feed here.
+
+Local focused Jest passed 13 tests after both ordering regressions failed against the old code. The broader available Jest run passed 44 tests in nine suites; its scene-analysis suite could not load because the borrowed local dependency tree lacks `react-native-image-picker`. Local TypeScript checking could not resolve React Native packages in this worktree. Backend and ML Ruff, structure, and whitespace checks passed. An independent Astra review found no actionable issue but could not run its own Jest. Clean-install CI must establish the complete mobile suite, strict TypeScript, native builds, and other package checks before merge.

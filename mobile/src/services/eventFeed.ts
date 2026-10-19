@@ -4,6 +4,8 @@ import { normalizeApiBaseUrl } from './settings';
 import type { HazardEvent } from '../types/hazard';
 
 const LATEST_EVENTS_KEY_PREFIX = 'mobile.latestEvents:';
+const latestRequestByUrl = new Map<string, symbol>();
+const pendingWriteByKey = new Map<string, Promise<void>>();
 
 export function eventFeedCacheKey(baseUrl: string): string {
   return `${LATEST_EVENTS_KEY_PREFIX}${normalizeApiBaseUrl(baseUrl)}`;
@@ -26,23 +28,53 @@ export type EventFeedResult = {
   isOffline: boolean;
 };
 
+async function saveCurrentEvents(
+  baseUrl: string,
+  requestToken: symbol,
+  events: HazardEvent[],
+): Promise<void> {
+  if (latestRequestByUrl.get(baseUrl) !== requestToken) return;
+
+  const key = eventFeedCacheKey(baseUrl);
+  const previousWrite = pendingWriteByKey.get(key) ?? Promise.resolve();
+  const nextWrite = previousWrite.catch(() => undefined).then(async () => {
+    if (latestRequestByUrl.get(baseUrl) === requestToken) {
+      await saveOfflineValue(key, events);
+    }
+  });
+  pendingWriteByKey.set(key, nextWrite);
+  try {
+    await nextWrite;
+  } finally {
+    if (pendingWriteByKey.get(key) === nextWrite) pendingWriteByKey.delete(key);
+  }
+}
+
 export async function loadEventFeed(baseUrl: string): Promise<EventFeedResult> {
   const normalizedUrl = normalizeApiBaseUrl(baseUrl);
   if (!normalizedUrl) {
     throw new ApiError('Enter the API URL to load hazard data', 0, 'not_configured');
   }
 
-  let events: HazardEvent[];
+  const requestToken = Symbol('event-feed-request');
+  latestRequestByUrl.set(normalizedUrl, requestToken);
   try {
-    events = await fetchEvents(normalizedUrl);
-  } catch (error) {
-    const cachedEvents = await readCachedEvents(normalizedUrl);
-    if (cachedEvents) return { events: cachedEvents, isOffline: true };
-    throw error;
-  }
+    let events: HazardEvent[];
+    try {
+      events = await fetchEvents(normalizedUrl);
+    } catch (error) {
+      const cachedEvents = await readCachedEvents(normalizedUrl);
+      if (cachedEvents) return { events: cachedEvents, isOffline: true };
+      throw error;
+    }
 
-  await saveOfflineValue(eventFeedCacheKey(normalizedUrl), events);
-  return { events, isOffline: false };
+    await saveCurrentEvents(normalizedUrl, requestToken, events);
+    return { events, isOffline: false };
+  } finally {
+    if (latestRequestByUrl.get(normalizedUrl) === requestToken) {
+      latestRequestByUrl.delete(normalizedUrl);
+    }
+  }
 }
 
 export function isHazardEvent(value: unknown): value is HazardEvent {
