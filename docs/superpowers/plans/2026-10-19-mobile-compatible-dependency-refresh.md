@@ -42,10 +42,10 @@
 - Run `npm audit fix --package-lock-only --omit=dev --ignore-scripts` without `--force`, or narrower `npm update <package> --package-lock-only` when needed.
 - `mobile/package.json` and native project files must remain unchanged; React Native 0.75.5 and React Navigation 6.1.18 must remain resolved.
 
-- [ ] **Step 1: Refresh the lockfile** and inspect all changed dependency entries and tarball integrity values.
-- [ ] **Step 2: Re-audit production dependencies**; require zero critical and document before/after counts and unresolved root paths.
-- [ ] **Step 3: Run a clean mobile install, Jest, and TypeScript** where the local environment permits; CI is authoritative for native builds.
-- [ ] **Step 4: Commit** the bounded lockfile update with a Conventional Commit message.
+- [x] **Step 1: Refresh the lockfile** and inspect all changed dependency entries and tarball integrity values.
+- [x] **Step 2: Re-audit production dependencies**; require zero critical and document before/after counts and unresolved root paths.
+- [x] **Step 3: Run a clean mobile install, Jest, and TypeScript** where the local environment permits; CI is authoritative for native builds.
+- [x] **Step 4: Commit** the bounded lockfile update with a Conventional Commit message.
 
 ---
 
@@ -59,11 +59,17 @@
 - Classify unresolved findings by direct dependency root, affected toolchain/runtime context, available non-breaking or major path, and verification needed. Make no reachability claim without code-path evidence.
 - Keep React Native platform-minimum and new-architecture migration, navigation API migration, Android/iOS device-flow evidence, and shipped-code reachability as separate acceptance gates.
 
-- [ ] **Step 1: Write the evidence and prioritized follow-up slices** using exact audit counts and source links.
+- [x] **Step 1: Write the evidence and prioritized follow-up slices** using exact audit counts and source links.
 - [ ] **Step 2: Run package suites, linters, structure, and whitespace checks**; document any local limit.
-- [ ] **Step 3: Request independent review** of lockfile scope and audit claims.
+- [x] **Step 3: Request independent review** of lockfile scope and audit claims.
 - [ ] **Step 4: Push and open a PR**; merge only after all five CI checks pass, verify tested head on remote main, and remove this worktree and branch.
 
 ## Notes for the executor
 
 The remaining 41 findings are grouped by npm's proposed fixes: 10 report `fixAvailable: true`, 27 point to a major React Native upgrade, and four point to a major React Navigation upgrade. These groups may change after compatible updates. React Native 0.76 already changes default architecture and minimum platform versions, so a larger upgrade requires separate design, native-build work, and device evidence. A zero-critical audit alone does not complete Epic 4.
+
+The non-forced refresh updated only `brace-expansion` 1.1.18 → 1.1.21, `compression` 1.8.1 → 1.8.2, and `joi` 17.13.6 → 17.13.8. A fresh production audit reports 38 findings: 10 moderate, 28 high, zero critical. The 38 group as 27 React Native major-upgrade suggestions, four React Navigation major-upgrade suggestions, and seven `fixAvailable: true` chain entries still present after the non-forced command. The [audit record](../../mobile-dependency-audit-2026-10-19.md) describes the next slices.
+
+Local Windows `npm ci --no-audit --no-fund` was stopped after remaining incomplete for several minutes; Jest and TypeScript did not become runnable in that worktree. Backend's full suite was started but the first database integration fixture could not run because Docker Desktop was unavailable; the 128 backend unit tests passed. ML's full 72-test suite, backend and ML Ruff, and the 140-path structure check passed. Clean CI must establish the full backend/web/mobile suites, TypeScript, and Android/iOS native builds before merge.
+
+Independent review found no actionable issue: registry integrity and metadata match, parent version ranges permit all three updates, a fresh audit confirmed the 38/27/4/7 counts, and the unused-navigation and `image-size` notes match source and lockfile evidence. The reviewer did not rerun clean installation or native builds.
