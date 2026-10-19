@@ -19,7 +19,7 @@ scientific validation, device evidence, or deployed-state verification.
 | 1: feed/API/map | USGS ingestion, persisted events, interactive dashboard | Reverify suites and deployed feed/health; staging host absent in recorded evidence |
 | 2: PHIVOLCS/realtime | Canonical deduplication, committed-event publishing, volcano feed | Operational source/TLS and realtime smoke checks on deployment |
 | 3: reference layers | Importer/API/toggles; recorded 155-feature GEM import | PHIVOLCS reuse permission, reviewed vectors, national coverage evidence |
-| 4: mobile | Saved locations, foreground nearby alerts, URL-scoped and ordered offline cache, native CI | Fix cache-write failures; device-flow evidence; background push and store release remain deferred |
+| 4: mobile | Saved locations, foreground nearby alerts, URL-scoped and ordered offline cache, native CI | Audit and update dependencies; device-flow evidence; background push and store release remain deferred |
 | 5: regional profiles | Historical pipeline, validation/sensitivity reports, API/UI; Kaggle `.env` credential loader merged | Domain-approved sparse-region policy and new validated artifact; current export remains held |
 | 6: stretch | NASA reference overlay merged; InSAR metadata research recorded | InSAR footprint/reuse and independent reference gates; no production deformation claim |
 | 7: scene review | Transient API, camera clients, warnings and provisional blur handling merged | Integrate training PR; same-sample baseline evaluation CLI; approved image data, thresholds, real-scene and device/resource validation |
@@ -42,8 +42,9 @@ PR #32 was incorporated through PR #43; PR #36 remains in the integration queue.
 - [x] P2 mobile cache isolation: [PR #46](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/46) merged at `8854903b` after all five CI checks passed. Offline caching and initial restoration use normalized API URL keys; the old unscoped cache is not reused. A server change clears visible events and ignores the prior server's response. See the [focused plan](docs/superpowers/plans/2026-10-18-mobile-cache-isolation.md). Device-flow evidence remains pending.
 - [x] P2 mobile refresh ordering: [PR #47](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/47) merged at `40dce118` after all five CI checks passed. The controller ignores superseded same-URL success and error results and invalidates pending work on a server change; see the [focused plan](docs/superpowers/plans/2026-10-19-mobile-refresh-ordering.md).
 - [x] P2 mobile cache-write ordering: [PR #48](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/48) merged at `c61945a6` after all five CI checks passed. Latest-request tokens and serialized per-server cache writes prevent stale offline restoration; see the [focused plan](docs/superpowers/plans/2026-10-19-mobile-cache-write-ordering.md).
-- [ ] P2 mobile persistence resilience: return freshly fetched events even when local cache writes fail, with a separate persistence warning; test rejected writes and usable fresh results. See the [focused plan](docs/superpowers/plans/2026-10-19-mobile-cache-resilience.md).
-- [ ] P2 mobile dependency audit triage: a 2026-10-18 `npm audit --omit=dev` reported 42 findings (10 moderate, 31 high, 1 critical), with direct findings in React Native 0.75 and React Navigation 6 and a critical transitive `shell-quote` finding. Assess which code reaches the shipped app, identify compatible updates and native-build impact, then plan bounded upgrades. A raw audit count is not an app exploitability finding.
+- [x] P2 mobile persistence resilience: [PR #49](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/49) merged at `de9170d9` after all five CI checks passed. A failed offline-cache write now preserves fresh events and shows a separate warning; see the [focused plan](docs/superpowers/plans/2026-10-19-mobile-cache-resilience.md).
+- [ ] P1 mobile critical transitive patch: the 2026-10-19 audit still reports 42 findings, including `shell-quote` 1.10.0 through React Native CLI tools and React DevTools. Patch its lockfile version to at least 1.11.0 within the existing parent ranges, then verify the critical count falls without a direct React Native upgrade. See the [focused plan](docs/superpowers/plans/2026-10-19-mobile-shell-quote-patch.md). A raw audit count does not establish app exploitability.
+- [ ] P2 mobile dependency migration triage: after the critical patch, assess remaining React Native 0.75 and React Navigation 6 findings for shipped-code reachability, compatible updates, platform minimums, and native-build impact; split upgrades into bounded features. The current audit suggests major direct upgrades, which need separate migration work.
 - [ ] P2 scene training integration: review PR #36, resolve documentation conflicts while preserving Epic 6 records, rerun all checks and merge only after fresh CI.
 - [ ] P2 scene baseline CLI: implement same-held-out-sample baseline comparison with explicit label mapping; keep export fail-closed and test incomplete/mismatched comparisons. Derive a focused implementation plan from the integrated training code first.
 - [ ] P2 setup consistency: correct Windows README environment paths and outdated runtime/CI descriptions; verify commands against the documented environment layout.
@@ -66,9 +67,9 @@ untouched. New worktrees created by this session are archived only after verifyi
 - Documentation: some historical Epic 7 and runtime descriptions and the Windows
   quick-start virtual-environment path still need reconciliation. The staging/export
   conflict is addressed by the held-export deployment mode.
-- Bugs: cache-write failure discarding fresh network data (audit; regression
-  reproduction pending).
-- Weak tests: missing mobile rejected-storage cases; no physical
+- Bugs: no known unresolved mobile cache correctness bug in the audited flows;
+  runtime/device behavior still needs evidence.
+- Weak tests: no physical
   camera coverage; synthetic scene tests do not establish recognition quality.
 - Technical debt: PR #40 resolves the original 18 backend and 11 ML lint findings under explicit package rules. Two applied migrations retain narrowly scoped style exceptions. The baseline web audit reported nine findings; PR #41 removed the production finding and PR #42 removed the remaining eight development-tool findings in their respective audited lockfiles.
 - External gates: OCI/DNS, source-owner permission, domain review, image reuse and
