@@ -58,9 +58,9 @@
 - Replace the prospective navigation-removal claim with measured audit and source evidence. Keep React Native/Metro migration and physical-device flow checks open.
 
 - [x] **Step 1: Update the audit record and project tracking** with exact results.
-- [ ] **Step 2: Run all package suites, linters, structure, and whitespace checks**; document any local limit.
+- [x] **Step 2: Run all package suites, linters, structure, and whitespace checks**; document any local limit.
 - [x] **Step 3: Request independent review** of the package graph and behavior claim.
-- [ ] **Step 4: Push and open a PR**; merge only after five green CI checks, verify the tested head on remote main, and remove this worktree and branch.
+- [x] **Step 4: Push and open a PR**; merge only after five green CI checks, verify the tested head on remote main, and remove this worktree and branch.
 
 ## Notes for the executor
 
@@ -69,3 +69,5 @@ This is dependency removal, not a navigation rewrite. Do not add a test that mer
 `npm uninstall --package-lock-only` removed the direct declaration and 12 orphaned lockfile packages, with no other dependency resolution or native file change. `npm ls @react-navigation/native --package-lock-only --all` reports an empty tree; React Native remains 0.75.5. The production audit fell from 38 findings (10 moderate, 28 high, zero critical) to 34 (six moderate, 28 high, zero critical). Clean CI must verify that navigation behavior and native builds remain intact.
 
 Local Windows `npm ci --no-audit --no-fund` remained incomplete and was stopped before Jest or TypeScript became runnable. Backend and ML Ruff, the 140-path structure check, and `git diff --check` passed; the full package suites and native builds remain CI gates. Independent read-only review found no actionable issue, independently confirmed the exact 12-package prune and 38-to-34 audit change, and found no mobile source/configuration imports. The reviewer did not rerun installation, tests, or native builds.
+
+[PR #52](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/52) passed all five clean CI checks and merged at `a3366d9c`. The tested head was verified on remote main, and the isolated worktree and local/remote branches were removed.
