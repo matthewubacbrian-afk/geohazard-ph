@@ -34,6 +34,25 @@ jobs:
       - name: Build Android debug app
         run: ./gradlew assembleDebug
         working-directory: mobile/android
+      - name: Build non-published Android release app
+        run: ./gradlew assembleRelease
+        working-directory: mobile/android
+      - name: Record Android release contents
+        working-directory: mobile
+        run: |
+          npm audit --omit=dev --package-lock-only --json > "$RUNNER_TEMP/mobile-audit.json" || test "$?" -eq 1
+          python3 ../scripts/mobile_artifact_inventory.py \
+            --platform android \
+            --source-map android/app/build/generated/sourcemaps/react/release/index.android.bundle.map \
+            --artifact android/app/build/outputs/apk/release/app-release.apk \
+            --audit-json "$RUNNER_TEMP/mobile-audit.json" \
+            --output "$RUNNER_TEMP/mobile-artifact-report-android.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-artifact-report-android
+          path: ${{ runner.temp }}/mobile-artifact-report-android.json
+          if-no-files-found: error
+          retention-days: 7
 
   ios-simulator:
     runs-on: macos-15
@@ -60,3 +79,32 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
             build
+      - name: Build non-published iOS Release simulator app
+        working-directory: mobile
+        run: |
+          xcodebuild \
+            -workspace ios/GeoHazardPH.xcworkspace \
+            -scheme GeoHazardPH \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/mobile-ios-derived" \
+            SOURCEMAP_FILE="$RUNNER_TEMP/ios-release.map" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Record iOS release contents
+        working-directory: mobile
+        run: |
+          npm audit --omit=dev --package-lock-only --json > "$RUNNER_TEMP/mobile-audit.json" || test "$?" -eq 1
+          python3 ../scripts/mobile_artifact_inventory.py \
+            --platform ios \
+            --source-map "$RUNNER_TEMP/ios-release.map" \
+            --artifact "$RUNNER_TEMP/mobile-ios-derived/Build/Products/Release-iphonesimulator/GeoHazardPH.app" \
+            --audit-json "$RUNNER_TEMP/mobile-audit.json" \
+            --output "$RUNNER_TEMP/mobile-artifact-report-ios.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-artifact-report-ios
+          path: ${{ runner.temp }}/mobile-artifact-report-ios.json
+          if-no-files-found: error
+          retention-days: 7

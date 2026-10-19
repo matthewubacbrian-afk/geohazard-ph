@@ -113,6 +113,17 @@ def test_report_rejects_missing_bundle_or_invalid_audit(tmp_path: Path) -> None:
         build_report("android", source_map, apk, audit_json)
 
 
+def test_report_rejects_source_map_without_package_paths(tmp_path: Path) -> None:
+    source_map, audit_json = _inputs(tmp_path)
+    source_map.write_text(json.dumps({"sources": ["src/App.tsx"]}), encoding="utf-8")
+    apk = tmp_path / "app-release.apk"
+    with zipfile.ZipFile(apk, "w") as archive:
+        archive.writestr("assets/index.android.bundle", b"Hermes bytecode")
+
+    with pytest.raises(ValueError, match="package"):
+        build_report("android", source_map, apk, audit_json)
+
+
 def test_cli_writes_small_deterministic_report(tmp_path: Path) -> None:
     source_map, audit_json = _inputs(tmp_path)
     apk = tmp_path / "app-release.apk"

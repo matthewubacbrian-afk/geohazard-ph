@@ -47,6 +47,8 @@ def _source_counts(source_map: dict) -> dict[str, int]:
         package = _package_from_source(source)
         if package is not None:
             counts[package] = counts.get(package, 0) + 1
+    if not counts:
+        raise ValueError("source map has no package paths; cannot classify advisory observations")
     return counts
 
 
