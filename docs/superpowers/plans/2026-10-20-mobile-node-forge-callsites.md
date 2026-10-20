@@ -40,7 +40,7 @@
 
 - [x] **Step 1: Mark PR #58 merged and cleaned up, then write this focused plan before investigation changes.** PR #58 merged at `3827dd03` after five checks; both final reports were inspected, and its worktree/branches were removed.
 - [x] **Step 2: Verify documentation and relevant package checks.** Run `git diff --check`, structure verification, source/lockfile consistency checks, and available configured local suites. CI is the full package/native gate where local services or installs are unavailable.
-- [ ] **Step 3: Commit, push, open one PR, and obtain independent review.** Record only exact-version-supported claims.
+- [x] **Step 3: Commit, push, open one PR, and obtain independent review.** Record only exact-version-supported claims.
 - [ ] **Step 4: Require five exact-head CI checks, merge, verify remote main, and remove this worktree and branch.** The next feature updates tracking before implementation.
 
 ## Notes for the executor
