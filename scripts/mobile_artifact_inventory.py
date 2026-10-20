@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import plistlib
 import zipfile
 from pathlib import Path
 
@@ -99,10 +100,27 @@ def _ios_artifact(app: Path) -> tuple[str, str, list[str]]:
     bundle = app / "main.jsbundle"
     if not bundle.is_file():
         raise ValueError(f"iOS artifact has no release bundle: {app}")
+    try:
+        with (app / "Info.plist").open("rb") as source:
+            app_info = plistlib.load(source)
+    except (OSError, ValueError, TypeError, plistlib.InvalidFileException) as exc:
+        raise ValueError(f"iOS artifact has no valid Info.plist: {app}") from exc
+    executable = app_info.get("CFBundleExecutable") if isinstance(app_info, dict) else None
+    if not isinstance(executable, str) or Path(executable).name != executable:
+        raise ValueError(f"iOS artifact has no valid executable name: {app}")
+    if not (app / executable).is_file():
+        raise ValueError(f"iOS artifact has no app executable: {app}")
     native_entries = sorted(
-        path.relative_to(app).as_posix()
-        for path in (app / "Frameworks").rglob("*")
-        if path.is_file() and (path.parent.suffix == ".framework" or path.suffix == ".dylib")
+        {executable}
+        | {
+            path.relative_to(app).as_posix()
+            for path in (app / "Frameworks").rglob("*")
+            if path.is_file()
+            and (
+                path.suffix == ".dylib"
+                or (path.name == path.parent.stem and path.parent.suffix == ".framework")
+            )
+        }
     )
     return _sha256(bundle), "main.jsbundle", native_entries
 

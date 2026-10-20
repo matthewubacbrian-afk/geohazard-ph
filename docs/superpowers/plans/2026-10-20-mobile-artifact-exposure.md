@@ -55,8 +55,9 @@
 - [x] **Step 2: Run the focused tests and verify the expected failure**.
 - [x] **Step 3: Add Android and iOS release inventory steps** while preserving the existing debug/test gates.
 - [x] **Step 4: Update the audit and status docs** with the exact evidence boundary and commands; do not claim a new audit count before CI reports exist.
-- [ ] **Step 5: Run focused tests, package verification, structure and whitespace checks; request independent review**.
-- [ ] **Step 6: Commit, push, and open a PR**; require all five green CI checks and inspect generated report artifacts before merge, verify the tested head on remote main, then remove worktree and branches.
+- [ ] **Step 5: Verify and correct the first clean CI reports**. All five checks passed on PR #54 at `3d76763f`; the Android and iOS reports each recorded 34 advisory packages, with `react-native` listed in the JavaScript map. The first iOS report counted `Info.plist` as native code. A regression test now requires the app executable and excludes framework metadata; rerun all checks and inspect the corrected report.
+- [ ] **Step 6: Record dated evidence, finish verification and review**. Update the audit/status/epic records with only observed results and limits; run focused tests, package verification, structure and whitespace checks, and independent review.
+- [ ] **Step 7: Commit, push, and complete PR #54**; require all five green CI checks on the final head, verify the tested head on remote main, then remove worktree and branches.
 
 ## Notes for the executor
 

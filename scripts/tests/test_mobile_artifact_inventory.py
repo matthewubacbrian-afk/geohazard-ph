@@ -1,5 +1,6 @@
 import hashlib
 import json
+import plistlib
 import zipfile
 from pathlib import Path
 
@@ -85,18 +86,21 @@ def test_android_report_matches_sources_and_packaged_native_files(tmp_path: Path
     assert "sample" not in json.dumps(report)
 
 
-def test_ios_report_reads_main_bundle_and_framework_names(tmp_path: Path) -> None:
+def test_ios_report_lists_executables_without_framework_metadata(tmp_path: Path) -> None:
     source_map, audit_json = _inputs(tmp_path)
     app = tmp_path / "GeoHazardPH.app"
     (app / "Frameworks" / "React.framework").mkdir(parents=True)
     (app / "main.jsbundle").write_bytes(b"iOS Hermes bytecode")
+    (app / "Info.plist").write_bytes(plistlib.dumps({"CFBundleExecutable": "GeoHazardPH"}))
+    (app / "GeoHazardPH").write_bytes(b"app executable")
     (app / "Frameworks" / "React.framework" / "React").write_bytes(b"native code")
+    (app / "Frameworks" / "React.framework" / "Info.plist").write_bytes(b"metadata")
 
     report = build_report("ios", source_map, app, audit_json)
 
     assert report["bundle_path"] == "main.jsbundle"
     assert report["artifact_sha256"] == hashlib.sha256(b"iOS Hermes bytecode").hexdigest()
-    assert report["native_entries"] == ["Frameworks/React.framework/React"]
+    assert report["native_entries"] == ["Frameworks/React.framework/React", "GeoHazardPH"]
 
 
 def test_report_rejects_missing_bundle_or_invalid_audit(tmp_path: Path) -> None:
