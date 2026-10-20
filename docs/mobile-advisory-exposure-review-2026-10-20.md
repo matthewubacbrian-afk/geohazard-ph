@@ -53,7 +53,7 @@ operation with attacker-controlled input.
 | Advisory and installed package | Affected operation and input precondition | Current project evidence |
 | --- | --- | --- |
 | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), `braces` 3.0.3 (`<=3.0.3`) | Recursive brace-pattern parsing or expansion of a sufficiently deep pattern can exhaust the Node.js call stack. | Reached through CLI glob matching in the lockfile; pattern origin and whether an untrusted pattern reaches `braces` remain unverified. |
-| [GHSA-gh4j-gqv2-49f6](https://github.com/advisories/GHSA-gh4j-gqv2-49f6), `fast-xml-parser` 4.5.7 (`<5.7.0`) | `XMLBuilder` emits unescaped comment or CDATA delimiters if those values contain attacker-controlled `-->` or `]]>`. | Android and iOS CLI-platform dependency paths exist; `XMLBuilder` call sites and input provenance in those consumers have not been inspected. |
+| [GHSA-gh4j-gqv2-49f6](https://github.com/advisories/GHSA-gh4j-gqv2-49f6), `fast-xml-parser` 4.5.7 (`<5.7.0`) | `XMLBuilder` emits unescaped comment or CDATA delimiters if those values contain attacker-controlled `-->` or `]]>`. | The [bounded consumer-call review](mobile-fast-xml-parser-callsites-2026-10-20.md) found three direct `XMLParser`/`XMLValidator` uses and no direct `XMLBuilder` call in the pinned Android and Apple CLI packages. Other consumers, input control, and reachability remain unverified. |
 | [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq), `image-size` 1.2.1 (`>=1.2.0 <=2.0.2`) | Parsing a crafted JXL or HEIF buffer with a zero-sized box can loop indefinitely in a Node.js process. | Metro depends on `image-size`; whether Metro processes an untrusted JXL/HEIF file in a relevant build context remains unverified. |
 | [GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr), `image-size` 1.2.1 (`>=0.6.3 <=2.0.2`) | Parsing a crafted ICNS buffer with a zero-length entry can loop indefinitely in a Node.js process. | The same Metro path exists; ICNS processing and input provenance remain unverified. |
 | [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv), `node-forge` 1.4.0 (`<=1.4.0`) | RSA PKCS#1 v1.5 signature verification can accept extra nested `DigestAlgorithm` elements with low-exponent keys. | The path is through development middleware and `selfsigned`; use of affected verification with untrusted signatures has not been established. |
@@ -84,3 +84,8 @@ Until those checks are complete, all 34 finding dispositions stay
 **undetermined**. This record is dependency and advisory triage, not a release
 security signoff or a change to the held-profile, deployment, or source-data
 decisions.
+
+The [bounded `fast-xml-parser` consumer-call review](mobile-fast-xml-parser-callsites-2026-10-20.md)
+inspects the pinned Android and Apple CLI packages. Their published code uses
+`XMLParser` and `XMLValidator` on local project files and contains no direct
+`XMLBuilder` call; other consumer paths and input control remain open.

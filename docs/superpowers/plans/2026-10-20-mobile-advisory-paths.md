@@ -41,8 +41,8 @@
 
 - [x] **Step 1: Mark PR #55 merged at `bed6c572` after five checks and both report inspections.** The plan/status keep per-advisory API/attack-path review and migration/device gates open.
 - [x] **Step 2: Verify local documentation and script checks.** `git diff --check`, structure verification (140 paths), six-reference/five-version consistency, five shortest-path comparisons, both configured Ruff checks, and the scripts suite (26 tests plus seven subtests) passed. The five full package/native CI checks remain the merge gate because this branch changes documentation only and local Docker/npm installation is unavailable.
-- [ ] **Step 3: Commit the documentation with `docs: record mobile advisory paths`, push this branch, open one PR, and obtain independent review.**
-- [ ] **Step 4: Require five exact-head CI checks, merge, verify the tested head on remote main, and remove the worktree and branches.** Update the next feature's plan/status first before implementing its code.
+- [x] **Step 3: Commit the documentation with `docs: record mobile advisory paths`, push this branch, open one PR, and obtain independent review.** [PR #56](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/56) received independent review without an actionable finding.
+- [x] **Step 4: Require five exact-head CI checks, merge, verify the tested head on remote main, and remove the worktree and branches.** All five checks passed on `5b9b092f`, both final Release reports were inspected, and PR #56 merged at `29fa1a2e`. The tested head is on remote main; its worktree and local/remote branches were removed. The next feature's plan/status were updated before implementation.
 
 ## Notes for the executor
 
