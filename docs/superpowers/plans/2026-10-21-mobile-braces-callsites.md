@@ -4,7 +4,7 @@
 
 **Goal:** Trace the pinned React Native production-graph consumers of `braces` 3.0.3 to actual pattern calls and input origins relevant to GHSA-vfj7-8cjw-p6xm without changing advisory dispositions.
 
-**Architecture:** Fix versions and paths from the merged lockfile and PR #59 Release reports. Inspect SHA-512-verified published packages in the CLI, Metro file-map, codegen, and Jest chains, then publish one bounded call-path record that distinguishes an attacker-supplied deep brace pattern from a static or local build pattern.
+**Architecture:** Fix versions and paths from the merged lockfile and PR #59 Release reports. Inspect SHA-512-verified published packages in the CLI, Metro file-map, codegen, and Jest chains, labeling supplemental development-only consumers separately, then publish one bounded call-path record that distinguishes an attacker-supplied deep brace pattern from a static or local build pattern.
 
 **Tech Stack:** Markdown, npm lockfile and exact-version package tarballs, GitHub Actions.
 
@@ -25,10 +25,10 @@
 
 **Interfaces:** Consume `mobile/package-lock.json`, the final PR #59 Android/iOS advisory identities, and exact published `braces` 3.0.3, `micromatch` 4.0.8, `fast-glob` 3.3.3, Metro file-map 0.80.12, and observed CLI/codegen/Jest callers. Produce a table of caller file/function, glob or pattern API, pattern origin, relationship to nested-brace processing, and evidence limit.
 
-- [ ] **Step 1: Verify versions and advisory.** Reproduce all observed production lockfile paths to `braces` and the affected operation in GHSA-vfj7-8cjw-p6xm.
-- [ ] **Step 2: Inspect exact-version source.** Verify inspected package tarballs against lockfile SHA-512 values; find `micromatch`/`braces` uses in the published consumers, including indirect `fast-glob` paths.
-- [ ] **Step 3: Trace pattern inputs.** Distinguish fixed package patterns, local project/configuration values, and any user-supplied values. State when an untrusted deeply nested pattern or execution path cannot be established.
-- [ ] **Step 4: Publish the bounded review and link it from the advisory record.** Keep the `braces` reference and all 34 finding dispositions `undetermined`.
+- [x] **Step 1: Verify versions and advisory.** Reproduce all observed production lockfile paths to `braces` and the affected operation in GHSA-vfj7-8cjw-p6xm.
+- [x] **Step 2: Inspect exact-version source.** Verify inspected package tarballs against lockfile SHA-512 values; find `micromatch`/`braces` uses in the published consumers, including indirect `fast-glob` paths.
+- [x] **Step 3: Trace pattern inputs.** Distinguish fixed package patterns, local project/configuration values, and any user-supplied values. State when an untrusted deeply nested pattern or execution path cannot be established.
+- [x] **Step 4: Publish the bounded review and link it from the advisory record.** Keep the `braces` reference and all 34 finding dispositions `undetermined`.
 
 ### Task 2: Synchronize tracking and integrate
 
@@ -39,7 +39,7 @@
 - Modify: this plan
 
 - [x] **Step 1: Mark PR #59 merged and cleaned up, then write this focused plan before investigation changes.** PR #59 merged at `61f85055` after five exact-head checks; both final reports were inspected, and its worktree/branches were removed.
-- [ ] **Step 2: Verify documentation and available checks.** Run `git diff --check`, structure verification, source/lockfile consistency checks, and configured local suites. CI is the full package/native gate.
+- [x] **Step 2: Verify documentation and available checks.** Run `git diff --check`, structure verification, source/lockfile consistency checks, and configured local suites. CI is the full package/native gate.
 - [ ] **Step 3: Commit, push, open one PR, and obtain independent review.** Record only exact-version-supported claims.
 - [ ] **Step 4: Require five exact-head CI checks, merge, verify remote main, and remove this worktree and branch.** The next feature updates tracking before implementation.
 
