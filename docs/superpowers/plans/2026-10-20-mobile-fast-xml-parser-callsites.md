@@ -25,10 +25,10 @@
 
 **Interfaces:** Consume `mobile/package-lock.json`, the final PR #56 Android/iOS report identities, and exact package source for `@react-native-community/cli-platform-android` and `cli-platform-apple` at 14.1.0. Produce a table with consumer version, source file/function, `fast-xml-parser` API called, input origin, advisory operation match, and evidence limit.
 
-- [ ] **Step 1: Verify the pinned packages and direct advisory identity.** Confirm the two CLI dependency paths, `fast-xml-parser` 4.5.7, and GHSA-gh4j-gqv2-49f6 against the lockfile and final reports.
-- [ ] **Step 2: Inspect exact-version consumer source.** Record every direct `fast-xml-parser` import/use in the two CLI packages, including any `XMLBuilder` call or its verified absence in those package files. Check any additional direct consumer path shown by the lockfile tree before claiming completeness.
-- [ ] **Step 3: Trace input to each relevant call.** Cite the package source and classify what is known about input origin. Leave attacker control and device inclusion unresolved where the inspected source is insufficient.
-- [ ] **Step 4: Publish the bounded review and link it from the existing advisory record.** Keep all 34 findings `undetermined` and the remaining five direct references queued.
+- [x] **Step 1: Verify the pinned packages and direct advisory identity.** Both 14.1.0 CLI tarballs matched the lockfile SHA-512 integrity values; the tracked lockfile and PR #56 reports identify `fast-xml-parser` 4.5.7 and GHSA-gh4j-gqv2-49f6.
+- [x] **Step 2: Inspect exact-version consumer source.** A recursive search of the published JavaScript found three direct import/use files, with `XMLParser`/`XMLValidator` and no direct `XMLBuilder` call in the two pinned CLI packages.
+- [x] **Step 3: Trace input to each relevant call.** The cited functions read local manifest, workspace, or scheme files. Input control and other consumers remain unverified.
+- [x] **Step 4: Publish the bounded review and link it from the existing advisory record.** All 34 findings remain `undetermined` and the other five direct references remain queued.
 
 ### Task 2: Synchronize tracking and integrate
 
@@ -39,7 +39,7 @@
 - Modify: this plan
 
 - [x] **Step 1: Mark PR #56 merged and cleaned up, then write this focused plan before investigation changes.** PR #56 merged at `29fa1a2e` after five checks; both final Release reports were inspected, and its worktree/branches were removed.
-- [ ] **Step 2: Verify the documentation and relevant package checks.** Run `git diff --check`, structure verification, source/lockfile consistency checks, and available configured local suites. Use CI for the full package/native gate when local services or installs are unavailable.
+- [x] **Step 2: Verify the documentation and relevant package checks.** `git diff --check`, structure verification (140 paths), exact tarball integrity checks, the scripts suite (26 tests plus seven subtests), and backend/ML Ruff checks passed. CI remains the full package/native gate.
 - [ ] **Step 3: Commit, push, open one PR, and obtain independent review.** Record only claims supported by exact-version source.
 - [ ] **Step 4: Require five exact-head CI checks, merge, verify remote main, and remove this worktree and branch.** The next feature updates tracking before implementation.
 
