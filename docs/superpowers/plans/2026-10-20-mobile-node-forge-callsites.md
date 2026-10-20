@@ -25,10 +25,10 @@
 
 **Interfaces:** Consume `mobile/package-lock.json`, final PR #58 Android/iOS report identities, and exact published `@react-native/dev-middleware` 0.75.5 and `selfsigned` 2.4.1 source. Produce a table of consumer file/function, `node-forge` API called, input origin, relationship to vulnerable signature verification, and evidence limit.
 
-- [ ] **Step 1: Verify versions and advisory.** Confirm the shortest production path, `node-forge` 1.4.0, and GHSA-86w9-cpqp-85rv.
-- [ ] **Step 2: Inspect exact-version source.** Verify package tarballs against lockfile integrity; find direct `node-forge` imports and relevant middleware calls to `selfsigned`.
-- [ ] **Step 3: Trace the operation and input.** Identify whether the consumer calls vulnerable RSA verification, key/certificate generation, or another operation. Avoid conclusions about other `node-forge` users, attacker control, and device inclusion without evidence.
-- [ ] **Step 4: Publish the bounded review and link it from the advisory record.** Keep the direct reference and all 34 finding dispositions `undetermined`.
+- [x] **Step 1: Verify versions and advisory.** Confirm the shortest production path, `node-forge` 1.4.0, and GHSA-86w9-cpqp-85rv.
+- [x] **Step 2: Inspect exact-version source.** Verify package tarballs against lockfile integrity; find direct `node-forge` imports and relevant middleware calls to `selfsigned`.
+- [x] **Step 3: Trace the operation and input.** Identify whether the consumer calls vulnerable RSA verification, key/certificate generation, or another operation. Avoid conclusions about other `node-forge` users, attacker control, and device inclusion without evidence.
+- [x] **Step 4: Publish the bounded review and link it from the advisory record.** Keep the direct reference and all 34 finding dispositions `undetermined`.
 
 ### Task 2: Synchronize tracking and integrate
 
@@ -39,7 +39,7 @@
 - Modify: this plan
 
 - [x] **Step 1: Mark PR #58 merged and cleaned up, then write this focused plan before investigation changes.** PR #58 merged at `3827dd03` after five checks; both final reports were inspected, and its worktree/branches were removed.
-- [ ] **Step 2: Verify documentation and relevant package checks.** Run `git diff --check`, structure verification, source/lockfile consistency checks, and available configured local suites. CI is the full package/native gate where local services or installs are unavailable.
+- [x] **Step 2: Verify documentation and relevant package checks.** Run `git diff --check`, structure verification, source/lockfile consistency checks, and available configured local suites. CI is the full package/native gate where local services or installs are unavailable.
 - [ ] **Step 3: Commit, push, open one PR, and obtain independent review.** Record only exact-version-supported claims.
 - [ ] **Step 4: Require five exact-head CI checks, merge, verify remote main, and remove this worktree and branch.** The next feature updates tracking before implementation.
 
