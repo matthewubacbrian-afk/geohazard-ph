@@ -25,10 +25,10 @@
 
 **Interfaces:** Existing `_inputs` fixture gains a lockfile path; `build_report` gains a fifth path argument. Expected advisory fields are `installed_nodes`, `via_packages`, and `advisory_references`.
 
-- [ ] **Step 1: Add a minimal `packages` lockfile fixture with `node_modules/image-size` version `1.2.1` and `node_modules/metro` version `0.75.5`; include direct `via` source `12345`, HTTPS URL, and range `<=1.2.1`.** Assert direct and inherited rows exactly, including empty arrays for the opposite evidence type.
-- [ ] **Step 2: Add cases for a missing audit node in the lockfile, missing version, malformed `via` entry, and invalid advisory URL.** Each must raise `ValueError` mentioning the finding package.
-- [ ] **Step 3: Assert both workflow invocations pass `--lockfile mobile/package-lock.json`.**
-- [ ] **Step 4: Run `python -m pytest scripts/tests/test_mobile_artifact_inventory.py scripts/tests/test_mobile_ci_workflow.py -q`; verify failure from the missing fifth argument/fields before implementation.**
+- [x] **Step 1: Add a minimal `packages` lockfile fixture with `node_modules/image-size` version `1.2.1` and `node_modules/metro` version `0.75.5`; include direct `via` source `12345`, HTTPS URL, and range `<=1.2.1`.** Direct and inherited rows are asserted exactly.
+- [x] **Step 2: Add cases for a missing audit node in the lockfile, missing version, malformed `via` entry, and invalid advisory URL.** Each raises `ValueError` mentioning the finding package.
+- [x] **Step 3: Assert both workflow invocations pass `--lockfile package-lock.json` from `mobile/`.**
+- [x] **Step 4: Run the focused pytest command and verify the expected red failure.** The initial test failed because `build_report` did not accept the fifth argument; after implementation, 19 focused tests passed.
 
 ### Task 2: Implement deterministic evidence enrichment
 
@@ -38,10 +38,10 @@
 
 **Interfaces:** `build_report(platform, source_map_path, artifact_path, audit_json_path, lockfile_path)`; required CLI `--lockfile`.
 
-- [ ] **Step 1: Read the lockfile as a JSON object and require a `packages` object.** Resolve each audit node exactly, rejecting missing or non-string versions.
-- [ ] **Step 2: Parse every `via` entry.** Strings become sorted `via_packages`; direct objects become sorted dictionaries containing `source`, `url`, and `range`. Reject unsupported/malformed entries. Do not copy title, CVSS, or raw audit payload.
-- [ ] **Step 3: Add `--lockfile mobile/package-lock.json` to both platform inventory commands.**
-- [ ] **Step 4: Rerun the focused tests, full `scripts/tests`, configured Ruff, structure and whitespace checks.**
+- [x] **Step 1: Read the lockfile as a JSON object and require a `packages` object.** Each audit node resolves to a nonempty string version.
+- [x] **Step 2: Parse every `via` entry.** Strings become sorted `via_packages`; direct objects become sorted `source`, `url`, and `range` dictionaries; malformed entries fail.
+- [x] **Step 3: Add `--lockfile package-lock.json` to both platform inventory commands (their working directory is `mobile/`).**
+- [x] **Step 4: Rerun the focused tests, full `scripts/tests`, configured Ruff, structure and whitespace checks.** 19 focused tests, 26 script tests plus seven subtests, Ruff, structure, and whitespace checks passed.
 - [ ] **Step 5: Commit the implementation and tests with `feat: record mobile advisory identities`.**
 
 ### Task 3: Verify, review, and integrate

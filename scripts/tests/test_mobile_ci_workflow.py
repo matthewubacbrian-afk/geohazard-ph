@@ -36,6 +36,7 @@ class MobileCiWorkflowTests(unittest.TestCase):
             ],
         )
         self.assertIn("if-no-files-found: error", workflow)
+        self.assertEqual(workflow.count("--lockfile package-lock.json"), 2)
 
     def test_inventory_script_is_exercised_in_python_ci(self):
         backend_workflow = (ROOT / ".github" / "workflows" / "backend-ci.yml").read_text(
