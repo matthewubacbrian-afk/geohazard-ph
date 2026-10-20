@@ -27,7 +27,7 @@
 
 **Interfaces:**
 - CLI: `python scripts/mobile_artifact_inventory.py --platform android|ios --source-map PATH --artifact PATH --audit-json PATH --output PATH`.
-- Output: deterministic JSON with `platform`, `artifact_sha256` (APK bytes or iOS `main.jsbundle` bytes), `source_map_sha256`, `bundle_path`, `native_entries`, `source_packages`, and `advisories`. Each advisory has `package`, `severity`, `source_map_observation` (`listed` or `not_listed`), `matched_source_count`, `dependency_paths`, and `disposition: undetermined`.
+- Output: deterministic JSON with `platform`, `artifact_sha256`, `artifact_hash_scope` (`android_apk_file` or `ios_main_jsbundle_file`), `source_map_sha256`, `bundle_path`, `native_entries`, `source_packages`, and `advisories`. Each advisory has `package`, `severity`, `source_map_observation` (`listed` or `not_listed`), `matched_source_count`, `dependency_paths`, and `disposition: undetermined`.
 
 - [x] **Step 1: Write synthetic tests** for a Metro source map, audit entries, an APK zip with a Hermes asset/native file, and an iOS `.app` with `main.jsbundle`/Frameworks.
 - [x] **Step 2: Run the focused test and verify it fails** because the inventory script does not yet exist.
@@ -55,7 +55,7 @@
 - [x] **Step 2: Run the focused tests and verify the expected failure**.
 - [x] **Step 3: Add Android and iOS release inventory steps** while preserving the existing debug/test gates.
 - [x] **Step 4: Update the audit and status docs** with the exact evidence boundary and commands; do not claim a new audit count before CI reports exist.
-- [ ] **Step 5: Verify and correct the first clean CI reports**. All five checks passed on PR #54 at `3d76763f`; the Android and iOS reports each recorded 34 advisory packages, with `react-native` listed in the JavaScript map. The first iOS report counted `Info.plist` as native code. A regression test now requires the app executable and excludes framework metadata; rerun all checks and inspect the corrected report.
+- [x] **Step 5: Verify and correct the first clean CI reports**. All five checks passed on PR #54 at `3d76763f`; the Android and iOS reports each recorded 34 advisory packages, with `react-native` listed in the JavaScript map. The first iOS report counted `Info.plist` as native code. A regression test now requires the app executable and excludes framework metadata. The corrected clean run at `2c5890d7` passed and its iOS report lists only the app and Hermes executables. Independent review also requested explicit hash scope, iOS input-failure coverage, and exact report-only upload checks; those are implemented locally and await final-head CI.
 - [ ] **Step 6: Record dated evidence, finish verification and review**. Update the audit/status/epic records with only observed results and limits; run focused tests, package verification, structure and whitespace checks, and independent review.
 - [ ] **Step 7: Commit, push, and complete PR #54**; require all five green CI checks on the final head, verify the tested head on remote main, then remove worktree and branches.
 
