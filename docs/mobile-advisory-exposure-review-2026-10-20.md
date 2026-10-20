@@ -52,7 +52,7 @@ operation with attacker-controlled input.
 
 | Advisory and installed package | Affected operation and input precondition | Current project evidence |
 | --- | --- | --- |
-| [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), `braces` 3.0.3 (`<=3.0.3`) | Recursive brace-pattern parsing or expansion of a sufficiently deep pattern can exhaust the Node.js call stack. | Reached through CLI glob matching in the lockfile; pattern origin and whether an untrusted pattern reaches `braces` remain unverified. |
+| [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), `braces` 3.0.3 (`<=3.0.3`) | Recursive brace-pattern parsing or expansion of a sufficiently deep pattern can exhaust the Node.js call stack. | The [bounded consumer-call review](mobile-braces-callsites-2026-10-21.md) found `fast-glob`'s direct `micromatch.braces` bridge, fixed Android/Apple CLI patterns without paired braces, local cache patterns in `cli-clean`, and other inspected `micromatch` methods that call `picomatch`. A crafted untrusted pattern path and broader execution context remain unverified. |
 | [GHSA-gh4j-gqv2-49f6](https://github.com/advisories/GHSA-gh4j-gqv2-49f6), `fast-xml-parser` 4.5.7 (`<5.7.0`) | `XMLBuilder` emits unescaped comment or CDATA delimiters if those values contain attacker-controlled `-->` or `]]>`. | The [bounded consumer-call review](mobile-fast-xml-parser-callsites-2026-10-20.md) found three direct `XMLParser`/`XMLValidator` uses and no direct `XMLBuilder` call in the pinned Android and Apple CLI packages. Other consumers, input control, and reachability remain unverified. |
 | [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq), `image-size` 1.2.1 (`>=1.2.0 <=2.0.2`) | Parsing a crafted JXL or HEIF buffer with a zero-sized box can loop indefinitely in a Node.js process. | The [bounded Metro consumer-call review](mobile-image-size-callsites-2026-10-20.md) found asset path/buffer calls and byte-signature format selection; attacker control of a crafted asset remains unverified. |
 | [GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr), `image-size` 1.2.1 (`>=0.6.3 <=2.0.2`) | Parsing a crafted ICNS buffer with a zero-length entry can loop indefinitely in a Node.js process. | The same Metro asset calls can dispatch by bytes despite an extension gate; a crafted ICNS input path and attacker control remain unverified. |
@@ -95,3 +95,6 @@ crafted-input provenance remains open for both parser-loop advisories.
 The [bounded `node-forge` consumer-call review](mobile-node-forge-callsites-2026-10-20.md)
 records the middleware manifest-only edge and `selfsigned.generate` certificate
 verification; external signature input and an actual middleware call remain unverified.
+The [bounded `braces` consumer-call review](mobile-braces-callsites-2026-10-21.md)
+distinguishes `fast-glob` brace expansion from ordinary `micromatch` matching;
+untrusted pattern provenance and execution context remain open.
