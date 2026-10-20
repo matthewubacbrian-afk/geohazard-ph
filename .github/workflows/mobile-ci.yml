@@ -46,6 +46,7 @@ jobs:
             --source-map android/app/build/generated/sourcemaps/react/release/index.android.bundle.map \
             --artifact android/app/build/outputs/apk/release/app-release.apk \
             --audit-json "$RUNNER_TEMP/mobile-audit.json" \
+            --lockfile package-lock.json \
             --output "$RUNNER_TEMP/mobile-artifact-report-android.json"
       - uses: actions/upload-artifact@v4
         with:
@@ -101,6 +102,7 @@ jobs:
             --source-map "$RUNNER_TEMP/ios-release.map" \
             --artifact "$RUNNER_TEMP/mobile-ios-derived/Build/Products/Release-iphonesimulator/GeoHazardPH.app" \
             --audit-json "$RUNNER_TEMP/mobile-audit.json" \
+            --lockfile package-lock.json \
             --output "$RUNNER_TEMP/mobile-artifact-report-ios.json"
       - uses: actions/upload-artifact@v4
         with:

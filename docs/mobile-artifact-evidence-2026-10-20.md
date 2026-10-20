@@ -6,8 +6,11 @@ This record covers non-published Release builds of the React Native 0.75.5 app i
 passed all five project checks at head `3d76763f` and uploaded small Android and
 iOS JSON reports. Inspection exposed an iOS file-list error, which the
 [corrected clean run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/39370776500)
-at head `2c5890d7` resolved. The workflow retains reports for seven days; this
-page keeps the essential corrected observations after those attachments expire.
+at head `2c5890d7` resolved. The [final-head run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/39375918287)
+at `a16805ba` passed all five project checks. Its Android and iOS reports were
+downloaded and inspected before [PR #54](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/54)
+merged. The workflow retains reports for seven days; this page keeps the
+essential observations after those attachments expire.
 
 | Observation | Android Release APK | iOS unsigned Release simulator app |
 | --- | --- | --- |
@@ -25,7 +28,10 @@ hash of the complete `.app` directory:
 The Android and iOS source-map hashes are respectively
 `45fb6e3cbe2ecc2eb51f574b2445c8d76fa190c64b1bc3ea7dbbc8f1a0a078ea`
 and `f65522694eac430286068b517e3266ff10c6e8f486ee36eec35c278030026d47`.
-The next report format also labels the artifact hash scope explicitly.
+The final report format labels these scopes `android_apk_file` and
+`ios_main_jsbundle_file`. It repeats the same source-map hashes and iOS bundle
+hash; the final APK file hash is
+`84b880b9020ddb523b458815f156890c57cea52eec2c958b5205803628bbc6ff`.
 
 Inspection of the first iOS report found that the native-file filter counted
 `Frameworks/hermes.framework/Info.plist` and omitted the app executable. The

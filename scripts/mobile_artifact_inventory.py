@@ -53,7 +53,7 @@ def _source_counts(source_map: dict) -> dict[str, int]:
     return counts
 
 
-def _advisories(audit: dict, source_counts: dict[str, int]) -> list[dict]:
+def _advisories(audit: dict, source_counts: dict[str, int], packages: dict) -> list[dict]:
     vulnerabilities = audit.get("vulnerabilities")
     if not isinstance(vulnerabilities, dict):
         raise ValueError("audit JSON has no vulnerabilities object")
@@ -63,10 +63,42 @@ def _advisories(audit: dict, source_counts: dict[str, int]) -> list[dict]:
             raise ValueError("audit vulnerabilities have an invalid entry")
         nodes = finding.get("nodes")
         severity = finding.get("severity")
-        if not isinstance(nodes, list) or not all(isinstance(node, str) for node in nodes):
+        if not isinstance(nodes, list) or not nodes or not all(isinstance(node, str) for node in nodes):
             raise ValueError(f"audit paths are invalid for {name}")
         if not isinstance(severity, str):
             raise ValueError(f"audit severity is invalid for {name}")
+        installed_nodes = []
+        for node in sorted(set(nodes)):
+            package = packages.get(node)
+            version = package.get("version") if isinstance(package, dict) else None
+            if not isinstance(version, str) or not version:
+                raise ValueError(f"lockfile version is missing for {name}: {node}")
+            installed_nodes.append({"path": node, "version": version})
+        via = finding.get("via")
+        if not isinstance(via, list) or not via:
+            raise ValueError(f"audit via entries are invalid for {name}")
+        via_packages = set()
+        references = set()
+        for entry in via:
+            if isinstance(entry, str) and entry:
+                via_packages.add(entry)
+            elif isinstance(entry, dict):
+                source = entry.get("source")
+                url = entry.get("url")
+                affected_range = entry.get("range")
+                if (
+                    not isinstance(source, int)
+                    or isinstance(source, bool)
+                    or source <= 0
+                    or not isinstance(url, str)
+                    or not url.startswith("https://")
+                    or not isinstance(affected_range, str)
+                    or not affected_range
+                ):
+                    raise ValueError(f"audit advisory reference is invalid for {name}")
+                references.add((source, url, affected_range))
+            else:
+                raise ValueError(f"audit via entry is invalid for {name}")
         matched = source_counts.get(name, 0)
         rows.append(
             {
@@ -75,6 +107,12 @@ def _advisories(audit: dict, source_counts: dict[str, int]) -> list[dict]:
                 "source_map_observation": "listed" if matched else "not_listed",
                 "matched_source_count": matched,
                 "dependency_paths": sorted(set(nodes)),
+                "installed_nodes": installed_nodes,
+                "via_packages": sorted(via_packages),
+                "advisory_references": [
+                    {"source": source, "url": url, "range": affected_range}
+                    for source, url, affected_range in sorted(references)
+                ],
                 "disposition": "undetermined",
             }
         )
@@ -126,11 +164,19 @@ def _ios_artifact(app: Path) -> tuple[str, str, list[str]]:
 
 
 def build_report(
-    platform: str, source_map_path: Path, artifact_path: Path, audit_json_path: Path
+    platform: str,
+    source_map_path: Path,
+    artifact_path: Path,
+    audit_json_path: Path,
+    lockfile_path: Path,
 ) -> dict:
     """Return a small deterministic report of observed release inputs."""
     source_map = _read_object(source_map_path, "source map")
     audit = _read_object(audit_json_path, "audit")
+    lockfile = _read_object(lockfile_path, "lockfile")
+    packages = lockfile.get("packages")
+    if not isinstance(packages, dict):
+        raise ValueError("lockfile has no packages object")
     source_counts = _source_counts(source_map)
     if platform == "android":
         artifact_hash, bundle_path, native_entries = _android_artifact(artifact_path)
@@ -148,7 +194,7 @@ def build_report(
         "bundle_path": bundle_path,
         "native_entries": native_entries,
         "source_packages": sorted(source_counts),
-        "advisories": _advisories(audit, source_counts),
+        "advisories": _advisories(audit, source_counts, packages),
     }
 
 
@@ -158,9 +204,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--source-map", required=True, type=Path)
     parser.add_argument("--artifact", required=True, type=Path)
     parser.add_argument("--audit-json", required=True, type=Path)
+    parser.add_argument("--lockfile", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
-    report = build_report(args.platform, args.source_map, args.artifact, args.audit_json)
+    report = build_report(
+        args.platform, args.source_map, args.artifact, args.audit_json, args.lockfile
+    )
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return 0
 
