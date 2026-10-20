@@ -45,6 +45,10 @@ jobs:
           ruff check scripts/verify_staging_config.py scripts/tests/test_deploy_staging.py
           python scripts/verify_staging_config.py
           python -m unittest discover -s scripts/tests -p 'test_deploy_staging.py' -v
+      - name: Verify mobile artifact inventory
+        run: |
+          ruff check --config backend/pyproject.toml scripts/mobile_artifact_inventory.py scripts/tests/test_mobile_artifact_inventory.py scripts/tests/test_mobile_ci_workflow.py
+          PYTHONPATH=. pytest -q scripts/tests/test_mobile_artifact_inventory.py scripts/tests/test_mobile_ci_workflow.py
       - name: Create test database
         working-directory: backend
         run: |

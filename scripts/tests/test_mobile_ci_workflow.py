@@ -1,13 +1,51 @@
-from pathlib import Path
 import subprocess
 import unittest
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github" / "workflows" / "mobile-ci.yml"
 
 
 class MobileCiWorkflowTests(unittest.TestCase):
+    def test_release_artifact_reports_are_generated_without_uploading_binaries(self):
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        android_job, ios_job = workflow.split("  ios-simulator:", maxsplit=1)
+
+        self.assertIn("./gradlew assembleRelease", android_job)
+        self.assertIn("index.android.bundle.map", android_job)
+        self.assertIn("app-release.apk", android_job)
+        self.assertIn("--platform android", android_job)
+        self.assertIn("--platform ios", ios_job)
+        self.assertIn("-configuration Release", ios_job)
+        self.assertIn("SOURCEMAP_FILE", ios_job)
+        self.assertIn("GeoHazardPH.app", ios_job)
+        self.assertEqual(workflow.count("actions/upload-artifact@v4"), 2)
+        upload_paths = [
+            [
+                line.strip().removeprefix("path: ")
+                for line in block.splitlines()
+                if line.startswith("          path: ")
+            ]
+            for block in workflow.split("uses: actions/upload-artifact@v4")[1:]
+        ]
+        self.assertEqual(
+            upload_paths,
+            [
+                ["${{ runner.temp }}/mobile-artifact-report-android.json"],
+                ["${{ runner.temp }}/mobile-artifact-report-ios.json"],
+            ],
+        )
+        self.assertIn("if-no-files-found: error", workflow)
+
+    def test_inventory_script_is_exercised_in_python_ci(self):
+        backend_workflow = (ROOT / ".github" / "workflows" / "backend-ci.yml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("pytest -q scripts/tests/test_mobile_artifact_inventory.py", backend_workflow)
+        self.assertIn("ruff check", backend_workflow)
+        self.assertIn("scripts/mobile_artifact_inventory.py", backend_workflow)
+
     def test_android_setup_skips_obsolete_default_tools_package(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")
         setup_start = workflow.index("uses: android-actions/setup-android@v3")
