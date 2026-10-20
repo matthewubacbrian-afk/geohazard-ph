@@ -20,7 +20,21 @@ class MobileCiWorkflowTests(unittest.TestCase):
         self.assertIn("SOURCEMAP_FILE", ios_job)
         self.assertIn("GeoHazardPH.app", ios_job)
         self.assertEqual(workflow.count("actions/upload-artifact@v4"), 2)
-        self.assertNotIn("path: mobile/android/app/build/outputs", workflow)
+        upload_paths = [
+            [
+                line.strip().removeprefix("path: ")
+                for line in block.splitlines()
+                if line.startswith("          path: ")
+            ]
+            for block in workflow.split("uses: actions/upload-artifact@v4")[1:]
+        ]
+        self.assertEqual(
+            upload_paths,
+            [
+                ["${{ runner.temp }}/mobile-artifact-report-android.json"],
+                ["${{ runner.temp }}/mobile-artifact-report-ios.json"],
+            ],
+        )
         self.assertIn("if-no-files-found: error", workflow)
 
     def test_inventory_script_is_exercised_in_python_ci(self):

@@ -134,13 +134,16 @@ def build_report(
     source_counts = _source_counts(source_map)
     if platform == "android":
         artifact_hash, bundle_path, native_entries = _android_artifact(artifact_path)
+        artifact_hash_scope = "android_apk_file"
     elif platform == "ios":
         artifact_hash, bundle_path, native_entries = _ios_artifact(artifact_path)
+        artifact_hash_scope = "ios_main_jsbundle_file"
     else:
         raise ValueError(f"unsupported platform: {platform}")
     return {
         "platform": platform,
         "artifact_sha256": artifact_hash,
+        "artifact_hash_scope": artifact_hash_scope,
         "source_map_sha256": _sha256(source_map_path),
         "bundle_path": bundle_path,
         "native_entries": native_entries,

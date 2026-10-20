@@ -62,6 +62,7 @@ def test_android_report_matches_sources_and_packaged_native_files(tmp_path: Path
     assert report["platform"] == "android"
     assert report["bundle_path"] == "assets/index.android.bundle"
     assert report["artifact_sha256"] == hashlib.sha256(apk.read_bytes()).hexdigest()
+    assert report["artifact_hash_scope"] == "android_apk_file"
     assert report["native_entries"] == ["lib/arm64-v8a/libhermes.so"]
     assert report["source_packages"] == ["@react-native/metro-config", "image-size"]
     assert report["advisories"] == [
@@ -100,7 +101,30 @@ def test_ios_report_lists_executables_without_framework_metadata(tmp_path: Path)
 
     assert report["bundle_path"] == "main.jsbundle"
     assert report["artifact_sha256"] == hashlib.sha256(b"iOS Hermes bytecode").hexdigest()
+    assert report["artifact_hash_scope"] == "ios_main_jsbundle_file"
     assert report["native_entries"] == ["Frameworks/React.framework/React", "GeoHazardPH"]
+
+
+def test_ios_report_rejects_missing_or_invalid_app_executable(tmp_path: Path) -> None:
+    source_map, audit_json = _inputs(tmp_path)
+    app = tmp_path / "GeoHazardPH.app"
+    app.mkdir()
+    (app / "main.jsbundle").write_bytes(b"iOS Hermes bytecode")
+
+    with pytest.raises(ValueError, match=r"Info\.plist"):
+        build_report("ios", source_map, app, audit_json)
+
+    (app / "Info.plist").write_text("bad plist", encoding="utf-8")
+    with pytest.raises(ValueError, match=r"Info\.plist"):
+        build_report("ios", source_map, app, audit_json)
+
+    (app / "Info.plist").write_bytes(plistlib.dumps({"CFBundleExecutable": "../other"}))
+    with pytest.raises(ValueError, match="executable name"):
+        build_report("ios", source_map, app, audit_json)
+
+    (app / "Info.plist").write_bytes(plistlib.dumps({"CFBundleExecutable": "GeoHazardPH"}))
+    with pytest.raises(ValueError, match="app executable"):
+        build_report("ios", source_map, app, audit_json)
 
 
 def test_report_rejects_missing_bundle_or_invalid_audit(tmp_path: Path) -> None:
