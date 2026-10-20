@@ -25,10 +25,10 @@
 
 **Interfaces:** Consume `mobile/package-lock.json`, final PR #57 Android/iOS report identities, and Metro 0.80.12 published source. Produce a table of source file/function, `image-size` API call, file/buffer origin, JXL/HEIF/ICNS handling evidence, and limits for GHSA-5p2g-fcmc-qvqq and GHSA-w3rx-r6r6-pgpr.
 
-- [ ] **Step 1: Verify versions and advisories.** Confirm `metro` 0.80.12, `image-size` 1.2.1, both direct GHSA references, and the shortest production lockfile path.
-- [ ] **Step 2: Inspect exact-version source.** Verify the npm tarball against lockfile integrity, find all direct `image-size` uses in published Metro JavaScript, and inspect the relevant caller/helper chain.
-- [ ] **Step 3: Trace inputs and formats.** Record what is known about file paths, buffers, format filtering, and build context. Leave attacker control and packaged-device reachability unresolved unless directly evidenced.
-- [ ] **Step 4: Publish the bounded review and link it from the advisory record.** Keep both advisory references and all 34 finding dispositions `undetermined`.
+- [x] **Step 1: Verify versions and advisories.** The lockfile and production tree confirm Metro 0.80.12, `image-size` 1.2.1, both GHSA references, and the shortest path.
+- [x] **Step 2: Inspect exact-version source.** Both tarballs match lockfile SHA-512 integrity. Published Metro JavaScript has one direct `image-size` import in `Assets.js`; its two calls and the asset serializer were inspected.
+- [x] **Step 3: Trace inputs and formats.** The review records local file paths/buffers, Metro's extension list, and `image-size` byte-based dispatch. Attacker control and device inclusion remain unverified.
+- [x] **Step 4: Publish the bounded review and link it from the advisory record.** Both direct references and all 34 finding dispositions remain `undetermined`.
 
 ### Task 2: Synchronize tracking and integrate
 
@@ -39,7 +39,7 @@
 - Modify: this plan
 
 - [x] **Step 1: Mark PR #57 merged and cleaned up, then write this focused plan before investigation changes.** PR #57 merged at `521faeed` after five checks; both final reports were inspected, and its worktree/branches were removed.
-- [ ] **Step 2: Verify documentation and relevant package checks.** Run `git diff --check`, structure verification, source/lockfile consistency checks, and available configured local suites. CI is the full package/native gate where local services or installs are unavailable.
+- [x] **Step 2: Verify documentation and relevant package checks.** `git diff --check`, structure verification (140 paths), exact tarball integrity checks, the scripts suite (26 tests plus seven subtests), and backend/ML Ruff checks passed. CI remains the full package/native gate.
 - [ ] **Step 3: Commit, push, open one PR, and obtain independent review.** Record only exact-version-supported claims.
 - [ ] **Step 4: Require five exact-head CI checks, merge, verify remote main, and remove this worktree and branch.** The next feature updates tracking before implementation.
 
