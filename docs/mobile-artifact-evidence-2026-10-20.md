@@ -44,6 +44,14 @@ dispositions. An unlisted JavaScript package may still affect build tooling or
 compiled native code; a listed package does not establish use of the vulnerable
 API or an attack path. The Android list excludes DEX contents, and the iOS list
 cannot attribute statically linked code inside the app executable. Every
-finding remains **undetermined** pending the per-advisory review in
+finding remains **undetermined** pending consumer-call and attack-path review in
 [PLAN.md](../PLAN.md). No APK, `.app`, raw source map, bundle code, or raw npm
 audit payload is committed or uploaded by this workflow.
+
+[PR #55](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/55)
+subsequently added installed lockfile versions, direct advisory references,
+and inherited package links to both report formats. Its final reports retained
+34 undetermined findings on each platform. The
+[dated path and precondition review](mobile-advisory-exposure-review-2026-10-20.md)
+connects the six direct references to shortest observed lockfile paths and
+states the affected operations and remaining reachability questions.

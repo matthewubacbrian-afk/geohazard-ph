@@ -42,7 +42,7 @@
 - [x] **Step 2: Parse every `via` entry.** Strings become sorted `via_packages`; direct objects become sorted `source`, `url`, and `range` dictionaries; malformed entries fail.
 - [x] **Step 3: Add `--lockfile package-lock.json` to both platform inventory commands (their working directory is `mobile/`).**
 - [x] **Step 4: Rerun the focused tests, full `scripts/tests`, configured Ruff, structure and whitespace checks.** 19 focused tests, 26 script tests plus seven subtests, Ruff, structure, and whitespace checks passed.
-- [ ] **Step 5: Commit the implementation and tests with `feat: record mobile advisory identities`.**
+- [x] **Step 5: Commit the implementation and tests with `feat: record mobile advisory identities`.** Commit `98ecaa3b` was pushed in PR #55.
 
 ### Task 3: Verify, review, and integrate
 
@@ -52,11 +52,11 @@
 - Modify: `docs/mobile-artifact-evidence-2026-10-20.md`
 - Modify: this plan
 
-- [ ] **Step 1: Record PR #54 as merged and describe the new fields without classifying findings.** Keep shortest root paths and affected-API review in the queue.
-- [ ] **Step 2: Run full backend/ML `pytest -v` and Ruff, web `npm test`/`npm run build`, mobile Jest/TypeScript, Python script tests, structure verification, and `git diff --check`.**
-- [ ] **Step 3: Get an independent code review, fix actionable findings, commit, push, and open one PR.**
-- [ ] **Step 4: Wait for all five exact-head CI checks, download both reports, and verify every finding has version plus direct reference or inherited link; inspect disposition counts.**
-- [ ] **Step 5: Merge only on success; confirm tested head on remote main, remove this worktree and branch, and update current tracking for the next feature.**
+- [x] **Step 1: Record PR #54 as merged and describe the new fields without classifying findings.** The tracked plan/status kept shortest root paths and affected-API review open.
+- [x] **Step 2: Run package verification.** Local script tests passed 26 plus seven subtests; focused tests passed 19; backend unit tests passed 128, ML tests passed 72, Ruff, structure, and whitespace checks passed. Local Docker Desktop was unavailable for backend integration, and npm installation stalled, so all four complete package checks, mobile TypeScript, and native builds were required and passed in CI.
+- [x] **Step 3: Get an independent code review, fix actionable findings, commit, push, and open one PR.** The reviewer approved with no actionable finding; PR #55 was opened from the pushed branch.
+- [x] **Step 4: Wait for all five exact-head CI checks, download both reports, and verify every finding has version plus direct reference or inherited link; inspect disposition counts.** Five checks passed on `98ecaa3b`. Both reports have 34 findings, five directly affected packages, six direct references, 29 inherited-link findings, zero incomplete rows, and all dispositions undetermined.
+- [x] **Step 5: Merge only on success; confirm tested head on remote main, remove this worktree and branch, and update current tracking for the next feature.** PR #55 merged at `bed6c572`, the tested head is on remote main, and the worktree and branches were removed; this path-review branch updates tracking.
 
 ## Notes for the executor
 
