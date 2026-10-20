@@ -26,10 +26,10 @@
 
 **Interfaces:** The review table has package, installed version, GHSA link, shortest observed root path, affected operation/input, and evidence limit. The six IDs are GHSA-vfj7-8cjw-p6xm, GHSA-gh4j-gqv2-49f6, GHSA-5p2g-fcmc-qvqq, GHSA-w3rx-r6r6-pgpr, GHSA-86w9-cpqp-85rv, and GHSA-hp3w-g68c-fv3c.
 
-- [ ] **Step 1: Recheck the final PR #55 Android/iOS JSON reports.** Confirm 34 rows each, installed versions, five directly affected packages, six direct references, and undetermined dispositions.
-- [ ] **Step 2: Run `npm ls braces fast-xml-parser image-size node-forge sprintf-js --omit=dev --package-lock-only --all --json` from `mobile/`.** Record the shortest `react-native` root path per affected package; note both `fast-xml-parser` paths.
-- [ ] **Step 3: Read the six GitHub Advisory Database pages.** Record the vulnerable operation and required input for each, with direct links and affected ranges.
-- [ ] **Step 4: Write the dated review and link it from the artifact and dependency audit records.** State that package names, npm paths, and operation preconditions do not establish app reachability; leave affected API calls and untrusted input unresolved.
+- [x] **Step 1: Recheck the final PR #55 Android/iOS JSON reports.** Both have 34 rows, installed versions, five directly affected packages, six direct references, and undetermined dispositions.
+- [x] **Step 2: Run the lockfile-only production `npm ls` command from `mobile/`.** The five shortest `react-native` paths and both `fast-xml-parser` paths are recorded.
+- [x] **Step 3: Read the six GitHub Advisory Database pages.** The record links each affected operation, input precondition, and range.
+- [x] **Step 4: Write the dated review and link it from the artifact and dependency audit records.** Package paths and preconditions are separated from unresolved call-site, input, and reachability evidence.
 
 ### Task 2: Synchronize tracking and integrate
 
@@ -39,8 +39,8 @@
 - Modify: `docs/superpowers/plans/2026-10-20-mobile-advisory-identities.md`
 - Modify: this plan
 
-- [ ] **Step 1: Mark PR #55 merged at `bed6c572` after five checks and both report inspections.** Keep per-advisory API/attack-path review and migration/device gates open.
-- [ ] **Step 2: Verify `git diff --check`, `python scripts/verify_structure.py`, report/ID/path consistency, and relevant package suites and linters.** Full CI remains the merge gate if local Docker/npm installation is unavailable.
+- [x] **Step 1: Mark PR #55 merged at `bed6c572` after five checks and both report inspections.** The plan/status keep per-advisory API/attack-path review and migration/device gates open.
+- [x] **Step 2: Verify local documentation and script checks.** `git diff --check`, structure verification (140 paths), six-reference/five-version consistency, five shortest-path comparisons, both configured Ruff checks, and the scripts suite (26 tests plus seven subtests) passed. The five full package/native CI checks remain the merge gate because this branch changes documentation only and local Docker/npm installation is unavailable.
 - [ ] **Step 3: Commit the documentation with `docs: record mobile advisory paths`, push this branch, open one PR, and obtain independent review.**
 - [ ] **Step 4: Require five exact-head CI checks, merge, verify the tested head on remote main, and remove the worktree and branches.** Update the next feature's plan/status first before implementing its code.
 
