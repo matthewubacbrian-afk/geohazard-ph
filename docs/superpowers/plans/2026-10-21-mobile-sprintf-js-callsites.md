@@ -41,7 +41,7 @@
 - [x] **Step 1: Mark PR #60 merged and cleaned up, then commit this focused plan before investigation changes.** PR #60 merged at `b10296a2` after five exact-head checks and inspection of both final reports; its tested head is on remote main and the worktree and branches were removed.
 - [x] **Step 2: Verify documentation and available checks.** `git diff --check`, 140-path structure verification, SHA-512 package integrity, production lockfile graph, the pinned precision probe, script tests (26 plus 7 subtests), and backend/ML Ruff passed. CI is the full package/native gate.
 - [x] **Step 3: Commit, push, open one PR, and obtain independent review.** [PR #61](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/61) contains the SHA-512-verified review; the independent reviewer found no actionable issue.
-- [ ] **Step 4: Require five exact-head CI checks, merge, verify remote main, and remove this worktree and branch.** The next feature updates tracking before implementation.
+- [x] **Step 4: Require five exact-head CI checks, merge, verify remote main, and remove this worktree and branch.** PR #61 merged at `ed13a9cd`; the final reports were inspected and the tested head is on remote main. The worktree and branches were removed.
 
 ## Notes for the executor
 

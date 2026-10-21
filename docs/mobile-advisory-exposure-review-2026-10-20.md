@@ -68,10 +68,11 @@ those operations run on an Android or iOS device.
 
 ## Evidence still needed
 
-1. Inspect the pinned transitive consumers at their installed versions to find
-   actual calls to the affected `braces`, `XMLBuilder`, image parsers,
-   `node-forge` verification, and `sprintf-js` format APIs. Record the caller
-   file/function and whether input is fixed, local, or user-controlled.
+1. The five dated consumer-call reviews inspected bounded direct consumers at
+   pinned versions and recorded observed calls or non-calls. The
+   [cross-advisory gate matrix](mobile-advisory-attack-path-gates-2026-10-21.md)
+   reconciles all six direct references and distinguishes those observations
+   from uninspected indirect consumers; it does not close them.
 2. Trace any untrusted input from a reachable build or runtime entry point to
    that call, including whether the affected code is present in the distributed
    JS bundle, Android DEX/native code, or iOS executable. Record a negative
