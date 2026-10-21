@@ -24,10 +24,10 @@
 
 **Interfaces:** Consume `mobile/package-lock.json`, the PR #61 Android/iOS `mobile-artifact-report` JSON, `docs/mobile-advisory-exposure-review-2026-10-20.md`, and the five dated `mobile-*-callsites` reviews. Produce one row per direct GHSA reference with installed version, observed affected-operation call or boundary, format/pattern/asset/certificate input origin, established process context, remaining untrusted-input/artifact gate, and a precise next evidence action.
 
-- [ ] **Step 1: Verify inventory.** Confirm five directly affected installed packages, six direct advisory references, 34 inherited-chain audit entries per platform, package versions, and unchanged report dispositions.
-- [ ] **Step 2: Reconcile source reviews.** Compare each dated consumer finding to the advisory's operation and input precondition. Distinguish observed call, observed non-call in a bounded consumer, and uninspected indirect consumers.
-- [ ] **Step 3: Record gate matrix.** State the minimum input-to-operation-to-process evidence needed for a disposition; prioritize the next bounded evidence slice without claiming full reachability or safety.
-- [ ] **Step 4: Refresh advisory checklist.** Mark source-call inspection as completed only for the bounded direct consumers reviewed; keep indirect paths, runtime/device attribution, and post-migration verification open.
+- [x] **Step 1: Verify inventory.** Confirm five directly affected installed packages, six direct advisory references, 34 audit entries per platform (29 with inherited links), package versions, and unchanged report dispositions.
+- [x] **Step 2: Reconcile source reviews.** Compare each dated consumer finding to the advisory's operation and input precondition. Distinguish observed call, observed non-call in a bounded consumer, and uninspected indirect consumers.
+- [x] **Step 3: Record gate matrix.** State the minimum input-to-operation-to-process evidence needed for a disposition; prioritize the next bounded evidence slice without claiming full reachability or safety.
+- [x] **Step 4: Refresh advisory checklist.** Mark source-call inspection as completed only for the bounded direct consumers reviewed; keep indirect paths, runtime/device attribution, and post-migration verification open.
 
 ### Task 2: Synchronize tracking and integrate
 
@@ -38,7 +38,7 @@
 - Modify: this plan
 
 - [x] **Step 1: Mark PR #61 merged and cleaned up, then commit this focused plan before investigation changes.** PR #61 merged at `ed13a9cd` after five exact-head checks and inspection of both final reports; its tested head is on remote main and the worktree and branches were removed.
-- [ ] **Step 2: Verify documentation and available checks.** Run `git diff --check`, structure verification, lockfile/report consistency checks, and configured local suites. CI is the full package/native gate.
+- [x] **Step 2: Verify documentation and available checks.** `git diff --check`, 140-path structure verification, script tests (26 plus 7 subtests), backend/ML Ruff, local-link checks, and both final PR #61 report inventories passed. CI is the full package/native gate.
 - [ ] **Step 3: Commit, push, open one PR, and obtain independent review.** Keep findings factual and scoped.
 - [ ] **Step 4: Require five exact-head CI checks, merge, verify remote main, and remove this worktree and branch.** Update tracking before the next feature.
 
