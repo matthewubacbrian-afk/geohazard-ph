@@ -35,6 +35,12 @@ fields match their platform's baseline except the Android APK file hash; the
 iOS app bundle hash also matches. The Release-report JSON format did not
 change.
 
+The [final exact-head run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/39622151862)
+on `2fe27ea8` again passed both native jobs; backend, ML, and web also passed
+on that head. Both compact package summaries matched the first run. The final
+Android report again differed from PR #63 only in the APK file hash, and the
+final iOS report matched PR #63 in every field. PR #64 merged at `ecbe6173`.
+
 ## Interpretation and next gate
 
 V8 coverage records function entry in Node processes inheriting the Release
