@@ -33,16 +33,18 @@ direct names. Each package has `loaded_files` and `executed_functions`, where
 each function has `path`, `name`, and `start_offset`. Paths are relative to
 the requested `node_modules` root.
 
-- [ ] **Step 1: Write tests for import-only and called-function coverage.**
+- [x] **Step 1: Write tests for import-only and called-function coverage.**
       A module-wrapper entry counts as loaded; a nonempty named function with
       positive entry count is listed; zero-count functions are omitted.
-- [ ] **Step 2: Run focused pytest and see the missing-module failure.**
-- [ ] **Step 3: Implement parsing, path validation, deterministic sorting,
+- [x] **Step 2: Run focused pytest and see the missing-module failure.**
+- [x] **Step 3: Implement parsing, path validation, deterministic sorting,
       and the four-argument CLI.**
-- [ ] **Step 4: Run focused pytest; add malformed/no-file and nested-path
+- [x] **Step 4: Run focused pytest; add malformed/no-file and nested-path
       cases, plus a missing-Metro-build sentinel case; observe failures first,
       then pass them.**
-- [ ] **Step 5: Commit the tested summarizer and tests.**
+- [x] **Step 5: Commit the tested summarizer and tests.** Commits `4399fdaf`
+      and `c66f1aa7` include the reviewer-requested sentinel, attribution,
+      and malformed-entry cases.
 
 ### Task 2: Capture the exact CI Release process
 
@@ -55,10 +57,12 @@ the requested `node_modules` root.
 summarizer with `mobile/node_modules` and uploads
 `mobile-process-trace-android`/`mobile-process-trace-ios` JSON.
 
-- [ ] **Step 1: Add a workflow test for both scoped Release environments and
+- [x] **Step 1: Add a workflow test for both scoped Release environments and
       report uploads; run it and observe failure.**
-- [ ] **Step 2: Modify only the Release steps and add report/upload steps.**
-- [ ] **Step 3: Run workflow and script tests; commit the workflow change.**
+- [x] **Step 2: Modify only the Release steps and add report/upload steps.**
+- [x] **Step 3: Run workflow and script tests; commit the workflow change.**
+      Commit `aed14e0f` added the CI wiring; the script suite passed 36 tests
+      and seven subtests after the reviewer fixes.
 
 ### Task 3: Review actual CI evidence and integrate
 
