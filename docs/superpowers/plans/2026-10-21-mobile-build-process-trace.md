@@ -87,10 +87,16 @@ unresolved attack-path/device gates.
       retained 34 undetermined findings, 25 source-map packages, the same
       source-map hashes and native inventories. Only the Android APK hash
       differed. The documentation commit requires a new exact-head gate.
-- [ ] **Step 3: Commit the dated evidence and tracking updates, rerun the
+- [x] **Step 3: Commit the dated evidence and tracking updates, rerun the
       exact-head gate, then merge only if still green.**
-- [ ] **Step 4: Verify the tested head on remote main; archive only a clean,
+      Final head `2fe27ea8` passed backend, ML, web, Android, and iOS checks.
+      Its Android/iOS traces matched the first run; both final Release reports
+      preserved the audited fields, with only the Android APK hash differing.
+- [x] **Step 4: Verify the tested head on remote main; archive only a clean,
       ignored-file-free worktree and remove merged branches.**
+      PR #64 merged at `ecbe6173`; the tested head is an ancestor of main.
+      All 25 ignored items were moved to named preservation folders before
+      archiving the clean worktree and deleting its merged branches.
 
 ## Notes for the executor
 
