@@ -41,7 +41,7 @@
 - [x] **Step 1: Mark PR #59 merged and cleaned up, then write this focused plan before investigation changes.** PR #59 merged at `61f85055` after five exact-head checks; both final reports were inspected, and its worktree/branches were removed.
 - [x] **Step 2: Verify documentation and available checks.** Run `git diff --check`, structure verification, source/lockfile consistency checks, and configured local suites. CI is the full package/native gate.
 - [x] **Step 3: Commit, push, open one PR, and obtain independent review.** [PR #60](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/60) contains the corrected review; independent review found and resolved a production-versus-development lockfile labeling issue.
-- [ ] **Step 4: Require five exact-head CI checks, merge, verify remote main, and remove this worktree and branch.** The next feature updates tracking before implementation.
+- [x] **Step 4: Require five exact-head CI checks, merge, verify remote main, and remove this worktree and branch.** PR #60 merged at `b10296a2`; the final reports were inspected and the tested head is on remote main. The worktree and branches were removed.
 
 ## Notes for the executor
 

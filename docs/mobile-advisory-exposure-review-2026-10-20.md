@@ -57,7 +57,7 @@ operation with attacker-controlled input.
 | [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq), `image-size` 1.2.1 (`>=1.2.0 <=2.0.2`) | Parsing a crafted JXL or HEIF buffer with a zero-sized box can loop indefinitely in a Node.js process. | The [bounded Metro consumer-call review](mobile-image-size-callsites-2026-10-20.md) found asset path/buffer calls and byte-signature format selection; attacker control of a crafted asset remains unverified. |
 | [GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr), `image-size` 1.2.1 (`>=0.6.3 <=2.0.2`) | Parsing a crafted ICNS buffer with a zero-length entry can loop indefinitely in a Node.js process. | The same Metro asset calls can dispatch by bytes despite an extension gate; a crafted ICNS input path and attacker control remain unverified. |
 | [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv), `node-forge` 1.4.0 (`<=1.4.0`) | RSA PKCS#1 v1.5 signature verification can accept extra nested `DigestAlgorithm` elements with low-exponent keys. | The [bounded consumer-call review](mobile-node-forge-callsites-2026-10-20.md) found no direct `selfsigned` use in the pinned middleware's published JavaScript. `selfsigned.generate` does verify the certificate it creates, but no path for a crafted external signature or low-exponent key was established. |
-| [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c), `sprintf-js` 1.0.3 (`<=1.1.3`) | A caller-supplied format string with an out-of-range precision can throw an uncaught `RangeError`. | The path is through Metro configuration/YAML argument parsing; the origin of any format string passed to `sprintf-js` has not been traced. |
+| [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c), `sprintf-js` 1.0.3 (`<=1.1.3`) | A caller-supplied format string with an out-of-range precision can throw an uncaught `RangeError`. | The [bounded consumer-call review](mobile-sprintf-js-callsites-2026-10-21.md) finds `argparse` formatter calls with caller-supplied usage/help text, but Metro's observed YAML loader calls the `js-yaml` library, while `argparse` is imported by the separate YAML CLI. The inspected CLI uses fixed parser text; other callers, input control, and execution context remain unverified. |
 
 The npm result counts package-chain findings, not six independently exploitable
 paths. A package's presence in that graph or absence from a JavaScript source
@@ -98,3 +98,6 @@ verification; external signature input and an actual middleware call remain unve
 The [bounded `braces` consumer-call review](mobile-braces-callsites-2026-10-21.md)
 distinguishes `fast-glob` brace expansion from ordinary `micromatch` matching;
 untrusted pattern provenance and execution context remain open.
+The [bounded `sprintf-js` consumer-call review](mobile-sprintf-js-callsites-2026-10-21.md)
+separates Metro's YAML library call from the YAML executable's `argparse`
+formatter calls; untrusted format-string provenance and execution context remain open.
