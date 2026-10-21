@@ -75,10 +75,18 @@ summarizer with `mobile/node_modules` and uploads
 Release reports; state positive observations, absences within this run, and
 unresolved attack-path/device gates.
 
-- [ ] **Step 1: Verify local package suites, TypeScript, Ruff, structure,
-      links, and `git diff --check`; obtain independent wording/code review.**
-- [ ] **Step 2: Push one PR, require all five exact-head checks, inspect both
+- [x] **Step 1: Verify available local package suites, TypeScript, Ruff,
+      structure, links, and `git diff --check`; document any local gap and
+      obtain independent wording/code review.**
+      The independent review found no actionable issues. Backend integration
+      lacked a usable local Docker engine and passed in exact-head CI.
+- [x] **Step 2: Push one PR, require all five exact-head checks, inspect both
       process reports, and compare Android/iOS Release JSON to PR #63.**
+      PR #64's initial head `a4064e33` passed all five checks. Both traces
+      observed a Metro build and matched by package; both Release reports
+      retained 34 undetermined findings, 25 source-map packages, the same
+      source-map hashes and native inventories. Only the Android APK hash
+      differed. The documentation commit requires a new exact-head gate.
 - [ ] **Step 3: Commit the dated evidence and tracking updates, rerun the
       exact-head gate, then merge only if still green.**
 - [ ] **Step 4: Verify the tested head on remote main; archive only a clean,
@@ -91,3 +99,10 @@ receive the environment variable. It does not capture arguments, a process's
 trust boundary, native calls, or device execution. An anonymous top-level
 function shows module evaluation, not use of the affected parser. Keep those
 claims separate in both JSON interpretation and prose.
+
+Local verification on the first PR head included backend unit tests (128),
+ML tests (72), script tests (36 plus seven subtests), mobile Jest (61) and
+strict TypeScript, web build, and a successful web Vitest retry (175 tests in
+35 files using one threads worker). Ruff, structure, link, and whitespace
+checks passed. Backend PostGIS/Redis integration could not run locally because
+the Docker engine was unavailable; the exact-head backend CI job passed.
