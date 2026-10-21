@@ -24,9 +24,9 @@
 
 **Interfaces:** A preload hook reads an output directory from `GEOHAZARD_IMAGE_INPUT_TRACE_DIR`, intercepts only the pinned CommonJS `image-size` export, and writes one JSONL module-load or call record with PID. Call records distinguish path, `Uint8Array`, and invalid arguments. They include a byte count and SHA-256 of observed bytes (for paths, the parser's at-most-512-KiB read window), a bounded signature class, and a coarse origin class; they never include raw bytes or absolute paths. The wrapped function retains the original return, throw, callback, and exported properties.
 
-- [ ] **Step 1: Write focused tests** for path/buffer inputs, supported-suffix files with JXL/HEIF/ICNS prefixes, exported properties, thrown errors, and recording failure; run to see expected failures.
-- [ ] **Step 2: Implement the preload observer** with fail-closed record writes and deterministic event fields; rerun the focused tests.
-- [ ] **Step 3: Commit** the tested observer with `feat: observe mobile image parser inputs`.
+- [x] **Step 1: Write focused tests** for path/buffer inputs, supported-suffix files with JXL/HEIF/ICNS prefixes, exported properties, thrown errors, and recording failure; run to see expected failures.
+- [x] **Step 2: Implement the preload observer** with fail-closed record writes and deterministic event fields; rerun the focused tests.
+- [x] **Step 3: Commit** the tested observer with `feat: observe mobile image parser inputs`.
 
 ### Task 2: Correlate calls with the exact Release packager
 
