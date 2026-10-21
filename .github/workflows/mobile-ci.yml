@@ -35,8 +35,24 @@ jobs:
         run: ./gradlew assembleDebug
         working-directory: mobile/android
       - name: Build non-published Android release app
-        run: ./gradlew assembleRelease
+        run: |
+          mkdir -p "$RUNNER_TEMP/mobile-node-coverage-android"
+          NODE_V8_COVERAGE="$RUNNER_TEMP/mobile-node-coverage-android" ./gradlew assembleRelease
         working-directory: mobile/android
+      - name: Record Android build-process coverage
+        working-directory: mobile
+        run: |
+          python3 ../scripts/mobile_process_coverage.py \
+            --platform android \
+            --coverage-dir "$RUNNER_TEMP/mobile-node-coverage-android" \
+            --node-modules-root node_modules \
+            --output "$RUNNER_TEMP/mobile-process-trace-android.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-process-trace-android
+          path: ${{ runner.temp }}/mobile-process-trace-android.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Record Android release contents
         working-directory: mobile
         run: |
@@ -83,6 +99,8 @@ jobs:
       - name: Build non-published iOS Release simulator app
         working-directory: mobile
         run: |
+          mkdir -p "$RUNNER_TEMP/mobile-node-coverage-ios"
+          NODE_V8_COVERAGE="$RUNNER_TEMP/mobile-node-coverage-ios" \
           xcodebuild \
             -workspace ios/GeoHazardPH.xcworkspace \
             -scheme GeoHazardPH \
@@ -93,6 +111,20 @@ jobs:
             SOURCEMAP_FILE="$RUNNER_TEMP/ios-release.map" \
             CODE_SIGNING_ALLOWED=NO \
             build
+      - name: Record iOS build-process coverage
+        working-directory: mobile
+        run: |
+          python3 ../scripts/mobile_process_coverage.py \
+            --platform ios \
+            --coverage-dir "$RUNNER_TEMP/mobile-node-coverage-ios" \
+            --node-modules-root node_modules \
+            --output "$RUNNER_TEMP/mobile-process-trace-ios.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-process-trace-ios
+          path: ${{ runner.temp }}/mobile-process-trace-ios.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Record iOS release contents
         working-directory: mobile
         run: |

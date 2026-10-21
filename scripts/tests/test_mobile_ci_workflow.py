@@ -19,7 +19,7 @@ class MobileCiWorkflowTests(unittest.TestCase):
         self.assertIn("-configuration Release", ios_job)
         self.assertIn("SOURCEMAP_FILE", ios_job)
         self.assertIn("GeoHazardPH.app", ios_job)
-        self.assertEqual(workflow.count("actions/upload-artifact@v4"), 2)
+        self.assertEqual(workflow.count("actions/upload-artifact@v4"), 4)
         upload_paths = [
             [
                 line.strip().removeprefix("path: ")
@@ -31,7 +31,9 @@ class MobileCiWorkflowTests(unittest.TestCase):
         self.assertEqual(
             upload_paths,
             [
+                ["${{ runner.temp }}/mobile-process-trace-android.json"],
                 ["${{ runner.temp }}/mobile-artifact-report-android.json"],
+                ["${{ runner.temp }}/mobile-process-trace-ios.json"],
                 ["${{ runner.temp }}/mobile-artifact-report-ios.json"],
             ],
         )
@@ -46,6 +48,27 @@ class MobileCiWorkflowTests(unittest.TestCase):
         self.assertIn("pytest -q scripts/tests/test_mobile_artifact_inventory.py", backend_workflow)
         self.assertIn("ruff check", backend_workflow)
         self.assertIn("scripts/mobile_artifact_inventory.py", backend_workflow)
+
+    def test_release_builds_capture_scoped_node_coverage(self):
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        android_job, ios_job = workflow.split("  ios-simulator:", maxsplit=1)
+
+        self.assertIn(
+            'NODE_V8_COVERAGE="$RUNNER_TEMP/mobile-node-coverage-android" '
+            "./gradlew assembleRelease",
+            android_job,
+        )
+        self.assertIn(
+            'NODE_V8_COVERAGE="$RUNNER_TEMP/mobile-node-coverage-ios" \\',
+            ios_job,
+        )
+        self.assertIn("scripts/mobile_process_coverage.py", workflow)
+        self.assertIn("mobile-process-trace-android.json", android_job)
+        self.assertIn("mobile-process-trace-ios.json", ios_job)
+        backend_workflow = (ROOT / ".github" / "workflows" / "backend-ci.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("scripts/tests/test_mobile_process_coverage.py", backend_workflow)
 
     def test_android_setup_skips_obsolete_default_tools_package(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")
