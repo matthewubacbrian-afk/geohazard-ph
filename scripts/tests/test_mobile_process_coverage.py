@@ -19,12 +19,20 @@ def _coverage(coverage_dir: Path, entries: list[dict], name: str = "coverage-1.j
     (coverage_dir / name).write_text(json.dumps({"result": entries}), encoding="utf-8")
 
 
+def _metro_build(root: Path) -> dict:
+    return {
+        "url": (root / "metro" / "src" / "Server.js").as_uri(),
+        "functions": [_function("", 1), _function("build", 1, 30)],
+    }
+
+
 def test_report_separates_loaded_files_from_executed_named_functions(tmp_path: Path) -> None:
     root = tmp_path / "mobile" / "node_modules"
     coverage_dir = tmp_path / "coverage"
     _coverage(
         coverage_dir,
         [
+            _metro_build(root),
             {
                 "url": (root / "image-size" / "dist" / "types" / "jxl.js").as_uri(),
                 "functions": [_function("", 1), _function("calculate", 0, 25)],
@@ -48,6 +56,7 @@ def test_report_separates_loaded_files_from_executed_named_functions(tmp_path: P
 
     assert report["platform"] == "android"
     assert report["coverage_file_count"] == 1
+    assert report["packager_build_observed"] is True
     assert report["packages"]["image-size"] == {
         "loaded_files": ["image-size/dist/types/jxl.js", "image-size/dist/types/png.js"],
         "executed_functions": [
@@ -64,6 +73,7 @@ def test_report_accepts_nested_target_and_excludes_paths_outside_install(tmp_pat
     _coverage(
         coverage_dir,
         [
+            _metro_build(root),
             {
                 "url": (root / "owner" / "node_modules" / "braces" / "index.js").as_uri(),
                 "functions": [_function("", 1), _function("expand", 1, 30)],
@@ -71,6 +81,10 @@ def test_report_accepts_nested_target_and_excludes_paths_outside_install(tmp_pat
             {
                 "url": (tmp_path / "other" / "node_modules" / "braces" / "index.js").as_uri(),
                 "functions": [_function("", 1), _function("unsafe", 1, 30)],
+            },
+            {
+                "url": (root / "braces" / "node_modules" / "other" / "index.js").as_uri(),
+                "functions": [_function("", 1), _function("unrelated", 1, 30)],
             },
         ],
     )
@@ -83,6 +97,27 @@ def test_report_accepts_nested_target_and_excludes_paths_outside_install(tmp_pat
             {"path": "owner/node_modules/braces/index.js", "name": "expand", "start_offset": 30}
         ],
     }
+
+
+def test_report_rejects_coverage_without_executed_metro_build(tmp_path: Path) -> None:
+    root = tmp_path / "mobile" / "node_modules"
+    coverage_dir = tmp_path / "coverage"
+    _coverage(
+        coverage_dir,
+        [
+            {
+                "url": (root / "image-size" / "dist" / "index.js").as_uri(),
+                "functions": [_function("", 1)],
+            },
+            {
+                "url": (root / "metro" / "src" / "Server.js").as_uri(),
+                "functions": [_function("", 1), _function("build", 0, 30)],
+            },
+        ],
+    )
+
+    with pytest.raises(ValueError, match="no executed Metro build function"):
+        build_report("android", coverage_dir, root)
 
 
 def test_report_requires_coverage_and_installed_tree_entries(tmp_path: Path) -> None:
@@ -98,6 +133,23 @@ def test_report_requires_coverage_and_installed_tree_entries(tmp_path: Path) -> 
         [{"url": (tmp_path / "elsewhere.js").as_uri(), "functions": [_function("", 1)]}],
     )
     with pytest.raises(ValueError, match="no covered files under"):
+        build_report("android", coverage_dir, root)
+
+
+def test_report_rejects_malformed_entry_outside_install(tmp_path: Path) -> None:
+    root = tmp_path / "mobile" / "node_modules"
+    coverage_dir = tmp_path / "coverage"
+    _coverage(
+        coverage_dir,
+        [
+            _metro_build(root),
+            {
+                "url": (tmp_path / "elsewhere.js").as_uri(),
+                "functions": "invalid",
+            },
+        ],
+    )
+    with pytest.raises(TypeError, match="invalid V8 coverage functions array"):
         build_report("android", coverage_dir, root)
 
 
@@ -119,6 +171,7 @@ def test_cli_writes_deterministic_summary(tmp_path: Path) -> None:
     _coverage(
         coverage_dir,
         [
+            _metro_build(root),
             {
                 "url": (root / "sprintf-js" / "src" / "sprintf.js").as_uri(),
                 "functions": [_function("", 1), _function("sprintf", 1, 30)],

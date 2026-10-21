@@ -22,12 +22,14 @@ def _installed_path(url: str, root: Path) -> Path | None:
 
 def _direct_package(path: Path) -> str | None:
     pieces = path.parts
-    for index in range(len(pieces) - 2, -1, -1):
-        if index and pieces[index - 1] != "node_modules":
-            continue
-        if pieces[index] in DIRECT_PACKAGES:
-            return pieces[index]
-    return None
+    if not pieces:
+        return None
+    package_index = 0
+    for index, piece in enumerate(pieces[:-1]):
+        if piece == "node_modules":
+            package_index = index + 1
+    package = pieces[package_index]
+    return package if package in DIRECT_PACKAGES else None
 
 
 def _covered_functions(entry: dict, file: Path) -> tuple[bool, set[tuple[str, str, int]]]:
@@ -72,6 +74,7 @@ def build_report(platform: str, coverage_dir: Path, node_modules_root: Path) -> 
         package: set() for package in DIRECT_PACKAGES
     }
     installed_entry_count = 0
+    packager_build_observed = False
     for file in files:
         try:
             coverage = json.loads(file.read_text(encoding="utf-8"))
@@ -83,21 +86,26 @@ def build_report(platform: str, coverage_dir: Path, node_modules_root: Path) -> 
             if not isinstance(entry, dict) or not isinstance(entry.get("url"), str):
                 raise TypeError(f"invalid V8 coverage entry: {file}")
             relative = _installed_path(entry["url"], root)
-            if relative is None:
-                continue
-            observed, names = _covered_functions(entry, relative)
-            if not observed:
+            observed, names = _covered_functions(entry, relative or Path("."))
+            if relative is None or not observed:
                 continue
             installed_entry_count += 1
+            if relative.as_posix() == "metro/src/Server.js" and any(
+                name == "build" for _, name, _ in names
+            ):
+                packager_build_observed = True
             package = _direct_package(relative)
             if package is not None:
                 loaded[package].add(relative.as_posix())
                 executed[package].update(names)
     if not installed_entry_count:
         raise ValueError(f"no covered files under {root}")
+    if not packager_build_observed:
+        raise ValueError("no executed Metro build function in V8 coverage")
     return {
         "platform": platform,
         "coverage_file_count": len(files),
+        "packager_build_observed": True,
         "packages": {
             package: {
                 "loaded_files": sorted(loaded[package]),
