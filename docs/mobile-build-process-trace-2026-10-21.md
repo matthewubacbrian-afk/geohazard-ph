@@ -17,6 +17,8 @@ The summarizer required a positive named `metro/src/Server.js` `build`
 function entry before reporting package absences. It uploaded compact JSON
 summaries, not the raw coverage files or app binaries. The Android summary
 read 12 coverage files; iOS read 10. Their five package sections match.
+Named-function counts are distinct source positions with positive entry
+counts, not invocation totals.
 
 | Directly affected installed package | Loaded files on each platform | Executed named functions on each platform | Bounded observation |
 | --- | ---: | ---: | --- |
