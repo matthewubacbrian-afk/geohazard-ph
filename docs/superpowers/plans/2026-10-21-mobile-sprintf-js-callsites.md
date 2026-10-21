@@ -25,10 +25,10 @@
 
 **Interfaces:** Consume `mobile/package-lock.json`, the final PR #60 Android/iOS advisory identities, the GHSA-hp3w-g68c-fv3c affected operation, and SHA-512-verified published `sprintf-js` 1.0.3, `argparse` 1.0.10, `js-yaml` 3.15.2, Metro's nested `cosmiconfig` 5.2.1, and any other direct pinned consumers found. Produce a table of exact caller, formatting API, format-string origin, affected-operation relationship, and evidence limit.
 
-- [ ] **Step 1: Verify versions and advisory.** Enumerate all production lockfile paths to `sprintf-js`; distinguish nested newer parser/configuration copies.
-- [ ] **Step 2: Inspect exact-version source.** Verify published tarball integrity, inspect `sprintf-js` affected operation and every direct published caller found in the pinned path.
-- [ ] **Step 3: Trace inputs.** Follow format strings through the observed CLI/configuration calls; distinguish fixed strings, local configuration or file contents, and potentially untrusted input. State unverified indirect paths or runtime contexts.
-- [ ] **Step 4: Publish the bounded review and link the advisory record.** Keep the `sprintf-js` reference and all 34 finding dispositions `undetermined` unless a separately reviewed full attack path supports a change.
+- [x] **Step 1: Verify versions and advisory.** Enumerate all production lockfile paths to `sprintf-js`; distinguish nested newer parser/configuration copies.
+- [x] **Step 2: Inspect exact-version source.** Verify published tarball integrity, inspect `sprintf-js` affected operation and every direct published caller found in the pinned path.
+- [x] **Step 3: Trace inputs.** Follow format strings through the observed CLI/configuration calls; distinguish fixed strings, local configuration or file contents, and potentially untrusted input. State unverified indirect paths or runtime contexts.
+- [x] **Step 4: Publish the bounded review and link the advisory record.** Keep the `sprintf-js` reference and all 34 finding dispositions `undetermined` unless a separately reviewed full attack path supports a change.
 
 ### Task 2: Synchronize tracking and integrate
 
@@ -39,7 +39,7 @@
 - Modify: this plan
 
 - [x] **Step 1: Mark PR #60 merged and cleaned up, then commit this focused plan before investigation changes.** PR #60 merged at `b10296a2` after five exact-head checks and inspection of both final reports; its tested head is on remote main and the worktree and branches were removed.
-- [ ] **Step 2: Verify documentation and available checks.** Run `git diff --check`, structure verification, source/lockfile consistency checks, and configured local suites. CI is the full package/native gate.
+- [x] **Step 2: Verify documentation and available checks.** `git diff --check`, 140-path structure verification, SHA-512 package integrity, production lockfile graph, the pinned precision probe, script tests (26 plus 7 subtests), and backend/ML Ruff passed. CI is the full package/native gate.
 - [ ] **Step 3: Commit, push, open one PR, and obtain independent review.** Record only exact-version-supported claims.
 - [ ] **Step 4: Require five exact-head CI checks, merge, verify remote main, and remove this worktree and branch.** The next feature updates tracking before implementation.
 
