@@ -56,7 +56,10 @@ The Android `assembleRelease` and iOS Release `xcodebuild` steps set
 command only. After each Release build, a Python summarizer reads all
 `coverage-*.json` files, limits file URLs to the installed
 `mobile/node_modules` tree, and selects the five direct advisory packages at
-any nesting depth. For each selected package it emits sorted relative paths
+any nesting depth. The summary is valid only when coverage shows the named
+`build` function in the pinned `metro/src/Server.js` executing; coverage of
+an unrelated Node helper cannot stand in for the packager. For each selected
+package it emits sorted relative paths
 whose module wrapper executed and sorted named functions with nonzero V8
 function-entry counts. The report also records platform and number of coverage
 files. No raw coverage file is uploaded.
@@ -67,6 +70,8 @@ covered files under the requested installed tree, and `TypeError` for an
 invalid coverage shape. It does not require every
 target package to appear: their absence is an observation. The CLI accepts
 `--platform`, `--coverage-dir`, `--node-modules-root`, and `--output`.
+The JSON includes `packager_build_observed: true`; a missing sentinel fails
+the summary step rather than publishing five empty packages.
 Function names can be anonymous or optimized; the summary includes only
 nonempty names and makes no argument/control claim. Paths are relative to
 `mobile/node_modules` so the uploaded summary omits runner paths.
@@ -95,8 +100,9 @@ before merging.
 ## Testing Strategy
 
 Synthetic coverage tests separate module wrapper execution from named API
-execution; exercise zero-count functions, nested packages, paths outside the
-installed tree, no coverage files, and malformed files. Workflow tests assert
+execution; exercise the Metro build sentinel, zero-count functions, nested
+packages, paths outside the installed tree, no coverage files, and malformed
+files. Workflow tests assert
 both Release commands set scoped coverage directories, summarize after
 packaging, and upload distinct artifacts. Local script, mobile, web, backend,
 and ML checks follow `CODING_STANDARDS.md`; exact-head CI must pass all five

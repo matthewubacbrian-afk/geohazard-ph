@@ -27,7 +27,8 @@
 - Test: `scripts/tests/test_mobile_process_coverage.py`
 
 **Interfaces:** `build_report(platform, coverage_dir, node_modules_root)`
-returns `platform`, `coverage_file_count`, and `packages` keyed by the five
+returns `platform`, `coverage_file_count`, `packager_build_observed`, and
+`packages` keyed by the five
 direct names. Each package has `loaded_files` and `executed_functions`, where
 each function has `path`, `name`, and `start_offset`. Paths are relative to
 the requested `node_modules` root.
@@ -39,7 +40,8 @@ the requested `node_modules` root.
 - [ ] **Step 3: Implement parsing, path validation, deterministic sorting,
       and the four-argument CLI.**
 - [ ] **Step 4: Run focused pytest; add malformed/no-file and nested-path
-      cases, observe failures first, then pass them.**
+      cases, plus a missing-Metro-build sentinel case; observe failures first,
+      then pass them.**
 - [ ] **Step 5: Commit the tested summarizer and tests.**
 
 ### Task 2: Capture the exact CI Release process
