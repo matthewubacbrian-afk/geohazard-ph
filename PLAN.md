@@ -1,6 +1,6 @@
 # Project completion plan
 
-Reviewed: 2026-10-20 (Asia/Manila). Initial audit baseline: origin/main `173f21be`.
+Reviewed: 2026-10-21 (Asia/Manila). Initial audit baseline: origin/main `173f21be`.
 
 ## Goal and completion rule
 
@@ -57,6 +57,7 @@ PR #32 was incorporated through PR #43; PR #36 remains in the integration queue.
 - [x] P2 `sprintf-js` consumer-call review: [PR #61](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/61) merged at `ed13a9cd` after independent review, five exact-head CI checks, and both final Release-report inspections. Metro's inspected YAML loader uses the `js-yaml` library, while the pinned `argparse` formatter is imported by the separate YAML CLI. Other callers and untrusted format-string provenance remain unverified; all 34 dispositions stay undetermined. The tested head is on remote main, and its worktree and branches were removed. See the [bounded review](docs/mobile-sprintf-js-callsites-2026-10-21.md).
 - [x] P2 mobile cross-advisory gate matrix: [PR #62](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/62) merged at `ec96864a` after independent review, five exact-head CI checks, and both final Release-report comparisons. The [six-advisory matrix](docs/mobile-advisory-attack-path-gates-2026-10-21.md) preserves all 34 undetermined dispositions; its tested head is on remote main, and its worktree and branches were removed.
 - [ ] P2 `image-size` asset provenance: enumerate tracked and pinned dependency assets in the Metro input graph, inspect supported-extension content signatures, and record which assets a non-published bundle actually processes. Keep both parser-advisory dispositions undetermined unless the full attacker-input, operation, and process chain is evidenced. See the [focused plan](docs/superpowers/plans/2026-10-21-mobile-image-asset-provenance.md).
+- [ ] P2 mobile exact-build advisory process trace: after the asset-provenance review, observe which affected packages and operations are actually loaded or called in non-published CI packager/CLI processes, without changing advisory dispositions from package-name inference. Plan instrumentation as a separate bounded slice; preserve Android/iOS Release report comparison.
 - [ ] P2 mobile affected-API and attack-path review: continue beyond the bounded matrix with remaining indirect calls, input provenance, native attribution, and device/build contexts before any classification. Package-name and dependency-path observations cannot establish build-only status, runtime reachability, or exploitability. Repeat the review after framework migration.
 - [ ] P2 CI action maintenance: the 2026-10-20 mobile run warned that several workflow actions still target the deprecated Node 20 action runtime, `actions/setup-java@v4` is deprecated, and `ubuntu-latest` is migrating. Refresh action versions and runner assumptions in a separate CI slice, preserving the five checks and native builds.
 - [ ] P2 mobile New Architecture readiness: verify native-library versions, enable the architecture on the current framework, and record clean native builds plus available device flows.

@@ -27,7 +27,7 @@
 **Interfaces:** Consume PR #62 state, merge commit, exact-head checks, and final Android/iOS JSON reports. Produce a tracked next-slice entry and mark the completed matrix step with its actual evidence.
 
 - [x] **Step 1: Verify PR #62.** It merged at `ec96864a`; all five checks passed at `a23e6f3a`, both final reports retained 34 undetermined findings and 25 source-map packages, and the worktree and branches were removed.
-- [ ] **Step 2: Commit this focused plan and status correction before the asset investigation changes.** Verify only intended Markdown paths are staged and `git diff --check` passes.
+- [x] **Step 2: Commit this focused plan and status correction before the asset investigation changes.** Commit `028bfad8` contains only the intended Markdown paths; structure and whitespace checks passed.
 
 ### Task 2: Inspect asset sources and a non-published Metro bundle
 
@@ -40,10 +40,10 @@
 
 **Interfaces:** Consume `mobile/package-lock.json`, the pinned Metro and `image-size` source, tracked mobile image paths, installed dependency asset paths, and a local Metro bundle/asset output generated under a temporary directory. Produce a bounded inventory of candidate image paths, owning package or tracked source, file signature, packager inclusion observation, and remaining attacker-control/exact-CI/device gates.
 
-- [ ] **Step 1: Enumerate sources.** Search static image imports and `require` calls in the app and its reachable dependencies; distinguish Android/iOS native icon catalogs from Metro inputs. Record package versions and checksum or lockfile provenance for relevant installed packages.
-- [ ] **Step 2: Generate and inspect a non-published Metro bundle.** Run pinned CLI with Release-like settings for Android and iOS, writing bundles, maps, and copied assets under a temporary directory; record command, exit status, asset paths, and whether output modules match the reviewed source path. Do not mistake this local bundle for exact CI execution.
-- [ ] **Step 3: Check parser-input shape.** Inspect byte signatures of supported-extension candidate assets and whether JXL/HEIF or ICNS signatures occur. Separate the observed files from the hypothetical crafted-content route; do not create or execute an exploit payload.
-- [ ] **Step 4: Publish bounded evidence.** Update the two matrix rows with actual observations and remaining gates. Leave all advisory dispositions undetermined.
+- [x] **Step 1: Enumerate sources.** The app has no static image import/`require`; 10 tracked native launcher PNGs and 247 installed supported-suffix dependency files were enumerated after pinned `npm ci`.
+- [x] **Step 2: Generate and inspect a non-published Metro bundle.** Both local `--dev false` platform bundles succeeded under `%TEMP%`; neither copied assets or listed image-file sources. Their 25 package-name sets match the corresponding final PR #62 reports, but the local maps are not exact CI maps.
+- [x] **Step 3: Check parser-input shape.** The 257 current candidates have 43 PNG signatures and 214 SVG documents, with no JXL/HEIF or ICNS signature under a supported suffix. No exploit payload was created.
+- [x] **Step 4: Publish bounded evidence.** The dated record and both matrix rows state the observations and remaining generated/external asset, exact-CI process, and device gates. All dispositions remain undetermined.
 
 ### Task 3: Verify and integrate
 
@@ -52,7 +52,7 @@
 - Modify: `docs/project-status.md`
 - Modify: this plan
 
-- [ ] **Step 1: Run local checks.** Structure verification, script tests, backend/ML Ruff, `git diff --check`, local documentation links, and any package checks needed for generated bundle commands.
+- [x] **Step 1: Run local checks.** Structure (140 paths), scripts (26 tests plus seven subtests), backend/ML Ruff, mobile Jest (61 tests), strict TypeScript, `git diff --check`, and local documentation links passed. Both local Metro bundles exited successfully.
 - [ ] **Step 2: Obtain independent review, commit, push, and open one PR.** Include the exact bundle command and limits in the PR description.
 - [ ] **Step 3: Require five exact-head CI checks and compare both final Release reports with PR #62.** Merge only after success; verify the tested head on remote main, then archive and remove this worktree and branch.
 
