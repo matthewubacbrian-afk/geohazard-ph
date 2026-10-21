@@ -62,8 +62,9 @@ function-entry counts. The report also records platform and number of coverage
 files. No raw coverage file is uploaded.
 
 `build_report(platform: str, coverage_dir: Path, node_modules_root: Path) ->
-dict` raises `ValueError` for no coverage files, malformed JSON/shape, or no
-covered files under the requested installed tree. It does not require every
+dict` raises `ValueError` for no coverage files, malformed JSON, or no
+covered files under the requested installed tree, and `TypeError` for an
+invalid coverage shape. It does not require every
 target package to appear: their absence is an observation. The CLI accepts
 `--platform`, `--coverage-dir`, `--node-modules-root`, and `--output`.
 Function names can be anonymous or optimized; the summary includes only
