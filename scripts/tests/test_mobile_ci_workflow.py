@@ -19,7 +19,7 @@ class MobileCiWorkflowTests(unittest.TestCase):
         self.assertIn("-configuration Release", ios_job)
         self.assertIn("SOURCEMAP_FILE", ios_job)
         self.assertIn("GeoHazardPH.app", ios_job)
-        self.assertEqual(workflow.count("actions/upload-artifact@v4"), 4)
+        self.assertEqual(workflow.count("actions/upload-artifact@v4"), 6)
         upload_paths = [
             [
                 line.strip().removeprefix("path: ")
@@ -32,8 +32,10 @@ class MobileCiWorkflowTests(unittest.TestCase):
             upload_paths,
             [
                 ["${{ runner.temp }}/mobile-process-trace-android.json"],
+                ["${{ runner.temp }}/mobile-image-input-trace-android.json"],
                 ["${{ runner.temp }}/mobile-artifact-report-android.json"],
                 ["${{ runner.temp }}/mobile-process-trace-ios.json"],
+                ["${{ runner.temp }}/mobile-image-input-trace-ios.json"],
                 ["${{ runner.temp }}/mobile-artifact-report-ios.json"],
             ],
         )
@@ -54,8 +56,7 @@ class MobileCiWorkflowTests(unittest.TestCase):
         android_job, ios_job = workflow.split("  ios-simulator:", maxsplit=1)
 
         self.assertIn(
-            'NODE_V8_COVERAGE="$RUNNER_TEMP/mobile-node-coverage-android" '
-            "./gradlew assembleRelease",
+            'NODE_V8_COVERAGE="$RUNNER_TEMP/mobile-node-coverage-android" \\',
             android_job,
         )
         self.assertIn(
@@ -69,6 +70,22 @@ class MobileCiWorkflowTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("scripts/tests/test_mobile_process_coverage.py", backend_workflow)
+
+    def test_release_builds_capture_scoped_image_inputs(self):
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        android_job, ios_job = workflow.split("  ios-simulator:", maxsplit=1)
+        for job, platform in ((android_job, "android"), (ios_job, "ios")):
+            self.assertIn("GEOHAZARD_IMAGE_INPUT_TRACE_DIR", job)
+            self.assertIn("NODE_OPTIONS=", job)
+            self.assertIn("mobile_image_input_observer.cjs", job)
+            self.assertIn("mobile_image_input_summary.py", job)
+            self.assertIn(f"mobile-image-input-trace-{platform}.json", job)
+        backend_workflow = (ROOT / ".github" / "workflows" / "backend-ci.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("scripts/tests/test_mobile_image_input_summary.py", backend_workflow)
+        self.assertIn("scripts/mobile_image_input_summary.py", backend_workflow)
+        self.assertIn("scripts/tests/test_mobile_image_input_observer.cjs", android_job)
 
     def test_android_setup_skips_obsolete_default_tools_package(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")

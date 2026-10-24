@@ -37,6 +37,7 @@ test('records a supplied buffer without storing its bytes', () => {
   `);
   assert.equal(child.status, 0, child.stderr);
   assert.deepEqual(records.map((record) => record.event), ['activation', 'module_load', 'call']);
+  assert.ok(records.every((record) => record.thread_id === 0));
   const call = records[2];
   const bytes = fs.readFileSync(image);
   assert.equal(call.input_kind, 'buffer');
@@ -76,6 +77,19 @@ test('keeps CommonJS export identity and observes both function aliases', () => 
   assert.equal(records.filter((record) => record.event === 'call').length, 3);
 });
 
+test('observes a cached export loaded through its resolved absolute path', () => {
+  const { child, records } = runObserved(`
+    const fs = require('node:fs');
+    const packageExport = require('image-size');
+    const resolvedExport = require(require.resolve('image-size'));
+    if (packageExport !== resolvedExport) process.exit(2);
+    resolvedExport(fs.readFileSync(process.argv[1]));
+  `);
+  assert.equal(child.status, 0, child.stderr);
+  assert.equal(records.filter((record) => record.event === 'module_load').length, 1);
+  assert.equal(records.filter((record) => record.event === 'call').length, 1);
+});
+
 test('records advisory-relevant byte prefixes without claiming parser dispatch', () => {
   const { child, records } = runObserved(`
     const imageSize = require('image-size');
@@ -111,4 +125,18 @@ test('fails closed when the trace directory cannot be written', () => {
   });
   assert.notEqual(child.status, 0);
   assert.match(child.stderr, /ENOENT/);
+});
+
+test('distinguishes observer activation in a worker thread sharing the process ID', () => {
+  const { child, records } = runObserved(`
+    const { Worker } = require('node:worker_threads');
+    const worker = new Worker("require('image-size')", { eval: true });
+    worker.on('error', () => process.exit(2));
+    worker.on('exit', (code) => process.exit(code));
+  `);
+  assert.equal(child.status, 0, child.stderr);
+  const activations = records.filter((record) => record.event === 'activation');
+  assert.deepEqual(activations.map((record) => record.thread_id).sort(), [0, 1]);
+  assert.equal(new Set(activations.map((record) => record.pid)).size, 1);
+  assert.equal(records.find((record) => record.event === 'module_load').thread_id, 1);
 });

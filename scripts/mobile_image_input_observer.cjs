@@ -3,6 +3,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const Module = require('node:module');
 const path = require('node:path');
+const { threadId } = require('node:worker_threads');
 
 const traceDir = process.env.GEOHAZARD_IMAGE_INPUT_TRACE_DIR;
 if (!traceDir) {
@@ -14,7 +15,7 @@ const installRoot = path.join(workspace, 'mobile', 'node_modules');
 const maxInputSize = 512 * 1024;
 
 function record(event) {
-  fs.appendFileSync(traceFile, JSON.stringify({ pid: process.pid, ...event }) + '\n');
+  fs.appendFileSync(traceFile, JSON.stringify({ pid: process.pid, thread_id: threadId, ...event }) + '\n');
 }
 
 function within(root, candidate) {
@@ -70,10 +71,13 @@ const originalLoad = Module._load;
 const wrappedExports = new WeakMap();
 Module._load = function observedLoad(request, parent, isMain) {
   const loaded = originalLoad.apply(this, arguments);
-  if (request !== 'image-size' || typeof loaded !== 'function') return loaded;
+  if (typeof loaded !== 'function') return loaded;
   const resolved = Module._resolveFilename(request, parent, isMain);
+  if (!path.isAbsolute(resolved)) return loaded;
   const canonical = fs.realpathSync(resolved);
-  if (!within(installRoot, canonical)) return loaded;
+  if (path.relative(installRoot, canonical).split(path.sep).join('/') !== 'image-size/dist/index.js') {
+    return loaded;
+  }
   if (wrappedExports.has(loaded)) return wrappedExports.get(loaded);
   record({ event: 'module_load', module_path: path.relative(installRoot, canonical).split(path.sep).join('/') });
   const wrapped = new Proxy(loaded, {
