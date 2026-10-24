@@ -17,6 +17,9 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
       - run: npm ci
         working-directory: mobile
+      - name: Test image-input observer
+        run: node --test ../scripts/tests/test_mobile_image_input_observer.cjs
+        working-directory: mobile
       - run: npm test -- --runInBand
         working-directory: mobile
       - name: Check TypeScript
@@ -36,8 +39,11 @@ jobs:
         working-directory: mobile/android
       - name: Build non-published Android release app
         run: |
-          mkdir -p "$RUNNER_TEMP/mobile-node-coverage-android"
-          NODE_V8_COVERAGE="$RUNNER_TEMP/mobile-node-coverage-android" ./gradlew assembleRelease
+          mkdir -p "$RUNNER_TEMP/mobile-node-coverage-android" "$RUNNER_TEMP/mobile-image-input-android"
+          NODE_V8_COVERAGE="$RUNNER_TEMP/mobile-node-coverage-android" \
+          GEOHAZARD_IMAGE_INPUT_TRACE_DIR="$RUNNER_TEMP/mobile-image-input-android" \
+          NODE_OPTIONS="--require=$GITHUB_WORKSPACE/scripts/mobile_image_input_observer.cjs" \
+          ./gradlew assembleRelease
         working-directory: mobile/android
       - name: Record Android build-process coverage
         working-directory: mobile
@@ -51,6 +57,21 @@ jobs:
         with:
           name: mobile-process-trace-android
           path: ${{ runner.temp }}/mobile-process-trace-android.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Record Android image input trace
+        working-directory: mobile
+        run: |
+          python3 ../scripts/mobile_image_input_summary.py \
+            --platform android \
+            --coverage-dir "$RUNNER_TEMP/mobile-node-coverage-android" \
+            --trace-dir "$RUNNER_TEMP/mobile-image-input-android" \
+            --node-modules-root node_modules \
+            --output "$RUNNER_TEMP/mobile-image-input-trace-android.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-image-input-trace-android
+          path: ${{ runner.temp }}/mobile-image-input-trace-android.json
           if-no-files-found: error
           retention-days: 7
       - name: Record Android release contents
@@ -99,8 +120,10 @@ jobs:
       - name: Build non-published iOS Release simulator app
         working-directory: mobile
         run: |
-          mkdir -p "$RUNNER_TEMP/mobile-node-coverage-ios"
+          mkdir -p "$RUNNER_TEMP/mobile-node-coverage-ios" "$RUNNER_TEMP/mobile-image-input-ios"
           NODE_V8_COVERAGE="$RUNNER_TEMP/mobile-node-coverage-ios" \
+          GEOHAZARD_IMAGE_INPUT_TRACE_DIR="$RUNNER_TEMP/mobile-image-input-ios" \
+          NODE_OPTIONS="--require=$GITHUB_WORKSPACE/scripts/mobile_image_input_observer.cjs" \
           xcodebuild \
             -workspace ios/GeoHazardPH.xcworkspace \
             -scheme GeoHazardPH \
@@ -123,6 +146,21 @@ jobs:
         with:
           name: mobile-process-trace-ios
           path: ${{ runner.temp }}/mobile-process-trace-ios.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Record iOS image input trace
+        working-directory: mobile
+        run: |
+          python3 ../scripts/mobile_image_input_summary.py \
+            --platform ios \
+            --coverage-dir "$RUNNER_TEMP/mobile-node-coverage-ios" \
+            --trace-dir "$RUNNER_TEMP/mobile-image-input-ios" \
+            --node-modules-root node_modules \
+            --output "$RUNNER_TEMP/mobile-image-input-trace-ios.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-image-input-trace-ios
+          path: ${{ runner.temp }}/mobile-image-input-trace-ios.json
           if-no-files-found: error
           retention-days: 7
       - name: Record iOS release contents
