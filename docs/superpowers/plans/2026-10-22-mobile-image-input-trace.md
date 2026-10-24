@@ -11,10 +11,10 @@
 ## Global Constraints
 
 - Follow `AGENTS.md`, `CODING_STANDARDS.md`, `docs/testing-standards.md`, and `docs/git-workflow.md`; use Conventional Commits.
-- Keep all 34 advisory dispositions `undetermined`. A zero-call observation describes only these scoped builds; it cannot establish safety, device absence, or all future/generated input paths.
+- Preserve the 34-row PR #65 audit as a dated baseline. GitHub subsequently withdrew the `braces` and `sprintf-js` advisories, so PR #66's live audit returns 12 rows. Keep every current row `undetermined`; do not treat a withdrawal or zero-call observation as proof of safety, device absence, or all future/generated input paths.
 - Keep raw bytes, raw coverage, JSONL, binaries, and caches outside Git. Do not persist absolute host paths or input content in uploaded artifacts.
 - Require a Metro build sentinel and matching V8 coverage and observer activation for every scoped Node thread before reporting an absence of calls. Fail the summary on malformed or out-of-scope records.
-- Preserve the five exact-head CI jobs and compare both Release reports and existing process summaries with PR #65 before merging.
+- Preserve the five exact-head CI jobs and compare both Release reports and existing process summaries with PR #65 before merging. The user approved a documented audit-only baseline change after the two advisory withdrawals; require all other fields to match except the Android APK hash.
 
 ### Task 1: Observe bounded `image-size` inputs
 
@@ -41,19 +41,19 @@
 - [x] **Step 1: Write failing tests** for process/thread correlation, zero calls with activation, malformed JSON, missing Metro execution, and out-of-install coverage paths.
 - [x] **Step 2: Implement the summarizer** and make its focused tests pass.
 - [x] **Step 3: Write a failing workflow test** for scoped preload/report wiring; add the Android and iOS steps and make it pass.
-- [ ] **Step 4: Commit** the tested summarizer and workflow with `feat: report release image parser inputs`.
+- [x] **Step 4: Commit** the tested summarizer and workflow with `feat: report release image parser inputs` (`140d2d60`).
 
 ### Task 3: Review evidence and integrate
 
 **Files:**
-- Create: `docs/mobile-image-input-trace-2026-10-22.md`
+- Create: `docs/mobile-image-input-trace-2026-10-24.md`
 - Modify: `docs/mobile-advisory-attack-path-gates-2026-10-21.md`
 - Modify: `PLAN.md`, `docs/project-status.md`, and this plan
 
-**Interfaces:** Report only observed exact-head calls, input classes, and unresolved generated/external asset and device gates. Link both compact summaries and both unchanged-format Release reports. Keep all 34 dispositions undetermined.
+**Interfaces:** Report only observed exact-head calls, input classes, and unresolved generated/external asset and device gates. Link both compact summaries and both unchanged-format Release reports. Preserve the historical 34-row evidence, explain the current 12-row live audit, and keep every current disposition undetermined.
 
-- [ ] **Step 1: Run** script tests, backend and ML tests/Ruff, mobile Jest/TypeScript, single-worker web tests/build, structure, root-aware links, and whitespace; state any local Docker integration gap.
-- [ ] **Step 2: Obtain independent review** of observer behavior and evidence wording, correct findings, then commit and push the evidence.
+- [x] **Step 1: Run** script tests, backend unit and ML tests/Ruff, mobile Jest/TypeScript, single-worker web tests/build, structure, root-aware links, and whitespace. Backend integration could not run locally without Docker; exact-head backend CI passed at `140d2d60`.
+- [x] **Step 2: Obtain independent review** of observer behavior and evidence wording, correct findings, then commit and push the evidence. The reviewer found and verified fixes for a resolved-path observer bypass and stale present-tense advisory wording.
 - [ ] **Step 3: Require all five exact-head CI checks**, inspect both new summaries, compare the Android/iOS Release reports and existing process summaries with PR #65, and merge only if the gate passes.
 - [ ] **Step 4: Verify main**, preserve ignored files, archive the clean worktree, remove merged branches, and correct post-merge tracking if necessary.
 
