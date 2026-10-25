@@ -38,7 +38,7 @@
 **Interfaces:** Mark the direct-consumer inventory complete while retaining dynamic/generated caller, input-control, future framework, and device gates. Keep `node-forge` caller/key provenance as the next advisory slice.
 
 - [x] **Step 1: Update** the plan, Epic 4 status, and advisory matrix to match the source evidence and current 12-row audit.
-- [ ] **Step 2: Verify** local tests, TypeScript, lint, structure, links, and whitespace; record any unavailable integration services.
+- [x] **Step 2: Verify** local tests, TypeScript, lint, structure, links, and whitespace; record any unavailable integration services. Script tests passed 54 plus 7 subtests, backend unit 128 and Ruff, ML 72 and Ruff, mobile Jest 61 and TypeScript, web 175 and production build, structure 140 paths, 107 local links, and whitespace. The local Docker Linux engine was unavailable for backend integration; require exact-head backend CI.
 - [ ] **Step 3: Commit and push**, open a PR, require five exact-head checks, and compare Android/iOS Release reports and compact traces with PR #67.
 - [ ] **Step 4: Merge only after the gate passes**, verify remote main, preserve ignored content, remove the clean worktree and merged branches, and correct post-merge tracking.
 
