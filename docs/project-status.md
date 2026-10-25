@@ -27,8 +27,11 @@ each platform, all `undetermined`, rather than the 34 historical rows after
 GitHub withdrew the `sprintf-js` and `braces` advisories. The lockfile,
 source-map hashes, 25-package lists, native inventories, and five-package
 process summaries are unchanged; only the Android APK hash differs. The
-next active advisory evidence slice is `fast-xml-parser` builder-consumer
-provenance; framework and device gates remain. [PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
+dated [direct XML-builder inventory](mobile-xml-builder-path-2026-10-25.md)
+finds no direct external builder token in the inspected installed JavaScript
+and no named builder execution in the scoped Release trace. Dynamic/generated
+callers, comment/CDATA input control, framework, and device gates remain;
+`node-forge` caller/key provenance is the next advisory slice. [PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
 is still open with conflicts against `main` and has not been merged.
 
 ## Session delivery plan
