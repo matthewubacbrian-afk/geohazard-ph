@@ -60,7 +60,7 @@ lists, the same selected native inventories, and unchanged JSON field sets.
 The existing five-package process summaries match PR #65 exactly. Android's
 APK file hash differs as expected for a rebuilt artifact; the iOS app bundle
 hash matches. The only other report difference is the advisory list described
-above. A final exact-head rerun is required after this documentation commit.
+above. The final [exact-head CI run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40104717873) on `a80ecd85` passed all five checks. Its Android and iOS reports retained the same 12 undetermined rows and matched the first PR #66 run in every field except the Android APK hash. PR #66 merged at `c398d31c`.
 
 ## Limits and next gate
 
