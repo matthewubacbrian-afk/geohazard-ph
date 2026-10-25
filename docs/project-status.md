@@ -17,18 +17,18 @@ promise that a live advisory feed will return the same rows today.
 | Epic 7: Camera scene review | Merged demonstrator; image-quality calibration, deployment, and camera-device checks pending | Shared transient analysis API plus web and mobile camera review flows are implemented. Both clients display the same persistent visual cue demonstrator warning, including that results are not a safety assessment or production-ready emergency decision tool and do not give emergency instructions, identify official shelters, or predict earthquakes. API result limitations enumerate what a single image cannot verify, including structure, ground, glass/electrical hazards, egress, accessibility, routes, unseen areas, and changing conditions. A local Windows run loaded the pinned model and returned HTTP 200 for one synthetic image (`no_clear_candidate`, zero polygons, two model cues); this verifies model loading and the response path, not scene-recognition accuracy. Blur-threshold calibration and real-scene evaluation remain pending. The full backend suite passed (148 tests, including PostGIS and Redis integration), web tests passed (133) with production build, and mobile tests passed (46) with strict TypeScript checking. The 2026-10-13 local verification recorded API, Vite, PostGIS, and Redis running in an isolated Compose project; this is historical evidence, not a current health check. A browser check of `/dashboard` rendered 2,779 earthquake events after refresh; regional activity showed 2,753 events. Enabling Fault lines displayed 155 GEM reference features, and Volcano bulletins showed five PHIVOLCS entries retrieved on 2026-10-13. The recorded local polling-worker cycle fetched and processed 29 USGS events and 2,750 PHIVOLCS events. An earlier one-shot PHIVOLCS request failed Windows certificate-chain validation, but the continuous worker subsequently completed successfully. The checksum-verified pinned GEM source imported 155 local fault features into this isolated database; volcano-zone data remains unavailable pending reuse permission, and the alert-subscription API currently has no subscriptions. Android/iOS camera hardware checks and deployed Linux/ARM64 model packaging/resource fit remain unverified. The default API image omits the large model runtime and weights and can return typed 503 until deployment packaging is measured and provisioned. See the [Epic 7 plan](superpowers/plans/2026-10-13-epic7-scene-analysis.md), [image-quality follow-up plan](superpowers/plans/2026-10-13-epic7-image-quality.md), [model preflight and dataset limits](data-sources.md#scene-analysis-model-preflight), [runbook](runbook.md#epic-7-scene-review), and [camera smoke checklist](mobile-runtime-smoke-test.md). |
 | Oracle Always Free staging | Held-export deployment path implemented; deployment unverified | The [2026-10-14 staging release run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/38516440460) published an earlier AMD64/ARM64 bundle for commit `5ada21049808c51f080da1e0080d3ee7577ec32b`; it predates the held-export mode. The base Compose configuration now omits the risk-profile bind mount and checks for an empty profile list. An explicit override and `--with-profile` deploy flag are reserved for a later validated and domain-approved export. The [Oracle runbook](runbook.md#oracle-cloud-infrastructure-always-free-a1) documents both modes. There is no recorded OCI VM or DNS. A new bundle, host setup, and live checks remain; serving profiles additionally requires Epic 5 approval. |
 
-The current Epic 4 evidence slice is [PR #66](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/66),
-open and unmerged. Its first exact-head five-check run passed; Android and iOS
-Release traces each recorded two pinned `image-size` module loads and zero
-parser calls across covered Node threads. The [dated trace record](mobile-image-input-trace-2026-10-24.md)
-limits that observation to the scoped builds. The live audit now returns 12
-rows on each platform, all `undetermined`, rather than the 34 historical rows:
-GitHub withdrew the `sprintf-js` and `braces` advisories after the prior
-baseline. The lockfile, source-map hashes, package lists, native inventories,
-and prior process-summary formats are unchanged. The final exact-head rerun
-and comparison remain required before merge. The next active advisory evidence
-slice is `fast-xml-parser` builder-consumer provenance; framework and device
-gates remain. [PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
+The latest Epic 4 evidence slice, [PR #66](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/66),
+merged at `c398d31c` after five exact-head checks on `a80ecd85` and final
+Android/iOS Release-report comparison. Both traces recorded two pinned
+`image-size` module loads and zero parser calls across covered Release Node
+threads; the [dated trace record](mobile-image-input-trace-2026-10-24.md)
+limits that observation to those builds. The live audit returned 12 rows on
+each platform, all `undetermined`, rather than the 34 historical rows after
+GitHub withdrew the `sprintf-js` and `braces` advisories. The lockfile,
+source-map hashes, 25-package lists, native inventories, and five-package
+process summaries are unchanged; only the Android APK hash differs. The
+next active advisory evidence slice is `fast-xml-parser` builder-consumer
+provenance; framework and device gates remain. [PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
 is still open with conflicts against `main` and has not been merged.
 
 ## Session delivery plan

@@ -54,8 +54,8 @@
 
 - [x] **Step 1: Run** script tests, backend unit and ML tests/Ruff, mobile Jest/TypeScript, single-worker web tests/build, structure, root-aware links, and whitespace. Backend integration could not run locally without Docker; exact-head backend CI passed at `140d2d60`.
 - [x] **Step 2: Obtain independent review** of observer behavior and evidence wording, correct findings, then commit and push the evidence. The reviewer found and verified fixes for a resolved-path observer bypass and stale present-tense advisory wording.
-- [ ] **Step 3: Require all five exact-head CI checks**, inspect both new summaries, compare the Android/iOS Release reports and existing process summaries with PR #65, and merge only if the gate passes.
-- [ ] **Step 4: Verify main**, preserve ignored files, archive the clean worktree, remove merged branches, and correct post-merge tracking if necessary.
+- [x] **Step 3: Require all five exact-head CI checks**, inspect both new summaries, compare the Android/iOS Release reports and existing process summaries with PR #65, and merge only if the gate passes. The final checks passed on `a80ecd85`; [PR #66](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/66) merged at `c398d31c`.
+- [x] **Step 4: Verify main**, preserve ignored files, remove the clean worktree and merged branches, and correct post-merge tracking. The tested head is an ancestor of `origin/main`; 25 ignored cache/build directories were moved to a named preservation folder before worktree removal. This tracking correction is delivered in a separate docs-only PR.
 
 ## Notes for the executor
 
