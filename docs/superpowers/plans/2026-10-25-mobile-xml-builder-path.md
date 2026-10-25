@@ -23,9 +23,9 @@
 
 **Interfaces:** Read the tracked `mobile/package-lock.json`, installed JavaScript files under `mobile/node_modules`, and the dated PR #64/67 process and Release reports. Record the exact search scope and all direct consumers, then identify whether any call constructs or builds XML through `XMLBuilder` and where comment/CDATA values originate. State the limits of static search and V8 named-function coverage.
 
-- [ ] **Step 1: Inventory** direct package imports and `XMLBuilder` tokens across tracked mobile source and installed `.js`, `.cjs`, and `.mjs` files; inspect all matches and pin versions.
-- [ ] **Step 2: Reconcile** the three CLI call sites and PR #64 named-function result with the advisory's affected operation; write the bounded evidence record.
-- [ ] **Step 3: Commit** the source evidence separately from tracking updates.
+- [x] **Step 1: Inventory** direct package imports and `XMLBuilder` tokens across tracked mobile source and installed `.js`, `.cjs`, and `.mjs` files; inspect all matches and pin versions.
+- [x] **Step 2: Reconcile** the three CLI call sites and PR #64 named-function result with the advisory's affected operation; write the bounded evidence record.
+- [x] **Step 3: Commit** the source evidence separately from tracking updates.
 
 ### Task 2: Synchronize tracking and verify
 
@@ -37,7 +37,7 @@
 
 **Interfaces:** Mark the direct-consumer inventory complete while retaining dynamic/generated caller, input-control, future framework, and device gates. Keep `node-forge` caller/key provenance as the next advisory slice.
 
-- [ ] **Step 1: Update** the plan, Epic 4 status, and advisory matrix to match the source evidence and current 12-row audit.
+- [x] **Step 1: Update** the plan, Epic 4 status, and advisory matrix to match the source evidence and current 12-row audit.
 - [ ] **Step 2: Verify** local tests, TypeScript, lint, structure, links, and whitespace; record any unavailable integration services.
 - [ ] **Step 3: Commit and push**, open a PR, require five exact-head checks, and compare Android/iOS Release reports and compact traces with PR #67.
 - [ ] **Step 4: Merge only after the gate passes**, verify remote main, preserve ignored content, remove the clean worktree and merged branches, and correct post-merge tracking.
