@@ -19,14 +19,14 @@ class MobileCiWorkflowTests(unittest.TestCase):
         self.assertIn("-configuration Release", ios_job)
         self.assertIn("SOURCEMAP_FILE", ios_job)
         self.assertIn("GeoHazardPH.app", ios_job)
-        self.assertEqual(workflow.count("actions/upload-artifact@v4"), 6)
+        self.assertEqual(workflow.count("actions/upload-artifact@v7"), 6)
         upload_paths = [
             [
                 line.strip().removeprefix("path: ")
                 for line in block.splitlines()
                 if line.startswith("          path: ")
             ]
-            for block in workflow.split("uses: actions/upload-artifact@v4")[1:]
+            for block in workflow.split("uses: actions/upload-artifact@v7")[1:]
         ]
         self.assertEqual(
             upload_paths,
@@ -89,7 +89,7 @@ class MobileCiWorkflowTests(unittest.TestCase):
 
     def test_android_setup_skips_obsolete_default_tools_package(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")
-        setup_start = workflow.index("uses: android-actions/setup-android@v3")
+        setup_start = workflow.index("uses: android-actions/setup-android@v4")
         install_start = workflow.index("- name: Install Android SDK packages", setup_start)
         setup_step = workflow[setup_start:install_start]
 

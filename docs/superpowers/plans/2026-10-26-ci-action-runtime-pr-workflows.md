@@ -30,7 +30,7 @@
 **Interfaces:** Record PR #69's tested head, merge commit, five CI results, Android/iOS comparison, and cleanup limits. Split automatic PR action maintenance from manual staging action maintenance in the priority queue.
 
 - [x] **Step 1: Reconcile** tracking with GitHub and the downloaded PR #69 reports.
-- [ ] **Step 2: Commit and push** the plan and tracking before changing workflows.
+- [x] **Step 2: Commit and push** the plan and tracking before changing workflows. Committed and pushed as `b1be9f39`.
 
 ### Task 2: Update action versions without changing build behavior
 
@@ -38,8 +38,8 @@
 
 **Interfaces:** Use `actions/checkout@v7`, `actions/setup-node@v7`, `actions/setup-python@v7`, `actions/setup-java@v6`, `actions/upload-artifact@v7`, and `android-actions/setup-android@v4` where present. Use `ubuntu-24.04` for the four Linux jobs; keep `macos-15` for iOS.
 
-- [ ] **Step 1: Update the existing test assertions** for the new upload and Android-setup major tags; run that focused test and verify the old workflow fails for the expected string mismatch.
-- [ ] **Step 2: Edit only the four PR workflows** and rerun the focused test. Inspect the full diff for unchanged commands, inputs, and artifact paths.
+- [x] **Step 1: Update the existing test assertions** for the new upload and Android-setup major tags; run that focused test and verify the old workflow fails for the expected string mismatch. Before the workflow edit, eight tests ran with one expected assertion failure and one expected missing-tag error.
+- [x] **Step 2: Edit only the four PR workflows** and rerun the focused test. Inspect the full diff for unchanged commands, inputs, and artifact paths. The same eight tests pass after the action-tag edit.
 - [ ] **Step 3: Commit and push** the bounded workflow/test change.
 
 ### Task 3: Verify and deliver
