@@ -23,9 +23,9 @@
 
 **Interfaces:** Read `mobile/package-lock.json`, installed `.js`, `.cjs`, and `.mjs` files, the existing [pinned source review](../../mobile-node-forge-callsites-2026-10-20.md), and PR #68 Android/iOS Release summaries. Record direct caller matches, the internal verification call and key options, the absence or presence of exact-Release package loads, and the limits of these observations.
 
-- [ ] **Step 1: Inventory** direct installed `selfsigned`/`node-forge` tokens and tracked mobile source, pin versions, and inspect all matches.
-- [ ] **Step 2: Reconcile** `selfsigned.generate`/forge verification with the active advisory's crafted-signature and low-exponent-key preconditions and the Release process summaries; write the bounded evidence record.
-- [ ] **Step 3: Commit** the source evidence separately from tracking updates.
+- [x] **Step 1: Inventory** direct installed `selfsigned`/`node-forge` tokens and tracked mobile source, pin versions, and inspect all matches.
+- [x] **Step 2: Reconcile** `selfsigned.generate`/forge verification with the active advisory's crafted-signature and low-exponent-key preconditions and the Release process summaries; write the bounded evidence record.
+- [x] **Step 3: Commit** the source evidence separately from tracking updates. Committed and pushed as `4d39faa1`.
 
 ### Task 2: Synchronize tracking and verify
 
@@ -37,8 +37,8 @@
 
 **Interfaces:** Mark the direct-caller inventory complete while retaining dynamic/generated callers, certificate/key control, framework migration, and physical-device gates. Reprioritize the next engineering slice in the plan before starting it.
 
-- [ ] **Step 1: Update** the plan, Epic 4 status, and advisory matrix to match the evidence and current 12-row audit.
-- [ ] **Step 2: Verify** local tests, TypeScript, lint, structure, links, and whitespace; record unavailable integration services.
+- [x] **Step 1: Update** the plan, Epic 4 status, and advisory matrix to match the evidence and current 12-row audit.
+- [x] **Step 2: Verify** local tests, TypeScript, lint, structure, links, and whitespace; record unavailable integration services. Script tests passed 54 plus 7 subtests, backend unit 128 and Ruff, ML 72 and Ruff, mobile Jest 61 and TypeScript, and web 175 with the Node 22 VM-thread Vitest pool plus a production build. Structure found all 140 scaffold paths; 111 local links and whitespace checks passed. The local Docker Linux engine was unavailable for backend integration; require exact-head backend CI. The default local fork pool stalled while starting workers, and its isolated failed cases passed when rerun.
 - [ ] **Step 3: Commit and push**, open a PR, require five exact-head checks, and compare Android/iOS reports and traces with PR #68.
 - [ ] **Step 4: Merge only after the gate passes**, verify remote main, preserve ignored content, remove the clean worktree and merged branches, and correct post-merge tracking.
 

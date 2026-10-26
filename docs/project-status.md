@@ -31,7 +31,13 @@ dated [direct XML-builder inventory](mobile-xml-builder-path-2026-10-25.md)
 finds no direct external builder token in the inspected installed JavaScript
 and no named builder execution in the scoped Release trace. Dynamic/generated
 callers, comment/CDATA input control, framework, and device gates remain;
-`node-forge` caller/key provenance is the next advisory slice. [PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
+The [bounded `node-forge` caller and key-path inventory](mobile-node-forge-path-2026-10-25.md)
+found no external direct token in the inspected 7,540-file installed JavaScript
+tree and no forge load in the scoped PR #68 Release processes. `selfsigned`
+still contains a real certificate-verification call and an optional
+caller-supplied-key path; dynamic callers and crafted-input provenance remain
+unverified. All 12 current audit rows remain `undetermined`. CI action/runtime
+maintenance is the next engineering slice. [PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
 is still open with conflicts against `main` and has not been merged.
 
 ## Session delivery plan
