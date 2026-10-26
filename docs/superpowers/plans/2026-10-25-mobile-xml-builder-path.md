@@ -39,8 +39,8 @@
 
 - [x] **Step 1: Update** the plan, Epic 4 status, and advisory matrix to match the source evidence and current 12-row audit.
 - [x] **Step 2: Verify** local tests, TypeScript, lint, structure, links, and whitespace; record any unavailable integration services. Script tests passed 54 plus 7 subtests, backend unit 128 and Ruff, ML 72 and Ruff, mobile Jest 61 and TypeScript, web 175 and production build, structure 140 paths, 107 local links, and whitespace. The local Docker Linux engine was unavailable for backend integration; require exact-head backend CI.
-- [ ] **Step 3: Commit and push**, open a PR, require five exact-head checks, and compare Android/iOS Release reports and compact traces with PR #67.
-- [ ] **Step 4: Merge only after the gate passes**, verify remote main, preserve ignored content, remove the clean worktree and merged branches, and correct post-merge tracking.
+- [x] **Step 3: Commit and push**, open a PR, require five exact-head checks, and compare Android/iOS Release reports and compact traces with PR #67. [PR #68](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/68) passed all five checks on `4d711939`; Android differed only in the APK hash and iOS and compact traces matched.
+- [x] **Step 4: Merge only after the gate passes**, verify remote main, preserve ignored content, remove the clean worktree and merged branches, and correct post-merge tracking. PR #68 merged at `60322d92`; 23 ignored paths were preserved before the clean worktree and merged branches were removed. The current plan, Epic 4 status, and advisory matrix landed in that PR.
 
 ## Notes for the executor
 
