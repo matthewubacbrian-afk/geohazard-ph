@@ -39,8 +39,8 @@
 
 - [x] **Step 1: Update** the plan, Epic 4 status, and advisory matrix to match the evidence and current 12-row audit.
 - [x] **Step 2: Verify** local tests, TypeScript, lint, structure, links, and whitespace; record unavailable integration services. Script tests passed 54 plus 7 subtests, backend unit 128 and Ruff, ML 72 and Ruff, mobile Jest 61 and TypeScript, and web 175 with the Node 22 VM-thread Vitest pool plus a production build. Structure found all 140 scaffold paths; 111 local links and whitespace checks passed. The local Docker Linux engine was unavailable for backend integration; require exact-head backend CI. The default local fork pool stalled while starting workers, and its isolated failed cases passed when rerun.
-- [ ] **Step 3: Commit and push**, open a PR, require five exact-head checks, and compare Android/iOS reports and traces with PR #68.
-- [ ] **Step 4: Merge only after the gate passes**, verify remote main, preserve ignored content, remove the clean worktree and merged branches, and correct post-merge tracking.
+- [x] **Step 3: Commit and push**, open a PR, require five exact-head checks, and compare Android/iOS reports and traces with PR #68. [PR #69](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/69) passed all five on `449b0d31`; Android differed only in the APK hash, while iOS and all compact traces matched.
+- [x] **Step 4: Merge only after the gate passes**, verify remote main, preserve ignored content, remove the clean worktree and merged branches, and correct post-merge tracking. PR #69 merged at `d2fec772`, and its tested head is on remote main. Twenty-four ignored paths were preserved before the worktree registration and branches were removed. The physical checkout directory is empty; automatic command review blocked its final removal. Tracking correction is included in the next focused CI slice.
 
 ## Notes for the executor
 
