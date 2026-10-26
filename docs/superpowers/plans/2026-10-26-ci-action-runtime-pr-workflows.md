@@ -40,13 +40,13 @@
 
 - [x] **Step 1: Update the existing test assertions** for the new upload and Android-setup major tags; run that focused test and verify the old workflow fails for the expected string mismatch. Before the workflow edit, eight tests ran with one expected assertion failure and one expected missing-tag error.
 - [x] **Step 2: Edit only the four PR workflows** and rerun the focused test. Inspect the full diff for unchanged commands, inputs, and artifact paths. The same eight tests pass after the action-tag edit.
-- [ ] **Step 3: Commit and push** the bounded workflow/test change.
+- [x] **Step 3: Commit and push** the bounded workflow/test change. Committed and pushed as `ac5e6b45`.
 
 ### Task 3: Verify and deliver
 
 **Files:** this plan and the tracking docs only if verification reveals a necessary correction.
 
-- [ ] **Step 1: Run** local package tests, type/build/lint, structure, links, and whitespace sequentially; record unavailable services without claiming a pass.
+- [x] **Step 1: Run** local package tests, type/build/lint, structure, links, and whitespace sequentially; record unavailable services without claiming a pass. Scripts passed 54 tests plus 7 subtests; backend unit 128 and Ruff; ML 72 and Ruff; mobile Jest 61 and TypeScript; web 175 in the Node 22 VM-thread pool and production build. Structure found all 140 scaffold paths, 113 local links resolved, and whitespace passed. The local Docker Linux engine was unavailable, so backend integration requires exact-head CI.
 - [ ] **Step 2: Open a PR** with actual local results; require all five exact-head checks and both Release report/trace comparisons with PR #69.
 - [ ] **Step 3: Merge only when green**, verify tested head on remote main, preserve ignored paths, remove only this clean merged worktree and branches, and synchronize tracking.
 
