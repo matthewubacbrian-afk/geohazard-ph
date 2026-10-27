@@ -27,7 +27,7 @@ each platform, all `undetermined`, rather than the 34 historical rows after
 GitHub withdrew the `sprintf-js` and `braces` advisories. The lockfile,
 source-map hashes, 25-package lists, native inventories, and five-package
 process summaries are unchanged; only the Android APK hash differs. The
-latest merged Epic 4 evidence slice, [PR #68](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/68),
+next merged Epic 4 evidence slice, [PR #68](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/68),
 added the [direct XML-builder inventory](mobile-xml-builder-path-2026-10-25.md). It
 finds no direct external builder token in the inspected installed JavaScript
 and no named builder execution in the scoped Release trace. Dynamic/generated
@@ -38,7 +38,13 @@ tree and no forge load in the scoped PR #68 Release processes. `selfsigned`
 still contains a real certificate-verification call and an optional
 caller-supplied-key path; dynamic callers and crafted-input provenance remain
 unverified. All 12 current audit rows remain `undetermined`. CI action/runtime
-maintenance is the next engineering slice. [PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
+maintenance is the next engineering slice. [PR #69](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/69)
+merged this bounded inventory at `d2fec772` after independent review and five
+exact-head checks on `449b0d31`. Its Android Release report changed only the
+APK hash against PR #68; iOS and all compact traces matched. No advisory
+disposition changed. The automatic PR workflow refresh is scoped in the
+[focused plan](superpowers/plans/2026-10-26-ci-action-runtime-pr-workflows.md);
+manual staging workflow maintenance remains separate. [PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
 is still open with conflicts against `main` and has not been merged.
 
 ## Session delivery plan

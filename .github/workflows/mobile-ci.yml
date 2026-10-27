@@ -7,10 +7,10 @@ on:
 
 jobs:
   mobile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -25,11 +25,11 @@ jobs:
       - name: Check TypeScript
         run: npx tsc --noEmit
         working-directory: mobile
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
         with:
           packages: ""
       - name: Install Android SDK packages
@@ -53,7 +53,7 @@ jobs:
             --coverage-dir "$RUNNER_TEMP/mobile-node-coverage-android" \
             --node-modules-root node_modules \
             --output "$RUNNER_TEMP/mobile-process-trace-android.json"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mobile-process-trace-android
           path: ${{ runner.temp }}/mobile-process-trace-android.json
@@ -68,7 +68,7 @@ jobs:
             --trace-dir "$RUNNER_TEMP/mobile-image-input-android" \
             --node-modules-root node_modules \
             --output "$RUNNER_TEMP/mobile-image-input-trace-android.json"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mobile-image-input-trace-android
           path: ${{ runner.temp }}/mobile-image-input-trace-android.json
@@ -85,7 +85,7 @@ jobs:
             --audit-json "$RUNNER_TEMP/mobile-audit.json" \
             --lockfile package-lock.json \
             --output "$RUNNER_TEMP/mobile-artifact-report-android.json"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mobile-artifact-report-android
           path: ${{ runner.temp }}/mobile-artifact-report-android.json
@@ -95,8 +95,8 @@ jobs:
   ios-simulator:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -142,7 +142,7 @@ jobs:
             --coverage-dir "$RUNNER_TEMP/mobile-node-coverage-ios" \
             --node-modules-root node_modules \
             --output "$RUNNER_TEMP/mobile-process-trace-ios.json"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mobile-process-trace-ios
           path: ${{ runner.temp }}/mobile-process-trace-ios.json
@@ -157,7 +157,7 @@ jobs:
             --trace-dir "$RUNNER_TEMP/mobile-image-input-ios" \
             --node-modules-root node_modules \
             --output "$RUNNER_TEMP/mobile-image-input-trace-ios.json"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mobile-image-input-trace-ios
           path: ${{ runner.temp }}/mobile-image-input-trace-ios.json
@@ -174,7 +174,7 @@ jobs:
             --audit-json "$RUNNER_TEMP/mobile-audit.json" \
             --lockfile package-lock.json \
             --output "$RUNNER_TEMP/mobile-artifact-report-ios.json"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mobile-artifact-report-ios
           path: ${{ runner.temp }}/mobile-artifact-report-ios.json
