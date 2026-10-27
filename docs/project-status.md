@@ -65,6 +65,14 @@ is still open with conflicts against `main` and has not been merged.
 
 ## Session delivery plan
 
+[PR #72](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/72) merged
+the PR #71 tracking closeout at `e3bf201f` after five checks on `6d03f321`;
+both Release reports and four compact traces matched PR #71 except the Android
+APK hash. The current audit still has nine undetermined rows, including a high
+direct `node-forge` row. The next Epic 4 slice is the [New Architecture opt-in
+plan](superpowers/plans/2026-10-27-mobile-new-architecture-readiness.md);
+native builds and device flows on that branch are not yet verified.
+
 The [project completion plan](../PLAN.md) records the 2026-10-17 audit, prioritized
 engineering fixes, epic acceptance gates, and session verification evidence.
 

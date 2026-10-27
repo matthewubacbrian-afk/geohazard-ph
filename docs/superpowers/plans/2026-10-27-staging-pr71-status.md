@@ -15,3 +15,12 @@
 ## Resume state
 
 Branch `codex/staging-pr71-status` started at remote main `271310fd` and is pushed through tracking edit `977d7fed`; no PR yet at this checkpoint. All local checks listed above passed; local Docker-backed integration remains unavailable. Next: commit/push this verification record and reviewer fixes, open the docs PR, then require all five checks and unchanged Release reports/traces apart from the Android APK hash. New Architecture readiness follows this tracking closeout.
+
+## Final closeout (2026-10-27)
+
+[PR #72](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/72)
+merged at `e3bf201f` after all five checks passed on `6d03f321` and both
+Release reports and four compact traces matched PR #71 except the Android APK
+hash. Twenty-five ignored paths were preserved outside the checkout before
+the clean merged worktree and branches were removed. The checkpoint above is
+historical; New Architecture readiness is now the active slice.
