@@ -19,8 +19,8 @@
 
 - [x] Record PR #70 merged at `fcf8c0b6` from tested head `cf95281f`, update tracking, and commit/push this plan. Plan commit `4176f424` is pushed.
 - [x] Update `.github/workflows/deploy-staging.yml` action majors and Linux runner labels. Inspect the diff to preserve the main-only publication guard, held-export verification, registry/image configuration, and hidden example-env artifact. Existing Compose checks and 54 script tests plus 7 subtests passed, with staging-script Ruff clean.
-- [ ] Run existing staging configuration and deployment tests and full local checks. No new behavior is introduced; reuse the existing contract tests and real workflow execution.
-- [ ] Commit/push, request independent review, open the PR, and dispatch branch-only staging verification.
+- [x] Run existing staging configuration and deployment tests and full local checks. Existing Compose check, 54 script tests plus 7 subtests, backend 128 unit tests and Ruff, ML 72 tests and Ruff, mobile 61 tests and TypeScript, web 175 tests and production build, structure 140 paths, 115 local links, and whitespace passed. Local backend integration remains unavailable because the Docker engine did not respond; require CI.
+- [ ] Commit/push the verification record, open the PR, and dispatch branch-only staging verification. The independent review of `619d15ba` found no actionable issues.
 - [ ] Inspect five CI results and the manual verification run for the same commit; compare both Release reports and compact traces with PR #70.
 - [ ] Merge after verification, confirm tested commit on remote main, preserve ignored files, remove only the clean merged feature worktree/branches, and update tracking.
 
@@ -34,3 +34,7 @@
 ## Remaining gates
 
 The updated publication job still needs a future authorized main-branch release run. OCI/DNS and live-host evidence, physical-device flows, the framework support-floor decision, and Epic 5 domain approval remain independent.
+
+## Resume state
+
+Branch `ci/staging-action-runtime` is pushed at `619d15ba`; no PR yet at this checkpoint. Staging checks, backend 128/Ruff, ML 72/Ruff, mobile 61/TypeScript, web 175/build, structure, links, and whitespace passed. Docker-backed local integration remains unavailable. Next: commit/push this verification record, open the PR, dispatch staging on the branch, require five green PR checks and both Release report/trace comparisons with PR #70 before merge.
