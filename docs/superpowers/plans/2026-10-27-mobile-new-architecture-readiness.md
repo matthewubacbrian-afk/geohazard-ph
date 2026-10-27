@@ -32,16 +32,16 @@
 
 - [x] Set Android `newArchEnabled=true` and set `ENV['RCT_NEW_ARCH_ENABLED'] = '1'` before the Podfile loads React Native scripts, so local and CI pod installs select the same architecture.
 - [x] Document native build expectations and unverified real-device flows in the migration assessment and smoke checklist. Preserve the later Android SDK 24/iOS 15.1 migration decision.
-- [ ] Commit and push the bounded change before prolonged verification.
+- [x] Commit and push the bounded change as `8e440d7f` before prolonged verification; the separate PR #72 plan closeout was pushed as `b3c84561`.
 
 ## Task 3: Verify and integrate
 
-- [ ] Run local mobile Jest and TypeScript, web tests/TypeScript/build, backend and ML tests/Ruff, structure, local documentation links, and whitespace sequentially. Report any local environment gaps plainly.
-- [ ] Get an independent read-only review of the architecture flags, library compatibility claims, and evidence wording.
+- [x] Run local mobile Jest (61) and TypeScript; web tests (175), TypeScript, and production build; backend unit tests (128) and Ruff; ML tests (72) and Ruff; scripts tests (54 plus 7 subtests) and CI-scoped Ruff; structure (140 paths), 113 local document links, and whitespace sequentially. Local Docker-backed backend integration and native iOS/Android builds require CI. An initial web test run failed when Vite denied a worker loaded through an external `node_modules` junction; copying the same preserved dependencies into this ignored worktree path resolved it, and the full rerun passed. Broad, non-CI `ruff check scripts` has six pre-existing findings in untouched files; the workflow's two selected staging script files pass Ruff.
+- [x] Get an independent read-only review of the architecture flags, library compatibility claims, and evidence wording. It found no critical, important, or minor issue; it confirmed CI will select the flags, while native build and device results remain unverified.
 - [ ] Open a PR. Require backend, ML, web, Android mobile, and iOS simulator checks on its final head. Confirm Android/iOS Debug and non-published Release builds ran with the New Architecture flags.
 - [ ] Compare both Release reports and four compact traces with PR #72, investigate every difference, and preserve all undetermined dispositions unless affected-API evidence supports a separate review.
 - [ ] Merge only after the gate passes. Verify the tested commit on remote main; update the plan/status checklist, preserve ignored files, and remove only the clean merged worktree and branch.
 
 ## Resume state
 
-Branch `feat/mobile-new-arch-readiness` is an isolated worktree at remote main `e3bf201f` (PR #72 merged). The plan commit `ebf5d11b` is pushed. The three pinned native packages declare Codegen metadata; both platform opt-in flags and tracking notes are changed. Local mobile Jest passed 61 tests and TypeScript completed with exit 0. Native builds and device flows have not run on this branch. Next: commit and push the opt-in/configuration change, finish local suites sequentially, then open a PR for exact-head CI.
+Branch `feat/mobile-new-arch-readiness` is an isolated worktree at remote main `e3bf201f` (PR #72 merged). Commits `ebf5d11b`, `8e440d7f`, and `b3c84561` are pushed. Android/iOS opt-in flags and tracking notes are changed; all local checks listed above passed after correcting the Vite dependency path. Independent review found no issue. Native builds and device flows have not run on this branch. Next: commit this verification record, open a PR, and require the exact-head CI/report gate.
