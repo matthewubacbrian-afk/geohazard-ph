@@ -47,8 +47,8 @@
 **Files:** this plan and the tracking docs only if verification reveals a necessary correction.
 
 - [x] **Step 1: Run** local package tests, type/build/lint, structure, links, and whitespace sequentially; record unavailable services without claiming a pass. Scripts passed 54 tests plus 7 subtests; backend unit 128 and Ruff; ML 72 and Ruff; mobile Jest 61 and TypeScript; web 175 in the Node 22 VM-thread pool and production build. Structure found all 140 scaffold paths, 113 local links resolved, and whitespace passed. The local Docker Linux engine was unavailable, so backend integration requires exact-head CI.
-- [ ] **Step 2: Open a PR** with actual local results; require all five exact-head checks and both Release report/trace comparisons with PR #69.
-- [ ] **Step 3: Merge only when green**, verify tested head on remote main, preserve ignored paths, remove only this clean merged worktree and branches, and synchronize tracking.
+- [x] **Step 2: Open a PR** with actual local results; require all five exact-head checks and both Release report/trace comparisons with PR #69. PR #70 passed all five on `cf95281f`; Android changed only its APK hash, while iOS and all compact traces matched. Independent review found no actionable issue.
+- [x] **Step 3: Merge only when green**, verify tested head on remote main, preserve ignored paths, remove only this clean merged worktree and branches, and synchronize tracking. Merged at `fcf8c0b6`; tested head verified on remote main. Twenty-four ignored paths were preserved before the clean worktree and branches were removed. Tracking is reconciled in the staging maintenance slice.
 
 ## Notes for the executor
 

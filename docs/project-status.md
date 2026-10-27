@@ -3,7 +3,7 @@
 This is the authoritative current status register. It separates implemented code
 from data preparation, live deployment verification, and deferred product work.
 Status is based on the repository and its recorded history, reviewed on
-2026-10-26. Counts attached to earlier PRs are dated observations, not a
+2026-10-27. Counts attached to earlier PRs are dated observations, not a
 promise that a live advisory feed will return the same rows today.
 
 | Epic or workstream | Current status | Evidence and remaining work |
@@ -37,14 +37,18 @@ found no external direct token in the inspected 7,540-file installed JavaScript
 tree and no forge load in the scoped PR #68 Release processes. `selfsigned`
 still contains a real certificate-verification call and an optional
 caller-supplied-key path; dynamic callers and crafted-input provenance remain
-unverified. All 12 current audit rows remain `undetermined`. CI action/runtime
-maintenance is the next engineering slice. [PR #69](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/69)
+unverified. All 12 current audit rows remain `undetermined`. [PR #69](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/69)
 merged this bounded inventory at `d2fec772` after independent review and five
 exact-head checks on `449b0d31`. Its Android Release report changed only the
 APK hash against PR #68; iOS and all compact traces matched. No advisory
 disposition changed. The automatic PR workflow refresh is scoped in the
 [focused plan](superpowers/plans/2026-10-26-ci-action-runtime-pr-workflows.md);
-manual staging workflow maintenance remains separate. [PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
+the automatic workflow refresh merged in [PR #70](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/70)
+at `fcf8c0b6` after five passing checks on `cf95281f` and independent review.
+Android differed from PR #69 only in its APK hash; iOS and all compact traces
+matched. The [staging workflow maintenance plan](superpowers/plans/2026-10-27-staging-action-runtime.md)
+is next, with branch verification separate from publication and live-host evidence.
+[PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
 is still open with conflicts against `main` and has not been merged.
 
 ## Session delivery plan
