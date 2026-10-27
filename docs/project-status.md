@@ -46,9 +46,9 @@ disposition changed. The automatic PR workflow refresh is scoped in the
 the automatic workflow refresh merged in [PR #70](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/70)
 at `fcf8c0b6` after five passing checks on `cf95281f` and independent review.
 Android differed from PR #69 only in its APK hash; iOS and all compact traces
-matched. The [staging workflow maintenance plan](superpowers/plans/2026-10-27-staging-action-runtime.md)
-closed in [PR #71](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/71),
-merged at `271310fd` after five passing checks on `da7d3189`. The updated
+matched. Staging workflow maintenance was delivered by
+[PR #71](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/71),
+which merged at `271310fd` after five passing checks on `da7d3189`. The updated
 workflow's branch-only run `40482711712` passed its PostGIS/Redis-backed
 verification and skipped publication. Final Android/iOS Release reports showed
 nine undetermined audit rows rather than PR #70's 12: three inherited chain rows
@@ -58,6 +58,8 @@ and undetermined. The lockfile, source-map packages and hashes, native inventory
 and compact traces did not change; only the Android APK hash also differed.
 This audit-feed change gives no safety or device clearance. Main-branch image
 publication under the updated actions and a live staging host remain unverified.
+This closeout updates the [focused plan](superpowers/plans/2026-10-27-staging-action-runtime.md)
+with the final gate and cleanup evidence.
 [PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
 is still open with conflicts against `main` and has not been merged.
 
