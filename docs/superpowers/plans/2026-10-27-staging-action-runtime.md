@@ -17,8 +17,8 @@
 
 ## Tasks
 
-- [ ] Record PR #70 merged at `fcf8c0b6` from tested head `cf95281f`, update tracking, and commit/push this plan.
-- [ ] Update `.github/workflows/deploy-staging.yml` action majors and Linux runner labels. Inspect the diff to preserve the main-only publication guard, held-export verification, registry/image configuration, and hidden example-env artifact.
+- [x] Record PR #70 merged at `fcf8c0b6` from tested head `cf95281f`, update tracking, and commit/push this plan. Plan commit `4176f424` is pushed.
+- [x] Update `.github/workflows/deploy-staging.yml` action majors and Linux runner labels. Inspect the diff to preserve the main-only publication guard, held-export verification, registry/image configuration, and hidden example-env artifact. Existing Compose checks and 54 script tests plus 7 subtests passed, with staging-script Ruff clean.
 - [ ] Run existing staging configuration and deployment tests and full local checks. No new behavior is introduced; reuse the existing contract tests and real workflow execution.
 - [ ] Commit/push, request independent review, open the PR, and dispatch branch-only staging verification.
 - [ ] Inspect five CI results and the manual verification run for the same commit; compare both Release reports and compact traces with PR #70.
