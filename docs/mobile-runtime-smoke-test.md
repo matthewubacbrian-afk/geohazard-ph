@@ -4,6 +4,12 @@ Use this checklist to verify the existing Nearby, Saved locations, and Alerts fl
 an installed debug app. Record results separately for each runtime. The [README mobile
 section](../README.md#epic-4-mobile-nearby-alerts) has the project setup commands.
 
+For the New Architecture readiness branch, build from its exact commit and record
+Android and iOS results separately. A successful CI build verifies compilation,
+not saved-location persistence, camera capture, SVG overlay rendering, or device
+compatibility. Run the App flow below and the Scene review device checks on real
+hardware before marking those flows verified.
+
 ## Epic 7 Scene Review (Android and iOS)
 
 These device checks are pending until a camera-capable runtime and configured API are

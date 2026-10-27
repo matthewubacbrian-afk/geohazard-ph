@@ -22,16 +22,16 @@
 
 **Files:** `mobile/package.json`, `mobile/package-lock.json`, `mobile/android/gradle.properties`, `mobile/ios/Podfile`, `mobile/android/app/src/main/java/com/geohazardph/mobile/MainApplication.kt`, `.github/workflows/mobile-ci.yml`.
 
-- [ ] Confirm installed package versions and native-library Codegen/interop configuration on this branch.
-- [ ] Confirm Android `BuildConfig.IS_NEW_ARCHITECTURE_ENABLED` drives host initialization and iOS CI runs `pod install` from the tracked Podfile.
-- [ ] Record any compatibility issue with source and exact version; avoid an unrelated dependency refresh.
+- [x] Confirm pinned Async Storage 1.24.0, Image Picker 8.2.1, and SVG 15.12.1 each declare Codegen metadata. Their package declarations are evidence of integration hooks, not proven device compatibility.
+- [x] Confirm Android `BuildConfig.IS_NEW_ARCHITECTURE_ENABLED` drives host initialization and iOS CI runs `pod install` from the tracked Podfile.
+- [x] No incompatibility was established by source inspection; native CI and device flows remain the deciding evidence. No dependency refresh was made.
 
 ## Task 2: Enable and document the architecture
 
 **Files:** `mobile/android/gradle.properties`, `mobile/ios/Podfile`, `docs/mobile-rn-migration-assessment-2026-10-20.md`, `docs/project-status.md`, `PLAN.md`.
 
-- [ ] Set Android `newArchEnabled=true` and set `ENV['RCT_NEW_ARCH_ENABLED'] = '1'` before the Podfile loads React Native scripts, so local and CI pod installs select the same architecture.
-- [ ] Document how to reproduce the native builds and what remains unverified on devices. Preserve the later Android SDK 24/iOS 15.1 migration decision.
+- [x] Set Android `newArchEnabled=true` and set `ENV['RCT_NEW_ARCH_ENABLED'] = '1'` before the Podfile loads React Native scripts, so local and CI pod installs select the same architecture.
+- [x] Document native build expectations and unverified real-device flows in the migration assessment and smoke checklist. Preserve the later Android SDK 24/iOS 15.1 migration decision.
 - [ ] Commit and push the bounded change before prolonged verification.
 
 ## Task 3: Verify and integrate
@@ -44,4 +44,4 @@
 
 ## Resume state
 
-Branch `feat/mobile-new-arch-readiness` is an isolated worktree at remote main `e3bf201f` (PR #72 merged). This plan is the first branch change. Next: verify the three pinned native libraries and both platform entrypoints, then set the opt-in flags. No native build or device flow has passed on this branch yet.
+Branch `feat/mobile-new-arch-readiness` is an isolated worktree at remote main `e3bf201f` (PR #72 merged). The plan commit `ebf5d11b` is pushed. The three pinned native packages declare Codegen metadata; both platform opt-in flags and tracking notes are changed. Local mobile Jest passed 61 tests and TypeScript completed with exit 0. Native builds and device flows have not run on this branch. Next: commit and push the opt-in/configuration change, finish local suites sequentially, then open a PR for exact-head CI.
