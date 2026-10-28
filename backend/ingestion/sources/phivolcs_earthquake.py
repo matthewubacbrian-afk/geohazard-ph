@@ -31,7 +31,7 @@ def fetch_recent_events(
         raise PhivolcsFetchError(f"PHIVOLCS feed request failed: {exc}") from exc
 
     try:
-        return _parse_bulletin_table(response.text)
+        return _parse_bulletin_table(response.content.decode("utf-8"))
     except PhivolcsFetchError:
         raise
     except Exception as exc:
