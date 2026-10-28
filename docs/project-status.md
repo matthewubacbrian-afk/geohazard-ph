@@ -85,6 +85,17 @@ high direct `node-forge`. Real-device storage, camera, and SVG flows remain
 unverified, as does the Android SDK 24/iOS 15.1 support-floor decision for the
 later framework migration.
 
+[PR #74](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/74) merged the PR #73 tracking closeout at `771d529a` after five passing checks on `fe7b35af`; it recorded no device-flow evidence.
+
+The current maintenance decision is to keep React Native 0.75.5 and the existing
+Android SDK 23/iOS 13.4 minimums while verifying the app before a supported
+framework migration. The [maintenance design](superpowers/specs/2026-10-28-current-app-maintenance-design.md)
+and [launch-gate plan](superpowers/plans/2026-10-28-current-app-launch-gate.md)
+add Android/iOS simulator startup checks to Mobile CI. These checks establish
+installation, launch, short process survival, and a screenshot only when their
+exact-head runs pass. They do not replace the [device-flow checklist](mobile-runtime-smoke-test.md),
+a live staging deployment, or the held Epic 5 domain-review decision. All nine
+current mobile audit rows remain undetermined, including high direct `node-forge`.
 The [project completion plan](../PLAN.md) records the 2026-10-17 audit, prioritized
 engineering fixes, epic acceptance gates, and session verification evidence.
 

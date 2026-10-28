@@ -36,11 +36,18 @@
 
 ## Task 3: Tracking, verification, and integration
 
-- [ ] Update the manual runtime checklist, root plan, and project status with exact startup-only coverage and remaining device, staging, and Epic 5 holds. Keep all nine current audit rows undetermined unless a fresh audit and evidence show otherwise. Commit and push.
+- [x] Update the manual runtime checklist, root plan, and project status with exact startup-only coverage and remaining device, staging, and Epic 5 holds. Keep all nine current audit rows undetermined unless a fresh audit and evidence show otherwise. Commit and push.
 - [ ] Run focused Python tests, backend and ML tests/lint, web tests/build, mobile Jest/TypeScript, structure check, and whitespace check sequentially where local resources permit. Record missing local tools honestly; CI is the exact-head authority for native builds and backend integration when Docker is unavailable.
 - [ ] Open a PR and attach it to the task. Review the diff independently before merge. Wait for all five exact-head checks; inspect startup logs and compare both Release reports plus four compact traces against the prior audited baseline. Expected audit count is nine, all undetermined; only Android APK hash may differ, unless a dated audit-feed change is independently explained.
 - [ ] Merge only if all checks pass and artifact differences are explained. Verify the tested commit is on `origin/main`. Update tracking after merge in the next substantive slice if a separate status-only PR would add no value. Remove the feature worktree only when merged, clean, and free of ignored/untracked content; preserve any ignored files first. Keep the unrelated primary `web/index.html` edit untouched.
 
 ## Resume state
 
-Branch: `docs/mobile-maintenance-strategy`; pushed design commits `85b13076`, `7452d8b6`, and `bdad9efd`. Startup checker and CI wiring are committed through the next checkpoint; no PR yet. Base is `771d529a` on remote main. Latest known main checks: backend, ML, web, Android mobile passed; iOS Release job still running at last check. Next: begin Task 1 with failing unit tests. No Android/iOS device-flow or live staging evidence has been recorded.
+Branch: `docs/mobile-maintenance-strategy` based on remote-main `771d529a`.
+Pushed implementation commits: `1e78cd46` (runtime checker and tests) and
+`95b972ba` (CI wiring). The docs update is in this commit. Focused Python tests
+(18), Ruff, structure (140 paths), and whitespace passed locally. No PR yet.
+Next: run the remaining local suites sequentially, open the PR, and require five
+exact-head checks plus Android/iOS startup screenshots and Release report
+comparison. The old framework and OS floors remain; device flows and live
+staging are still unverified.
