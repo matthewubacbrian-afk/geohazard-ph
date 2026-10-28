@@ -59,6 +59,9 @@ def run_android(artifact, diagnostics, *, run=subprocess.run, sleep=time.sleep):
     process = _invoke(run, ["adb", "shell", "pidof", BUNDLE_ID], timeout=20, check=False)
     if process.returncode != 0 or not process.stdout.strip():
         raise SmokeError("Android app exited during startup")
+    diagnostics.mkdir(parents=True, exist_ok=True)
+    _invoke(run, ["adb", "shell", "screencap", "-p", "/sdcard/geohazard-startup.png"], timeout=30)
+    _invoke(run, ["adb", "pull", "/sdcard/geohazard-startup.png", str(diagnostics / "startup.png")], timeout=30)
     _write_result(diagnostics, "android", "emulator", process.stdout.strip())
 
 
@@ -110,6 +113,8 @@ def run_ios(artifact, diagnostics, *, run=subprocess.run, sleep=time.sleep, pid_
     sleep(STARTUP_WAIT_SECONDS)
     if not pid_alive(pid):
         raise SmokeError("iOS app exited during startup")
+    diagnostics.mkdir(parents=True, exist_ok=True)
+    _invoke(run, ["xcrun", "simctl", "io", udid, "screenshot", str(diagnostics / "startup.png")], timeout=30)
     _write_result(diagnostics, "ios", f"{device['name']} ({udid})", pid)
 
 

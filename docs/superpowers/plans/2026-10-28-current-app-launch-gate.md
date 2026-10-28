@@ -30,8 +30,8 @@
 
 ## Task 2: CI wiring
 
-- [ ] Add Android emulator package/API 34 image installation and bounded boot after the current Release inventory step. Verify KVM, create a named AVD, start headless, and fail on boot timeout. Run the smoke command against `mobile/android/app/build/outputs/apk/release/app-release.apk`.
-- [ ] After the iOS Release inventory step, select an available iPhone simulator with `simctl`, boot it, and run the smoke command against `$RUNNER_TEMP/mobile-ios-derived/Build/Products/Release-iphonesimulator/GeoHazardPH.app`. Fail if no usable simulator exists. Record diagnostic output only; do not publish app or raw coverage.
+- [x] Add Android emulator package/API 34 image installation and bounded boot after the current Release inventory step. Verify KVM, create a named AVD, start headless, and fail on boot timeout. Run the smoke command against `mobile/android/app/build/outputs/apk/release/app-release.apk`.
+- [x] After the iOS Release inventory step, select an available iPhone simulator with `simctl`, boot it, and run the smoke command against `$RUNNER_TEMP/mobile-ios-derived/Build/Products/Release-iphonesimulator/GeoHazardPH.app`. Fail if no usable simulator exists. Record diagnostic output only; do not publish app or raw coverage.
 - [ ] Check workflow syntax and `git diff --check`; run unit tests again. Commit and push.
 
 ## Task 3: Tracking, verification, and integration
@@ -43,4 +43,4 @@
 
 ## Resume state
 
-Branch: `docs/mobile-maintenance-strategy`; pushed design commits `85b13076`, `7452d8b6`, and `bdad9efd`. No implementation or PR yet. Base is `771d529a` on remote main. Latest known main checks: backend, ML, web, Android mobile passed; iOS Release job still running at last check. Next: begin Task 1 with failing unit tests. No Android/iOS device-flow or live staging evidence has been recorded.
+Branch: `docs/mobile-maintenance-strategy`; pushed design commits `85b13076`, `7452d8b6`, and `bdad9efd`. Startup checker and CI wiring are committed through the next checkpoint; no PR yet. Base is `771d529a` on remote main. Latest known main checks: backend, ML, web, Android mobile passed; iOS Release job still running at last check. Next: begin Task 1 with failing unit tests. No Android/iOS device-flow or live staging evidence has been recorded.

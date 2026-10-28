@@ -32,6 +32,7 @@ class MobileRuntimeSmokeTests(unittest.TestCase):
         self.assertIn(["adb", "install", "-r", str(self.artifact)], commands)
         self.assertIn(["adb", "shell", "am", "start", "-W", "-n", f"{BUNDLE}/.MainActivity"], commands)
         self.assertIn(["adb", "shell", "pidof", BUNDLE], commands)
+        self.assertIn(["adb", "shell", "screencap", "-p", "/sdcard/geohazard-startup.png"], commands)
         sleep.assert_called_once()
         self.assertGreaterEqual(sleep.call_args.args[0], 10)
 
@@ -66,6 +67,7 @@ class MobileRuntimeSmokeTests(unittest.TestCase):
         self.assertIn(["xcrun", "simctl", "install", "DEVICE-1", str(self.artifact)], commands)
         self.assertIn(["xcrun", "simctl", "launch", "DEVICE-1", BUNDLE], commands)
         pid_alive.assert_called_once_with(4567)
+        self.assertIn(["xcrun", "simctl", "io", "DEVICE-1", "screenshot", str(self.diagnostics / "startup.png")], commands)
 
     def test_ios_missing_simulator_fails_clearly(self):
         def run(command, **kwargs):

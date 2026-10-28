@@ -92,6 +92,35 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Install Android emulator image
+        run: sdkmanager "emulator" "system-images;android-34;google_apis;x86_64"
+      - name: Smoke test Android Release startup
+        timeout-minutes: 12
+        working-directory: mobile
+        run: |
+          mkdir -p "$RUNNER_TEMP/mobile-startup-android"
+          if [ ! -e /dev/kvm ]; then echo "Android KVM unavailable" >&2; exit 1; fi
+          sudo chmod 666 /dev/kvm
+          echo no | avdmanager create avd -n geohazard_ci -k "system-images;android-34;google_apis;x86_64" --force
+          "$ANDROID_HOME/emulator/emulator" -avd geohazard_ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -accel on > "$RUNNER_TEMP/mobile-startup-android/android-emulator.log" 2>&1 &
+          timeout 240s adb wait-for-device
+          booted=0
+          for attempt in $(seq 1 60); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; then booted=1; break; fi
+            sleep 3
+          done
+          if [ "$booted" != "1" ]; then echo "Android emulator did not boot" >&2; exit 1; fi
+          python3 ../scripts/mobile_runtime_smoke.py \
+            --platform android \
+            --artifact android/app/build/outputs/apk/release/app-release.apk \
+            --diagnostics "$RUNNER_TEMP/mobile-startup-android"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mobile-startup-android
+          path: ${{ runner.temp }}/mobile-startup-android/
+          if-no-files-found: warn
+          retention-days: 7
   ios-simulator:
     runs-on: macos-15
     steps:
@@ -179,4 +208,19 @@ jobs:
           name: mobile-artifact-report-ios
           path: ${{ runner.temp }}/mobile-artifact-report-ios.json
           if-no-files-found: error
+          retention-days: 7
+      - name: Smoke test iOS Release startup
+        timeout-minutes: 10
+        working-directory: mobile
+        run: |
+          python3 ../scripts/mobile_runtime_smoke.py \
+            --platform ios \
+            --artifact "$RUNNER_TEMP/mobile-ios-derived/Build/Products/Release-iphonesimulator/GeoHazardPH.app" \
+            --diagnostics "$RUNNER_TEMP/mobile-startup-ios"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mobile-startup-ios
+          path: ${{ runner.temp }}/mobile-startup-ios/
+          if-no-files-found: warn
           retention-days: 7
