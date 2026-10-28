@@ -28,7 +28,7 @@
 
 **Interfaces:** `fetch_recent_events(settings, *, session=None) -> list[HazardEvent]` stays unchanged. A Requests-like response supplies `content: bytes`; the adapter decodes it as UTF-8 with strict errors.
 
-- [ ] **Step 1: Write the failing regression.** Change `FakeResponse` to model the observed Requests fallback and update the existing fake feed. Add the exact place-name assertion and a separate invalid-byte case:
+- [x] **Step 1: Write the failing regression.** Change `FakeResponse` to model the observed Requests fallback and update the existing fake feed. Add the exact place-name assertion and a separate invalid-byte case:
 
   ```python
   class FakeResponse:
@@ -49,16 +49,16 @@
   with pytest.raises(PhivolcsFetchError, match="parsing failed"):
       fetch_recent_events(get_settings())
   ```
-- [ ] **Step 2: Run the focused tests from `backend/`.** Use `py -3.11 -m pytest tests/unit/test_phivolcs_earthquake_parser.py -q`. Expect the place-name assertion to fail with `Â°` before code changes.
-- [ ] **Step 3: Implement the boundary fix.** Replace the parse call inside the existing parsing `try` block. The generic wrapper converts `UnicodeDecodeError` to `PhivolcsFetchError` without ingesting a row:
+- [x] **Step 2: Run the focused tests from `backend/`.** Use `py -3.11 -m pytest tests/unit/test_phivolcs_earthquake_parser.py -q`. The place-name assertion failed with the extra `Â` before code changes, and the invalid-byte case failed with the old missing-table error.
+- [x] **Step 3: Implement the boundary fix.** Replace the parse call inside the existing parsing `try` block. The generic wrapper converts `UnicodeDecodeError` to `PhivolcsFetchError` without ingesting a row:
 
   ```python
   return _parse_bulletin_table(response.content.decode("utf-8"))
   ```
 
   Do not add fallback repair or client changes.
-- [ ] **Step 4: Verify green.** Run the focused tests, `py -3.11 -m pytest -q`, and `ruff check --config pyproject.toml .` from `backend/`. Provision or use the dedicated `geohazard_test` DB for the full suite; never point integration fixtures at the app DB.
-- [ ] **Step 5: Commit.** Stage only the two backend files, run `git diff --cached --check`, and commit as `fix: decode phivolcs earthquake feed as utf8`.
+- [x] **Step 4: Verify green.** Focused tests passed 5/5, the full suite passed 151/151 against the dedicated `geohazard_test` DB, and `ruff check --config pyproject.toml .` passed from `backend/`.
+- [x] **Step 5: Commit.** The backend fix was committed as `67963987` (`fix: decode phivolcs earthquake feed as utf8`).
 
 ### Task 2: Integrate Android evidence and verify the running flow
 
@@ -69,8 +69,8 @@
 
 **Interfaces:** No API or schema change. The runtime result must identify app commit, Android version, API environment, observed event, and limits.
 
-- [ ] **Step 1: Bring in the existing evidence.** Cherry-pick the documentation-only Android observations `566205fc` and `f4e50737` from `codex/android-device-smoke`, resolving any conflicts without changing their observed results.
-- [ ] **Step 2: Exercise fresh ingestion.** Build a one-off backend image from this branch and attach its short-lived ingestion process to the existing `ghph-device_default` development network. Set only the local development `DATABASE_URL` and `REDIS_URL` for that process. Leave the running API/Postgres/Redis containers in place; a fresh PHIVOLCS poll updates the shared development database. Use PowerShell syntax:
+- [x] **Step 1: Bring in the existing evidence.** Cherry-pick the documentation-only Android observations `566205fc` and `f4e50737` from `codex/android-device-smoke`; both applied without conflict.
+- [x] **Step 2: Exercise fresh ingestion.** A one-off backend image from this branch fetched 1,678 rows and updated 1,676 unique events on the existing `ghph-device_default` development network. The running API returned a recent place name with `°`. The 27 remaining malformed IDs were absent from the current feed. The command used PowerShell syntax:
 
   ```powershell
   docker build -t ghph-phivolcs-utf8:local .\backend
@@ -80,14 +80,14 @@
 
   Record the event ID and response; do not assume old events outside the recent feed are repaired.
 - [ ] **Step 3: Verify Android if connected.** Use the installed SDK tool at `C:\Users\matth\AppData\Local\Android\Sdk\platform-tools\adb.exe` to reapply `reverse tcp:8000 tcp:8000` and `reverse tcp:8081 tcp:8081`, refresh Nearby/Alerts, and inspect the corrected place name on the physical phone. If the device is unavailable, record the API result and mark device verification pending.
-- [ ] **Step 4: Update tracking.** Record the test, API, and device observations in the three documentation files. Keep scene-model 503, iOS, staging, and historical-backfill gates open. Run `python scripts\verify_structure.py`, `git diff --check`, and the applicable documentation checks.
-- [ ] **Step 5: Commit documentation** with `docs: record phivolcs encoding verification`.
+- [x] **Step 4: Update tracking.** The test and API observations are recorded; device verification remains explicitly pending. Scene-model 503, iOS, staging, and historical-backfill gates stay open. Structure verification and `git diff --check` passed.
+- [x] **Step 5: Commit documentation** as `a85e5245` (`docs: record phivolcs encoding verification`); reviewer-requested source-data and date corrections followed in `e5b402da`.
 
 ### Task 3: Review and integrate
 
 **Files:** No new source files.
 
-- [ ] **Step 1:** Review `git diff main...HEAD`, status, and tracked-file scope for secrets or generated files.
+- [x] **Step 1:** Reviewed branch scope and received independent read-only review. No code defect or generated-file issue was found; the reviewer required CI and phone display before merge and requested two documentation corrections, now committed.
 - [ ] **Step 2:** Run required package verification and exact-head CI. Inspect all checks before reporting a pass; Android phone verification remains a separate result.
 - [ ] **Step 3:** Open a focused PR with the actual tests and runtime limits. Merge only after the project workflow gates are met.
 
