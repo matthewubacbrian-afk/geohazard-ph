@@ -32,22 +32,25 @@
 
 - [x] Add Android emulator package/API 34 image installation and bounded boot after the current Release inventory step. Verify KVM, create a named AVD, start headless, and fail on boot timeout. Run the smoke command against `mobile/android/app/build/outputs/apk/release/app-release.apk`.
 - [x] After the iOS Release inventory step, select an available iPhone simulator with `simctl`, boot it, and run the smoke command against `$RUNNER_TEMP/mobile-ios-derived/Build/Products/Release-iphonesimulator/GeoHazardPH.app`. Fail if no usable simulator exists. Record diagnostic output only; do not publish app or raw coverage.
-- [ ] Check workflow syntax and `git diff --check`; run unit tests again. Commit and push.
+- [x] Check workflow syntax and `git diff --check`; run unit tests again. Commit and push.
 
 ## Task 3: Tracking, verification, and integration
 
 - [x] Update the manual runtime checklist, root plan, and project status with exact startup-only coverage and remaining device, staging, and Epic 5 holds. Keep all nine current audit rows undetermined unless a fresh audit and evidence show otherwise. Commit and push.
-- [ ] Run focused Python tests, backend and ML tests/lint, web tests/build, mobile Jest/TypeScript, structure check, and whitespace check sequentially where local resources permit. Record missing local tools honestly; CI is the exact-head authority for native builds and backend integration when Docker is unavailable.
+- [x] Run focused Python tests, backend and ML tests/lint, web tests/build, mobile Jest/TypeScript, structure check, and whitespace check sequentially where local resources permit. Record missing local tools honestly; CI is the exact-head authority for native builds and backend integration when Docker is unavailable.
 - [ ] Open a PR and attach it to the task. Review the diff independently before merge. Wait for all five exact-head checks; inspect startup logs and compare both Release reports plus four compact traces against the prior audited baseline. Expected audit count is nine, all undetermined; only Android APK hash may differ, unless a dated audit-feed change is independently explained.
 - [ ] Merge only if all checks pass and artifact differences are explained. Verify the tested commit is on `origin/main`. Update tracking after merge in the next substantive slice if a separate status-only PR would add no value. Remove the feature worktree only when merged, clean, and free of ignored/untracked content; preserve any ignored files first. Keep the unrelated primary `web/index.html` edit untouched.
 
 ## Resume state
 
 Branch: `docs/mobile-maintenance-strategy` based on remote-main `771d529a`.
-Pushed implementation commits: `1e78cd46` (runtime checker and tests) and
-`95b972ba` (CI wiring). The docs update is in this commit. Focused Python tests
-(18), Ruff, structure (140 paths), and whitespace passed locally. No PR yet.
-Next: run the remaining local suites sequentially, open the PR, and require five
-exact-head checks plus Android/iOS startup screenshots and Release report
-comparison. The old framework and OS floors remain; device flows and live
-staging are still unverified.
+Pushed code and docs through `f6cdcb33`; this follow-up fixes the independent
+review's AVD path, deprecated GPU mode, and missing crash logs. Local checks:
+128 backend unit tests, 72 ML tests, 175 web tests/build, 61 mobile tests and
+TypeScript, 57 mobile evidence tests, package Ruff, workflow YAML parsing,
+structure (140 paths), 102 local links, and whitespace passed. Backend
+integration and native simulator launch require exact-head CI. Main baseline
+run `40618628164` finished green on Android and iOS. No PR yet. Next: push
+this fix, open PR, inspect all five checks and startup screenshots, compare
+Release reports/traces, then merge only on a verified exact head. Device flows
+and live staging remain unverified; the old framework and OS floors remain.

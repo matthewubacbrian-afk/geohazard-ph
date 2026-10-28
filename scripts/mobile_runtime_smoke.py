@@ -44,25 +44,46 @@ def _write_result(diagnostics, platform, device, pid):
     )
 
 
+def _capture_failure_log(run, command, destination):
+    """Save bounded app logs without masking the original smoke failure."""
+    try:
+        result = _invoke(run, command, timeout=30, check=False)
+        output = ((result.stdout or "") + "\n" + (result.stderr or "")).strip()
+        if not output:
+            output = f"No log entries returned (exit {result.returncode})"
+    except SmokeError as exc:
+        output = f"Log capture unavailable: {exc}"
+    try:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(output[-100000:] + "\n", encoding="utf-8")
+    except OSError:
+        pass
+
+
 def run_android(artifact, diagnostics, *, run=subprocess.run, sleep=time.sleep):
     """Install and launch the Release APK on an already booted emulator."""
     artifact = Path(artifact)
     diagnostics = Path(diagnostics)
     _validate_artifact(artifact)
-    _invoke(run, ["adb", "get-state"], timeout=20)
-    _invoke(run, ["adb", "install", "-r", str(artifact)], timeout=180)
-    launch = _invoke(run, ["adb", "shell", "am", "start", "-W", "-n",
-                           f"{BUNDLE_ID}/.MainActivity"], timeout=60)
-    if "Error" in launch.stdout or "Exception" in launch.stdout:
-        raise SmokeError(f"Android launch failed: {launch.stdout.strip()[-500:]}")
-    sleep(STARTUP_WAIT_SECONDS)
-    process = _invoke(run, ["adb", "shell", "pidof", BUNDLE_ID], timeout=20, check=False)
-    if process.returncode != 0 or not process.stdout.strip():
-        raise SmokeError("Android app exited during startup")
-    diagnostics.mkdir(parents=True, exist_ok=True)
-    _invoke(run, ["adb", "shell", "screencap", "-p", "/sdcard/geohazard-startup.png"], timeout=30)
-    _invoke(run, ["adb", "pull", "/sdcard/geohazard-startup.png", str(diagnostics / "startup.png")], timeout=30)
-    _write_result(diagnostics, "android", "emulator", process.stdout.strip())
+    try:
+        _invoke(run, ["adb", "get-state"], timeout=20)
+        _invoke(run, ["adb", "install", "-r", str(artifact)], timeout=180)
+        launch = _invoke(run, ["adb", "shell", "am", "start", "-W", "-n",
+                               f"{BUNDLE_ID}/.MainActivity"], timeout=60)
+        if "Error" in launch.stdout or "Exception" in launch.stdout:
+            raise SmokeError(f"Android launch failed: {launch.stdout.strip()[-500:]}")
+        sleep(STARTUP_WAIT_SECONDS)
+        process = _invoke(run, ["adb", "shell", "pidof", BUNDLE_ID], timeout=20, check=False)
+        if process.returncode != 0 or not process.stdout.strip():
+            raise SmokeError("Android app exited during startup")
+        diagnostics.mkdir(parents=True, exist_ok=True)
+        _invoke(run, ["adb", "shell", "screencap", "-p", "/sdcard/geohazard-startup.png"], timeout=30)
+        _invoke(run, ["adb", "pull", "/sdcard/geohazard-startup.png", str(diagnostics / "startup.png")], timeout=30)
+        _write_result(diagnostics, "android", "emulator", process.stdout.strip())
+    except SmokeError:
+        _capture_failure_log(run, ["adb", "logcat", "-d", "-t", "500"],
+                             diagnostics / "app-logcat.txt")
+        raise
 
 
 def _select_iphone(raw):
@@ -98,24 +119,36 @@ def run_ios(artifact, diagnostics, *, run=subprocess.run, sleep=time.sleep, pid_
     artifact = Path(artifact)
     diagnostics = Path(diagnostics)
     _validate_artifact(artifact)
-    listing = _invoke(run, ["xcrun", "simctl", "list", "devices", "available", "-j"], timeout=30)
-    device = _select_iphone(listing.stdout)
-    udid = device["udid"]
-    if device.get("state") != "Booted":
-        _invoke(run, ["xcrun", "simctl", "boot", udid], timeout=90)
-    _invoke(run, ["xcrun", "simctl", "bootstatus", udid, "-b"], timeout=300)
-    _invoke(run, ["xcrun", "simctl", "install", udid, str(artifact)], timeout=180)
-    launch = _invoke(run, ["xcrun", "simctl", "launch", udid, BUNDLE_ID], timeout=90)
-    match = re.search(rf"{re.escape(BUNDLE_ID)}:\s*(\d+)", launch.stdout)
-    if not match:
-        raise SmokeError(f"iOS launch did not return an app PID: {launch.stdout.strip()[-500:]}")
-    pid = int(match.group(1))
-    sleep(STARTUP_WAIT_SECONDS)
-    if not pid_alive(pid):
-        raise SmokeError("iOS app exited during startup")
-    diagnostics.mkdir(parents=True, exist_ok=True)
-    _invoke(run, ["xcrun", "simctl", "io", udid, "screenshot", str(diagnostics / "startup.png")], timeout=30)
-    _write_result(diagnostics, "ios", f"{device['name']} ({udid})", pid)
+    udid = None
+    try:
+        listing = _invoke(run, ["xcrun", "simctl", "list", "devices", "available", "-j"], timeout=30)
+        device = _select_iphone(listing.stdout)
+        udid = device["udid"]
+        if device.get("state") != "Booted":
+            _invoke(run, ["xcrun", "simctl", "boot", udid], timeout=90)
+        _invoke(run, ["xcrun", "simctl", "bootstatus", udid, "-b"], timeout=300)
+        _invoke(run, ["xcrun", "simctl", "install", udid, str(artifact)], timeout=180)
+        launch = _invoke(run, ["xcrun", "simctl", "launch", udid, BUNDLE_ID], timeout=90)
+        match = re.search(rf"{re.escape(BUNDLE_ID)}:\s*(\d+)", launch.stdout)
+        if not match:
+            raise SmokeError(f"iOS launch did not return an app PID: {launch.stdout.strip()[-500:]}")
+        pid = int(match.group(1))
+        sleep(STARTUP_WAIT_SECONDS)
+        if not pid_alive(pid):
+            raise SmokeError("iOS app exited during startup")
+        diagnostics.mkdir(parents=True, exist_ok=True)
+        _invoke(run, ["xcrun", "simctl", "io", udid, "screenshot", str(diagnostics / "startup.png")], timeout=30)
+        _write_result(diagnostics, "ios", f"{device['name']} ({udid})", pid)
+    except SmokeError:
+        if udid is not None:
+            _capture_failure_log(
+                run,
+                ["xcrun", "simctl", "spawn", udid, "log", "show", "--last", "2m",
+                 "--style", "compact", "--predicate",
+                 'process == "GeoHazardPH" OR eventMessage CONTAINS "GeoHazardPH"'],
+                diagnostics / "app-system-log.txt",
+            )
+        raise
 
 
 def main(argv=None):

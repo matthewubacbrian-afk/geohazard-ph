@@ -101,8 +101,11 @@ jobs:
           mkdir -p "$RUNNER_TEMP/mobile-startup-android"
           if [ ! -e /dev/kvm ]; then echo "Android KVM unavailable" >&2; exit 1; fi
           sudo chmod 666 /dev/kvm
-          echo no | avdmanager create avd -n geohazard_ci -k "system-images;android-34;google_apis;x86_64" --force
-          "$ANDROID_HOME/emulator/emulator" -avd geohazard_ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -accel on > "$RUNNER_TEMP/mobile-startup-android/android-emulator.log" 2>&1 &
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/android-avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | avdmanager create avd -n geohazard_ci -k "system-images;android-34;google_apis;x86_64" --path "$ANDROID_AVD_HOME/geohazard_ci.avd" --force
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -Fx geohazard_ci
+          "$ANDROID_HOME/emulator/emulator" -avd geohazard_ci -no-window -no-audio -no-boot-anim -gpu software -accel on > "$RUNNER_TEMP/mobile-startup-android/android-emulator.log" 2>&1 &
           timeout 240s adb wait-for-device
           booted=0
           for attempt in $(seq 1 60); do

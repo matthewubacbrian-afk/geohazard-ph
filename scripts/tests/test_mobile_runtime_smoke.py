@@ -40,10 +40,13 @@ class MobileRuntimeSmokeTests(unittest.TestCase):
         def run(command, **kwargs):
             if command[:3] == ["adb", "shell", "pidof"]:
                 return subprocess.CompletedProcess(command, 1, "", "")
+            if command[:3] == ["adb", "logcat", "-d"]:
+                return subprocess.CompletedProcess(command, 0, "FATAL EXCEPTION: app crashed", "")
             return subprocess.CompletedProcess(command, 0, "", "")
 
         with self.assertRaisesRegex(smoke.SmokeError, "Android.*exited"):
             smoke.run_android(self.artifact, self.diagnostics, run=run, sleep=lambda _: None)
+        self.assertIn("FATAL EXCEPTION", (self.diagnostics / "app-logcat.txt").read_text())
 
     def test_ios_selects_available_iphone_and_verifies_launched_pid(self):
         commands = []
@@ -84,10 +87,13 @@ class MobileRuntimeSmokeTests(unittest.TestCase):
                 return subprocess.CompletedProcess(command, 0, json.dumps(devices), "")
             if command[:3] == ["xcrun", "simctl", "launch"]:
                 return subprocess.CompletedProcess(command, 0, f"{BUNDLE}: 4567\n", "")
+            if command[:3] == ["xcrun", "simctl", "spawn"]:
+                return subprocess.CompletedProcess(command, 0, "GeoHazardPH crash log", "")
             return subprocess.CompletedProcess(command, 0, "", "")
 
         with self.assertRaisesRegex(smoke.SmokeError, "iOS.*exited"):
             smoke.run_ios(self.artifact, self.diagnostics, run=run, sleep=lambda _: None, pid_alive=lambda _: False)
+        self.assertIn("GeoHazardPH crash log", (self.diagnostics / "app-system-log.txt").read_text())
 
     def test_android_install_command_failure_is_reported(self):
         def run(command, **kwargs):

@@ -116,6 +116,9 @@ class MobileCiWorkflowTests(unittest.TestCase):
             self.assertIn(f"mobile-startup-{platform}", job)
             self.assertNotIn("continue-on-error: true", job)
         self.assertIn('system-images;android-34;google_apis;x86_64', android_job)
+        self.assertIn('ANDROID_AVD_HOME=', android_job)
+        self.assertIn('emulator" -list-avds', android_job)
+        self.assertIn('-gpu software', android_job)
         self.assertIn('GeoHazardPH.app', ios_job)
         backend_workflow = (ROOT / ".github" / "workflows" / "backend-ci.yml").read_text(
             encoding="utf-8"
