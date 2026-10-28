@@ -36,21 +36,21 @@
 
 ## Task 3: Tracking, verification, and integration
 
-- [x] Update the manual runtime checklist, root plan, and project status with exact startup-only coverage and remaining device, staging, and Epic 5 holds. Keep all nine current audit rows undetermined unless a fresh audit and evidence show otherwise. Commit and push.
+- [x] Update the manual runtime checklist, root plan, and project status with exact startup-only coverage and remaining device, staging, and Epic 5 holds. Keep all 11 current audit rows undetermined unless a fresh audit and evidence show otherwise. Commit and push.
 - [x] Run focused Python tests, backend and ML tests/lint, web tests/build, mobile Jest/TypeScript, structure check, and whitespace check sequentially where local resources permit. Record missing local tools honestly; CI is the exact-head authority for native builds and backend integration when Docker is unavailable.
 - [x] Open [PR #75](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/75), attach it to the task, and get an independent diff review. The reviewer found and rechecked fixes for AVD discovery, deprecated GPU mode, and bounded crash logs.
-- [ ] Wait for all five exact-head checks; inspect startup logs and screenshots and compare both Release reports plus four compact traces against the prior audited baseline. Expected audit count is nine, all undetermined; only Android APK hash may differ, unless a dated audit-feed change is independently explained.
+- [ ] Wait for all five exact-head checks; inspect startup logs and screenshots and compare both Release reports plus four compact traces against the prior audited baseline. The current main baseline has 11 rows, all undetermined; only Android APK hash may differ, unless a later dated audit-feed change is independently explained.
 - [ ] Merge only if all checks pass and artifact differences are explained. Verify the tested commit is on `origin/main`. Update tracking after merge in the next substantive slice if a separate status-only PR would add no value. Remove the feature worktree only when merged, clean, and free of ignored/untracked content; preserve any ignored files first. Keep the unrelated primary `web/index.html` edit untouched.
 
 ## Resume state
 
 Branch: `docs/mobile-maintenance-strategy` based on remote-main `771d529a`.
-Pushed code and docs through `f6cdcb33`; this follow-up fixes the independent
+Pushed code and docs through `1d2cc829`; `fbc6812e` fixed the independent
 review's AVD path, deprecated GPU mode, and missing crash logs. Local checks:
 128 backend unit tests, 72 ML tests, 175 web tests/build, 61 mobile tests and
 TypeScript, 57 mobile evidence tests, package Ruff, workflow YAML parsing,
 structure (140 paths), 102 local links, and whitespace passed. Backend
-integration and native simulator launch require exact-head CI. Main baseline run `40618628164` finished green on Android and iOS.
+integration and native simulator launch require exact-head CI. Main baseline run `40618628164` finished green on Android and iOS, with 11 undetermined audit rows on each platform; `deepmerge` and inherited CLI config were added by the live advisory feed.
 [PR #75](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/75) is open; its exact head after this tracking commit must pass all five checks.
 Next: inspect both startup screenshots and compare Release reports/traces before merge. Device flows
 and live staging remain unverified; the old framework and OS floors remain.

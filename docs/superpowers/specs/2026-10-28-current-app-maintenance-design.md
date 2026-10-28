@@ -5,7 +5,7 @@
 
 ## Current evidence and limit
 
-The latest remote-main commit at design time is `771d529a`. Backend, ML, and web CI passed on that commit. The Android mobile job passed tests, TypeScript, Debug and non-published Release builds; the iOS job was still running when checked. Earlier PR #73 passed both platform builds with the New Architecture flags enabled on the current framework. These builds do not establish that the app launches, that saved data persists, or that camera and SVG flows work on devices. The device result tables in `docs/mobile-runtime-smoke-test.md` remain empty. The current nine mobile audit rows are undetermined, including a high direct `node-forge` row. A live OCI staging host and DNS have not been recorded; Epic 5 profile export is held by the domain-review record.
+The latest remote-main commit at design time is `771d529a`. Backend, ML, and web CI passed on that commit. The Android mobile job passed tests, TypeScript, Debug and non-published Release builds; the iOS job was still running at the first check and later passed on main run `40618628164`. Earlier PR #73 passed both platform builds with the New Architecture flags enabled on the current framework. These builds do not establish that the app launches, that saved data persists, or that camera and SVG flows work on devices. The device result tables in `docs/mobile-runtime-smoke-test.md` remain empty. The current 11 mobile audit rows are undetermined (the main run added direct `deepmerge` and inherited `@react-native-community/cli-config` without a lockfile change), including a high direct `node-forge` row. A live OCI staging host and DNS have not been recorded; Epic 5 profile export is held by the domain-review record.
 
 ## Strategy and order
 
