@@ -22,11 +22,11 @@
 
 ## Task 1: Runtime smoke command
 
-- [ ] Write unit tests first for Android install/launch/process alive, Android process exit, iOS simulator selection, iOS install/launch/process alive, missing simulator, command failure, and timeout. Mock all subprocess calls and waits. Assert failures are nonzero with a useful platform-specific message.
-- [ ] Run `python -m unittest scripts.tests.test_mobile_runtime_smoke -v`; confirm the new tests fail before implementation.
-- [ ] Implement the smallest `scripts/mobile_runtime_smoke.py` command. Require `--platform`, `--artifact`, and diagnostic output directory. Validate the artifact exists; use bounded subprocess timeouts. Use `com.geohazardph.mobile`; check process survival after a short wait. Never report a flow or security pass.
-- [ ] Run the focused tests again and confirm pass. Run `ruff check scripts/mobile_runtime_smoke.py scripts/tests/test_mobile_runtime_smoke.py` if Ruff is installed in the project environment; otherwise use the repository's documented lint command.
-- [ ] Commit the command and tests; push the branch.
+- [x] Write unit tests first for Android install/launch/process alive, Android process exit, iOS simulator selection, iOS install/launch/process alive, missing simulator, command failure, and timeout. Mock all subprocess calls and waits. Assert failures are nonzero with a useful platform-specific message.
+- [x] Run `python -m unittest scripts.tests.test_mobile_runtime_smoke -v`; confirm the new tests fail before implementation.
+- [x] Implement the smallest `scripts/mobile_runtime_smoke.py` command. Require `--platform`, `--artifact`, and diagnostic output directory. Validate the artifact exists; use bounded subprocess timeouts. Use `com.geohazardph.mobile`; check process survival after a short wait. Never report a flow or security pass.
+- [x] Run the focused tests again and confirm pass. Run `ruff check scripts/mobile_runtime_smoke.py scripts/tests/test_mobile_runtime_smoke.py` if Ruff is installed in the project environment; otherwise use the repository's documented lint command.
+- [x] Commit the command and tests; push the branch.
 
 ## Task 2: CI wiring
 
