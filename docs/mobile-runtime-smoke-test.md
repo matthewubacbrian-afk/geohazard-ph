@@ -118,8 +118,21 @@ blocker. Link CI runs when recording build results.
 
 | Date | Runtime and OS | App commit | API environment | Steps completed | Result and evidence |
 | --- | --- | --- | --- | --- | --- |
-| 2026-10-28 | Physical Android 14 (Infinix X6532) | `4e130fb8` | Local Docker Compose API over USB debugging forward | Steps 1-8 passed; step 9 partial | Invalid API URL and location inputs were rejected. A PHIVOLCS event at `13.56, 120.65` matched a saved 1 km location in Nearby and Alerts; offline refresh kept the cached match, and the API URL, location, and cached event survived a restart. Restoring the API cleared the offline label. A 1 km location at `0, 0` showed no match; removing it restored the saved-location prompt. The event place name contained `Â°` in both the API response and app; the source sends UTF-8 without a charset and Requests decoded it as ISO-8859-1. Fix pending. Indoor camera preview, quality warning, explicit override, model-unavailable error, and cleanup were observed. Android debug APK built locally; mobile tests 61/61 and TypeScript check passed. [Mobile CI attempt 3](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40637083576) passed at this commit. iOS, outdoor capture, camera denial, and model overlays remain unverified. |
+| 2026-10-28 | Physical Android 14 (Infinix X6532) | `4e130fb8` | Local Docker Compose API over USB debugging forward | Steps 1-8 passed; step 9 partial | Invalid API URL and location inputs were rejected. A PHIVOLCS event at `13.56, 120.65` matched a saved 1 km location in Nearby and Alerts; offline refresh kept the cached match, and the API URL, location, and cached event survived a restart. Restoring the API cleared the offline label. A 1 km location at `0, 0` showed no match; removing it restored the saved-location prompt. The event place name contained `Â°` in both the API response and app; the source sends UTF-8 without a charset and Requests decoded it as ISO-8859-1. A later backend fix is recorded below; this row remains the original observation. Indoor camera preview, quality warning, explicit override, model-unavailable error, and cleanup were observed. Android debug APK built locally; mobile tests 61/61 and TypeScript check passed. [Mobile CI attempt 3](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40637083576) passed at this commit. iOS, outdoor capture, camera denial, and model overlays remain unverified. |
 |  | iOS simulator |  |  |  |  |
+
+### 2026-10-29 PHIVOLCS text correction check
+
+The ingestion fix at `67963987` decodes the earthquake feed's response bytes as
+UTF-8 before HTML parsing. The new missing-charset and invalid-byte regression
+tests passed, and the full backend suite passed 151 tests with Ruff clean. A
+one-off process built from the fix fetched 1,678 live PHIVOLCS rows and updated
+1,676 unique events in the existing local development database. The unchanged
+local API then returned `phivolcs-2026_1028_1942_B1` as
+`024 km S 73° W of Claveria (Masbate)`. This verifies the ingestion-to-API
+path for a recent row. The API still returned 27 older `Â°` rows; none of their
+IDs was in the current 1,676-ID feed. No historical backfill was performed.
+The physical Android display has not yet been rechecked after this fix.
 
 These foreground proximity matches are informational and are not official warnings
 or forecasts. A simulator run does not verify background push, physical-device

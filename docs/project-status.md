@@ -143,7 +143,8 @@ state, and test-location removal. This verifies those foreground flows on one
 physical Android device. One PHIVOLCS place name contained `Â°` in both the
 API response and app display. A 2026-10-28 source check found UTF-8 degree bytes
 under `Content-Type: text/html` without a charset; Requests selected ISO-8859-1,
-and the ingestion parser uses `response.text`. A regression fix remains open.
+and the ingestion parser used `response.text`. The focused backend correction
+and its local API verification are recorded below.
 iOS physical-device behavior remains unverified.
 
 Scene review opened the camera and displayed one indoor capture. The provisional
@@ -154,6 +155,20 @@ outdoor capture, camera-denial handling, model calibration, and production devic
 behavior remain open. The camera permission prompt appeared after Open camera;
 the denial result was not verified. A transient Metro warning followed a USB
 disconnect during testing and cleared after the debug overlay was dismissed.
+
+## 2026-10-29 PHIVOLCS earthquake text correction
+
+Commit `67963987` decodes the earthquake feed response bytes as strict UTF-8
+before parsing. The observed missing-charset case failed before the fix and
+passed afterward; invalid UTF-8 now raises the typed feed parsing error.
+The full backend suite passed 151 tests and Ruff passed locally. A one-off
+backend image from this branch fetched 1,678 live source rows and updated
+1,676 unique events in the local development database without replacing the
+running API. That API returned recent event `phivolcs-2026_1028_1942_B1` with
+`024 km S 73° W of Claveria (Masbate)`. Twenty-seven older API rows still
+contain `Â°`; none of their IDs was present in the current 1,676-ID feed.
+No historical backfill was performed. The physical Android display and CI
+on the fix commit remain to be checked.
 
 ## Next integration milestone
 
