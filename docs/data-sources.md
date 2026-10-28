@@ -8,6 +8,12 @@
   - Poll cadence stays at or above one minute to respect USGS feed caching.
   - Attribution: USGS data requires attribution to the "USGS Earthquake Hazards Program". Display the source and last-updated time alongside any USGS-derived view.
 - PHIVOLCS earthquake bulletins: scraped source, no official public API assumed.
+  - On 2026-10-28, the inspected listing sent UTF-8 degree-symbol bytes under
+    `Content-Type: text/html` without a charset. Requests interpreted its text
+    as ISO-8859-1, producing `Â°` in event place names. The earthquake feed
+    adapter now decodes raw response bytes as strict UTF-8 before HTML parsing
+    and raises a feed parsing error on invalid UTF-8. This is an observed
+    source-specific assumption, not a guarantee about future PHIVOLCS responses.
 
 Canonical matching retains source rows separately and groups only pairwise-compatible,
 cross-source reports. Corrections to a row with a stable `external_id` update that

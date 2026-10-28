@@ -3,7 +3,7 @@
 This is the authoritative current status register. It separates implemented code
 from data preparation, live deployment verification, and deferred product work.
 Status is based on the repository and its recorded history, updated through
-2026-10-28. Counts attached to earlier PRs are dated observations, not a
+2026-10-29. Counts attached to earlier PRs are dated observations, not a
 promise that a live advisory feed will return the same rows today.
 
 | Epic or workstream | Current status | Evidence and remaining work |
