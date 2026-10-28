@@ -79,7 +79,7 @@
   ```
 
   Record the event ID and response; do not assume old events outside the recent feed are repaired.
-- [ ] **Step 3: Verify Android if connected.** Use the installed SDK tool at `C:\Users\matth\AppData\Local\Android\Sdk\platform-tools\adb.exe` to reapply `reverse tcp:8000 tcp:8000` and `reverse tcp:8081 tcp:8081`, refresh Nearby/Alerts, and inspect the corrected place name on the physical phone. If the device is unavailable, record the API result and mark device verification pending.
+- [x] **Step 3: Verify Android if connected.** On an Android 14 Infinix X6532, Nearby and Alerts displayed `024 km S 73° W of Claveria (Masbate)` after a fresh local API poll. The temporary test location was removed. The installed SDK tool at `C:\Users\matth\AppData\Local\Android\Sdk\platform-tools\adb.exe` restored the API and Metro USB forwards after reconnection.
 - [x] **Step 4: Update tracking.** The test and API observations are recorded; device verification remains explicitly pending. Scene-model 503, iOS, staging, and historical-backfill gates stay open. Structure verification and `git diff --check` passed.
 - [x] **Step 5: Commit documentation** as `a85e5245` (`docs: record phivolcs encoding verification`); reviewer-requested source-data and date corrections followed in `e5b402da`.
 

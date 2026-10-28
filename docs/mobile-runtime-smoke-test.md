@@ -119,6 +119,7 @@ blocker. Link CI runs when recording build results.
 | Date | Runtime and OS | App commit | API environment | Steps completed | Result and evidence |
 | --- | --- | --- | --- | --- | --- |
 | 2026-10-28 | Physical Android 14 (Infinix X6532) | `4e130fb8` | Local Docker Compose API over USB debugging forward | Steps 1-8 passed; step 9 partial | Invalid API URL and location inputs were rejected. A PHIVOLCS event at `13.56, 120.65` matched a saved 1 km location in Nearby and Alerts; offline refresh kept the cached match, and the API URL, location, and cached event survived a restart. Restoring the API cleared the offline label. A 1 km location at `0, 0` showed no match; removing it restored the saved-location prompt. The event place name contained `Â°` in both the API response and app; the source sends UTF-8 without a charset and Requests decoded it as ISO-8859-1. A later backend fix is recorded below; this row remains the original observation. Indoor camera preview, quality warning, explicit override, model-unavailable error, and cleanup were observed. Android debug APK built locally; mobile tests 61/61 and TypeScript check passed. [Mobile CI attempt 3](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40637083576) passed at this commit. iOS, outdoor capture, camera denial, and model overlays remain unverified. |
+| 2026-10-29 | Physical Android 14 (Infinix X6532) | Debug app `4e130fb8`; API ingestion fix `67963987` | Local Docker Compose API with freshly corrected rows over USB debugging forward | Focused place-name check in Nearby and Alerts | Saved a temporary `EncodingCheck` location at `12.84, 123.03` with a 1 km radius, refreshed Nearby, and observed `024 km S 73° W of Claveria (Masbate)`. Alerts showed the same text with the correct degree symbol. The test location was removed afterward. The existing debug app initially showed a missing-bundle error after USB reconnection; restoring both USB forwards and cold restarting the app loaded it successfully. This was a focused display check, not a repeat of all steps 1-9 or a scene-model check. |
 |  | iOS simulator |  |  |  |  |
 
 ### 2026-10-29 PHIVOLCS text correction check
@@ -132,7 +133,8 @@ local API then returned `phivolcs-2026_1028_1942_B1` as
 `024 km S 73° W of Claveria (Masbate)`. This verifies the ingestion-to-API
 path for a recent row. The API still returned 27 older `Â°` rows; none of their
 IDs was in the current 1,676-ID feed. No historical backfill was performed.
-The physical Android display has not yet been rechecked after this fix.
+The physical Android display was rechecked in Nearby and Alerts on 2026-10-29;
+see the focused device row above. This does not verify old rows or iOS.
 
 These foreground proximity matches are informational and are not official warnings
 or forecasts. A simulator run does not verify background push, physical-device

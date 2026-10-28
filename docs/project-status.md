@@ -167,8 +167,12 @@ backend image from this branch fetched 1,678 live source rows and updated
 running API. That API returned recent event `phivolcs-2026_1028_1942_B1` with
 `024 km S 73° W of Claveria (Masbate)`. Twenty-seven older API rows still
 contain `Â°`; none of their IDs was present in the current 1,676-ID feed.
-No historical backfill was performed. The physical Android display and CI
-on the fix commit remain to be checked.
+No historical backfill was performed. On an Android 14 Infinix X6532 running
+the existing debug app `4e130fb8`, a fresh 1 km `EncodingCheck` location at
+`12.84, 123.03` showed `024 km S 73° W of Claveria (Masbate)` in both Nearby
+and Alerts. The test location was removed afterward. This verifies one corrected
+mobile display path through the local API; CI on the fix branch and iOS remain
+to be checked.
 
 ## Next integration milestone
 
