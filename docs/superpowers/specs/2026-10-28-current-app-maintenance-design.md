@@ -1,6 +1,6 @@
 # Current App Maintenance and Runtime Verification Design
 
-**Date:** 2026-10-28  
+**Date:** 2026-10-28
 **Decision:** Keep React Native 0.75.5 and the current Android SDK 23/iOS 13.4 minimums while proving the existing app and resolving observed failures. The user approved this direction on 2026-10-28. This document defines verification and maintenance; it does not approve a framework, dependency, or OS-floor upgrade.
 
 ## Current evidence and limit
