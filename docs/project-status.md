@@ -68,7 +68,7 @@ is still open with conflicts against `main` and has not been merged.
 [PR #72](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/72) merged
 the PR #71 tracking closeout at `e3bf201f` after five checks on `6d03f321`;
 both Release reports and four compact traces matched PR #71 except the Android
-APK hash. The current audit still has nine undetermined rows, including a high
+APK hash. At that checkpoint, the audit had nine undetermined rows, including a high
 direct `node-forge` row. At that checkpoint, the next Epic 4 slice was the
 [New Architecture opt-in plan](superpowers/plans/2026-10-27-mobile-new-architecture-readiness.md);
 native builds and device flows had not yet been verified.
@@ -80,10 +80,30 @@ completed with opt-in flags. Android added 16 app/Codegen native entries across
 four ABIs and changed its APK hash. Its audit rows, source-map packages/hash,
 and compact traces matched PR #72; iOS's audited report and two compact traces
 matched exactly. The iOS artifact hash covers the main JavaScript bundle, not
-the native executable. All nine current rows remain undetermined, including
+the native executable. At that checkpoint, nine rows remained undetermined, including
 high direct `node-forge`. Real-device storage, camera, and SVG flows remain
 unverified, as does the Android SDK 24/iOS 15.1 support-floor decision for the
 later framework migration.
+
+[PR #74](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/74)
+merged the PR #73 tracking closeout at `771d529a` after five passing checks
+on `fe7b35af`; it recorded no device-flow evidence. The subsequent
+[main Mobile CI run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40618628164)
+completed both native jobs and returned 11 undetermined rows on each platform.
+Compared with PR #74, the new rows are direct `deepmerge`
+[GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4)
+and inherited `@react-native-community/cli-config`; the lockfile did not change.
+Other Release-report fields matched except the Android APK hash.
+
+The current maintenance decision is to keep React Native 0.75.5 and the existing
+Android SDK 23/iOS 13.4 minimums while verifying the app before a supported
+framework migration. The [maintenance design](superpowers/specs/2026-10-28-current-app-maintenance-design.md)
+and [launch-gate plan](superpowers/plans/2026-10-28-current-app-launch-gate.md)
+add Android/iOS simulator startup checks to Mobile CI. These checks establish
+installation, launch, short process survival, and a screenshot only when their
+exact-head runs pass. They do not replace the [device-flow checklist](mobile-runtime-smoke-test.md),
+a live staging deployment, or the held Epic 5 domain-review decision. All 11
+current mobile audit rows remain undetermined, including high direct `node-forge`.
 
 The [project completion plan](../PLAN.md) records the 2026-10-17 audit, prioritized
 engineering fixes, epic acceptance gates, and session verification evidence.

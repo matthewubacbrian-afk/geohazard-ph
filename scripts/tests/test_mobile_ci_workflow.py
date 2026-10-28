@@ -19,7 +19,7 @@ class MobileCiWorkflowTests(unittest.TestCase):
         self.assertIn("-configuration Release", ios_job)
         self.assertIn("SOURCEMAP_FILE", ios_job)
         self.assertIn("GeoHazardPH.app", ios_job)
-        self.assertEqual(workflow.count("actions/upload-artifact@v7"), 6)
+        self.assertEqual(workflow.count("actions/upload-artifact@v7"), 8)
         upload_paths = [
             [
                 line.strip().removeprefix("path: ")
@@ -34,9 +34,11 @@ class MobileCiWorkflowTests(unittest.TestCase):
                 ["${{ runner.temp }}/mobile-process-trace-android.json"],
                 ["${{ runner.temp }}/mobile-image-input-trace-android.json"],
                 ["${{ runner.temp }}/mobile-artifact-report-android.json"],
+                ["${{ runner.temp }}/mobile-startup-android/"],
                 ["${{ runner.temp }}/mobile-process-trace-ios.json"],
                 ["${{ runner.temp }}/mobile-image-input-trace-ios.json"],
                 ["${{ runner.temp }}/mobile-artifact-report-ios.json"],
+                ["${{ runner.temp }}/mobile-startup-ios/"],
             ],
         )
         self.assertIn("if-no-files-found: error", workflow)
@@ -104,6 +106,24 @@ class MobileCiWorkflowTests(unittest.TestCase):
         self.assertIn('"ndk;26.1.10909125"', workflow)
         self.assertIn("./gradlew assembleDebug", workflow)
 
+    def test_release_startup_smoke_fails_closed_on_both_platforms(self):
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        android_job, ios_job = workflow.split("  ios-simulator:", maxsplit=1)
+        for job, platform in ((android_job, "android"), (ios_job, "ios")):
+            self.assertIn("mobile_runtime_smoke.py", job)
+            self.assertIn(f"--platform {platform}", job)
+            self.assertIn("timeout-minutes:", job)
+            self.assertIn(f"mobile-startup-{platform}", job)
+            self.assertNotIn("continue-on-error: true", job)
+        self.assertIn('system-images;android-34;google_apis;x86_64', android_job)
+        self.assertIn('ANDROID_AVD_HOME=', android_job)
+        self.assertIn('emulator" -list-avds', android_job)
+        self.assertIn('-gpu software', android_job)
+        self.assertIn('GeoHazardPH.app', ios_job)
+        backend_workflow = (ROOT / ".github" / "workflows" / "backend-ci.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("test_mobile_runtime_smoke.py", backend_workflow)
     def test_android_gradle_wrapper_is_tracked_as_executable(self):
         result = subprocess.run(
             ["git", "ls-files", "--stage", "--", "mobile/android/gradlew"],
