@@ -141,8 +141,10 @@ records passing Nearby, Saved locations, and Alerts checks for input validation,
 a live 1 km PHIVOLCS match, offline cache, restart persistence, recovery, no-match
 state, and test-location removal. This verifies those foreground flows on one
 physical Android device. One PHIVOLCS place name contained `Â°` in both the
-API response and app display; its encoding cause remains uninvestigated. iOS
-physical-device behavior remains unverified.
+API response and app display. A 2026-10-28 source check found UTF-8 degree bytes
+under `Content-Type: text/html` without a charset; Requests selected ISO-8859-1,
+and the ingestion parser uses `response.text`. A regression fix remains open.
+iOS physical-device behavior remains unverified.
 
 Scene review opened the camera and displayed one indoor capture. The provisional
 image-quality check warned on that capture; continuing returned the expected
