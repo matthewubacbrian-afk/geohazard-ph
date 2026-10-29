@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, Text, View } from 'react-native';
 
 import AlertsScreen from '../screens/AlertsScreen';
 import NearbyHazardsScreen from '../screens/NearbyHazardsScreen';
@@ -164,7 +164,7 @@ export default function RootNavigator() {
   };
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root}>
       {storageWarning ? <Text accessibilityRole="alert" style={styles.error}>{storageWarning}</Text> : null}
       {eventCacheWarning ? <Text accessibilityRole="alert" style={styles.error}>{eventCacheWarning}</Text> : null}
       {!isReady ? <Text style={styles.muted}>Loading saved mobile data…</Text> : null}
@@ -193,6 +193,6 @@ export default function RootNavigator() {
           </Pressable>
         ))}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
