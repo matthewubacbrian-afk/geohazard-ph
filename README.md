@@ -169,7 +169,7 @@ To run the API, ingestion worker, database, and cache in containers, first make 
 
 ```powershell
 docker compose up -d postgres redis
-docker compose run --rm api alembic upgrade head
+docker compose run --rm api python -m alembic upgrade head
 docker compose up --build
 ```
 
@@ -449,10 +449,16 @@ sent to the backend.
 ### Native mobile development
 
 The native projects target the existing React Native 0.75.5 app. Install dependencies from
-`mobile/` with `npm ci`. For Android, install JDK 17 and Android Studio with Android SDK
-Platform 34, Build Tools 34.0.0, Platform Tools, and NDK 26.1.10909125. Set `JAVA_HOME` and
+`mobile/` with `npm ci`. For Android, install JDK 17 and the Android SDK (through Android
+Studio or the official command-line tools) with Platform 34, Build Tools 34.0.0, Platform
+Tools, and NDK 26.1.10909125. Set `JAVA_HOME` and
 `ANDROID_HOME` to those installations, start an Android emulator (or connect a device with USB
 debugging), and run the Metro server and app in separate terminals:
+
+On Windows, use Node.js 22.x for this mobile setup and place the checkout at a path without
+spaces. In the 2026-10-28 physical-device check, Node 24.15.0 started Metro but its status
+endpoint did not respond; Node 22.22.0 served the bundle. The native build from a path with
+spaces failed in generated CMake autolinking, while the same commit built from `C:\ghph-device`.
 
 ```powershell
 Set-Location mobile
@@ -467,6 +473,15 @@ npm run android
 On an Android emulator, the development computer's localhost is available at `10.0.2.2`; on a
 physical phone, use a LAN address reachable from the phone. Android permits cleartext HTTP only
 in the debug manifest; production deployments must use HTTPS. Do not commit a local API URL.
+With a USB-debugging phone, you can instead forward the laptop's API and Metro ports:
+
+```powershell
+adb reverse tcp:8000 tcp:8000
+adb reverse tcp:8081 tcp:8081
+```
+
+Then save `http://localhost:8000/api/v1` in Saved locations. Reapply these forwards after a USB
+reconnect or ADB restart. This USB option is for local debug builds only.
 
 iOS builds require macOS, Xcode, and CocoaPods. On a Mac, run `npm ci` from `mobile/`, then
 run `pod install` from `mobile/ios/` and `npm run ios` from `mobile/`. The project uses

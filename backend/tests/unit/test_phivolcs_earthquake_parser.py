@@ -13,8 +13,9 @@ FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
 
 class FakeResponse:
-    def __init__(self, text: str):
-        self.text = text
+    def __init__(self, content: bytes):
+        self.content = content
+        self.text = content.decode("latin-1")
 
     def raise_for_status(self) -> None:
         return None
@@ -55,7 +56,7 @@ def test_fetch_recent_events_uses_configured_feed(monkeypatch):
         captured["timeout"] = kwargs["timeout"]
         captured["headers"] = kwargs["headers"]
         captured["verify"] = kwargs["verify"]
-        return FakeResponse(html)
+        return FakeResponse(html.encode("utf-8"))
 
     monkeypatch.setattr(requests, "get", fake_get)
     get_settings.cache_clear()
@@ -65,6 +66,7 @@ def test_fetch_recent_events_uses_configured_feed(monkeypatch):
 
     assert len(events) == 2
     assert events[0].source == "phivolcs"
+    assert events[0].place_name == "010 km N 46° W of Polillo (Quezon)"
     assert captured == {
         "url": settings.phivolcs_earthquake_feed_url,
         "timeout": 30,
@@ -82,4 +84,13 @@ def test_fetch_recent_events_wraps_http_errors(monkeypatch):
     monkeypatch.setattr(requests, "get", fake_get)
 
     with pytest.raises(PhivolcsFetchError, match="request failed"):
+        fetch_recent_events(get_settings())
+
+
+def test_fetch_recent_events_rejects_invalid_utf8(monkeypatch):
+    import requests
+
+    monkeypatch.setattr(requests, "get", lambda _url, **_kwargs: FakeResponse(b"\xff"))
+
+    with pytest.raises(PhivolcsFetchError, match="parsing failed"):
         fetch_recent_events(get_settings())
