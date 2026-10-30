@@ -1,0 +1,112 @@
+name: Android QA build
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/android-qa.yml'
+      - 'scripts/mobile_qa_artifact.py'
+      - 'scripts/mobile_runtime_smoke.py'
+      - 'scripts/tests/test_mobile_qa_artifact.py'
+      - 'scripts/tests/test_mobile_runtime_smoke.py'
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/android-qa.yml'
+      - 'scripts/mobile_qa_artifact.py'
+      - 'scripts/mobile_runtime_smoke.py'
+      - 'scripts/tests/test_mobile_qa_artifact.py'
+      - 'scripts/tests/test_mobile_runtime_smoke.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Verify artifact and smoke commands
+        run: |
+          python -m pip install ruff
+          ruff check --config backend/pyproject.toml scripts/mobile_qa_artifact.py scripts/mobile_runtime_smoke.py scripts/tests/test_mobile_qa_artifact.py scripts/tests/test_mobile_runtime_smoke.py
+          python -m unittest scripts.tests.test_mobile_qa_artifact scripts.tests.test_mobile_runtime_smoke -v
+          python scripts/verify_structure.py
+      - run: npm ci
+        working-directory: mobile
+      - run: npm test -- --runInBand
+        working-directory: mobile
+      - run: npx tsc --noEmit
+        working-directory: mobile
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install SDK and emulator
+        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'platform-tools' 'ndk;26.1.10909125' 'emulator' 'system-images;android-34;google_apis;x86_64'
+      - name: Build reference Release and standalone QA
+        run: ./gradlew assembleRelease assembleQa
+        working-directory: mobile/android
+      - name: Verify final APKs and record identity
+        run: |
+          mkdir -p "$RUNNER_TEMP/android-qa"
+          cp mobile/android/app/build/outputs/apk/qa/app-qa.apk "$RUNNER_TEMP/android-qa/app-qa.apk"
+          python scripts/mobile_qa_artifact.py \
+            --apk "$RUNNER_TEMP/android-qa/app-qa.apk" \
+            --release-apk mobile/android/app/build/outputs/apk/release/app-release.apk \
+            --lockfile mobile/package-lock.json --commit "$GITHUB_SHA" \
+            --aapt "$ANDROID_HOME/build-tools/34.0.0/aapt" \
+            --output "$RUNNER_TEMP/android-qa/build-info.json"
+      - name: Verify QA startup without Metro
+        timeout-minutes: 12
+        run: |
+          mkdir -p "$RUNNER_TEMP/android-qa-startup"
+          test -e /dev/kvm
+          sudo chmod 666 /dev/kvm
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/android-qa-avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | avdmanager create avd -n geohazard_qa -k 'system-images;android-34;google_apis;x86_64' --path "$ANDROID_AVD_HOME/geohazard_qa.avd" --force
+          "$ANDROID_HOME/emulator/emulator" -avd geohazard_qa -no-window -no-audio -no-boot-anim -gpu software -accel on > "$RUNNER_TEMP/android-qa-startup/emulator.log" 2>&1 &
+          timeout 240s adb wait-for-device
+          booted=0
+          for attempt in $(seq 1 60); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = '1' ]; then booted=1; break; fi
+            sleep 3
+          done
+          test "$booted" = '1'
+          python scripts/mobile_runtime_smoke.py --platform android \
+            --artifact "$RUNNER_TEMP/android-qa/app-qa.apk" \
+            --android-package com.geohazardph.mobile.qa \
+            --android-activity com.geohazardph.mobile.MainActivity \
+            --diagnostics "$RUNNER_TEMP/android-qa-startup"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android-qa-${{ github.sha }}
+          path: ${{ runner.temp }}/android-qa/
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: android-qa-startup-${{ github.sha }}
+          path: ${{ runner.temp }}/android-qa-startup/
+          if-no-files-found: warn
+          retention-days: 7

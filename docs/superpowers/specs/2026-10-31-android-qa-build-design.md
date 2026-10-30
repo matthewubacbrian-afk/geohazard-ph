@@ -62,8 +62,8 @@ changes; do not change existing audited Release upload paths.
 native ABI entries and use Android build tools to inspect the merged manifests.
 
 Extend the Android runtime checker with optional `--android-package` and
-`--android-activity`, defaulting to the current application and fully qualified
-MainActivity. Keep iOS behavior unchanged. Record the actual package in results.
+`--android-activity`, defaulting to the existing application and MainActivity. QA passes the fully
+qualified activity explicitly. Keep iOS behavior unchanged. Record the actual package in results.
 
 ### Configuration, failures, and data
 
@@ -71,6 +71,10 @@ No new API configuration or hardcoded server URL. The existing Saved locations
 form sets the API address. Manifest checks fail closed with a concise diagnostic;
 no failed artifact is published. Build metadata contains no credentials or local
 developer paths. Application ID separation gives QA independent saved data.
+An explicit Release-only `usesCleartextTraffic=false` overlay makes the intended
+HTTPS policy inspectable without relying on platform defaults. Reject custom
+network security resources until their policy is explicitly reviewed, since they
+can override the cleartext flag.
 
 ## Rollout
 
@@ -82,6 +86,7 @@ be used only when connected; record missing hardware instead of claiming a pass.
 
 - `mobile/android/app/build.gradle` — QA build type.
 - `mobile/android/app/src/qa/AndroidManifest.xml` — development HTTP scope.
+- `mobile/android/app/src/release/AndroidManifest.xml` — explicit Release HTTP denial.
 - `mobile/android/app/src/qa/res/values/strings.xml` — distinct label.
 - `scripts/mobile_qa_artifact.py` and its script tests — final artifact contract.
 - `scripts/mobile_runtime_smoke.py` and its tests — configurable Android identity.

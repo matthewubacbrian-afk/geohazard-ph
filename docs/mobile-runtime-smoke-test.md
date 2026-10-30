@@ -140,3 +140,18 @@ see the focused device row above. This does not verify old rows or iOS.
 These foreground proximity matches are informational and are not official warnings
 or forecasts. A simulator run does not verify background push, physical-device
 behavior, production reliability, signing, or store distribution.
+
+## Standalone Android QA acceptance
+
+Download the commit-specific APK and `build-info.json` from Android QA build.
+Verify its SHA-256 before installing, as documented in README. Confirm the
+`GeoHazard QA` label and package `com.geohazardph.mobile.qa`; QA uses its own saved
+API URL and locations. Start it with Metro stopped and without forwarding port
+8081. Use the fully qualified activity `com.geohazardph.mobile.MainActivity`.
+
+Repeat foreground steps 1-8 and the camera cases independently. Include the
+artifact run, source commit, APK SHA-256, phone/OS, and API environment in the
+result row. For the USB API path, forward the chosen local API port and configure
+its `/api/v1` URL in the QA app. Do not use the older debug app's data or a Metro
+bundle as evidence for this standalone build. Empty result rows remain unfilled
+until the downloaded binary is actually exercised on hardware.

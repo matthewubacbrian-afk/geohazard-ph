@@ -25,11 +25,11 @@ script tests/lint, mobile Jest/TypeScript, native CI, structure, and whitespace.
 **Interfaces:** CLI flags and record fields are defined in the spec. A manifest
 inspector reports package, debuggable flag, and cleartext flag from aapt output.
 
-- [ ] Write failing temporary-ZIP and manifest validation cases plus custom
+- [x] Write failing temporary-ZIP and manifest validation cases plus custom
   package/activity smoke regression; run and confirm the intended failures.
-- [ ] Implement validation and identity parameters; rerun focused and full script
+- [x] Implement validation and identity parameters; rerun focused and full script
   tests, then Ruff. No device or live network is needed for these tests.
-- [ ] Commit the verified command and tests.
+- [x] Commit the verified command and tests.
 
 ### Task 2: Native variant and CI
 
@@ -38,10 +38,10 @@ inspector reports package, debuggable flag, and cleartext flag from aapt output.
 **Interfaces:** `./gradlew assembleRelease assembleQa` produces the reference
 release APK and QA APK; artifact command writes `build-info.json` next to QA APK.
 
-- [ ] Add `qa { initWith release; applicationIdSuffix ".qa";
+- [x] Add `qa { initWith release; applicationIdSuffix ".qa";
   versionNameSuffix "-qa"; debuggable false; matchingFallbacks = ["release"] }`.
-- [ ] Add QA-only HTTP manifest and `GeoHazard QA` app-name resource.
-- [ ] Add workflow checks, both builds, final APK inspection, API34 QA startup
+- [x] Add QA-only HTTP manifest and `GeoHazard QA` app-name resource.
+- [x] Add workflow checks, both builds, final APK inspection, API34 QA startup
   using custom package and fully qualified activity, then APK/metadata upload.
 - [ ] Run native CI and inspect manifests, embedded bundle, ABIs, metadata, and
   startup screenshot; fix failures before claiming an installable build.
@@ -53,10 +53,23 @@ release APK and QA APK; artifact command writes `build-info.json` next to QA APK
 **Interfaces:** Operator downloads one commit-specific artifact and verifies its
 APK hash before installing. QA uses its own saved API URL and locations.
 
-- [ ] Document artifact download, hash verification, installation, USB API
+- [x] Document artifact download, hash verification, installation, USB API
   forwarding, Metro-free startup, and physical acceptance limits.
 - [ ] Reconcile current main after readiness integration; rerun affected checks.
 - [ ] Obtain independent review, open PR, and wait for all required checks.
 - [ ] If a phone is connected, verify startup with no Metro and repeat foreground
   acceptance. Otherwise keep this physical gate explicitly pending.
 - [ ] Merge only reviewed, passing work; record tested commit and artifact identity.
+
+## Execution evidence (2026-10-31)
+
+Source review identified two policy gaps, both fixed with red/green regressions:
+network-security resources can override the cleartext flag, and an absent flag
+must not count as an explicit Release denial. The Release-only manifest now
+states false; unsupported resources fail verification. Independent recheck found
+no remaining source blockers. Local checks passed: 69 script tests plus eight
+subtests, 61 mobile tests, strict TypeScript, Ruff, structure, and whitespace.
+A real existing debug APK was parsed successfully with Android build tools.
+Local mobile checks reused a dependency set with the unchanged lockfile; clean
+native builds and final APK inspection remain CI gates. No phone was connected
+when this slice began, so physical QA acceptance remains pending.

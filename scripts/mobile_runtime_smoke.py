@@ -1,4 +1,4 @@
-"""Fail-closed startup smoke checks for existing mobile Release simulator builds."""
+"""Fail-closed startup smoke checks for packaged mobile simulator builds."""
 
 import argparse
 import json
@@ -32,13 +32,13 @@ def _invoke(run, command, *, timeout=120, check=True):
 
 def _validate_artifact(artifact):
     if not artifact.exists():
-        raise SmokeError(f"Release artifact is missing: {artifact}")
+        raise SmokeError(f"Packaged app artifact is missing: {artifact}")
 
 
-def _write_result(diagnostics, platform, device, pid):
+def _write_result(diagnostics, platform, device, pid, bundle_id=BUNDLE_ID):
     diagnostics.mkdir(parents=True, exist_ok=True)
     (diagnostics / "startup-result.json").write_text(
-        json.dumps({"platform": platform, "device": device, "bundle_id": BUNDLE_ID,
+        json.dumps({"platform": platform, "device": device, "bundle_id": bundle_id,
                     "pid": str(pid), "scope": "startup liveness only"}, indent=2) + "\n",
         encoding="utf-8",
     )
@@ -60,8 +60,9 @@ def _capture_failure_log(run, command, destination):
         pass
 
 
-def run_android(artifact, diagnostics, *, run=subprocess.run, sleep=time.sleep):
-    """Install and launch the Release APK on an already booted emulator."""
+def run_android(artifact, diagnostics, *, run=subprocess.run, sleep=time.sleep,
+                bundle_id=BUNDLE_ID, activity=".MainActivity"):
+    """Install and launch a packaged APK on an already booted emulator."""
     artifact = Path(artifact)
     diagnostics = Path(diagnostics)
     _validate_artifact(artifact)
@@ -69,17 +70,17 @@ def run_android(artifact, diagnostics, *, run=subprocess.run, sleep=time.sleep):
         _invoke(run, ["adb", "get-state"], timeout=20)
         _invoke(run, ["adb", "install", "-r", str(artifact)], timeout=180)
         launch = _invoke(run, ["adb", "shell", "am", "start", "-W", "-n",
-                               f"{BUNDLE_ID}/.MainActivity"], timeout=60)
+                               f"{bundle_id}/{activity}"], timeout=60)
         if "Error" in launch.stdout or "Exception" in launch.stdout:
             raise SmokeError(f"Android launch failed: {launch.stdout.strip()[-500:]}")
         sleep(STARTUP_WAIT_SECONDS)
-        process = _invoke(run, ["adb", "shell", "pidof", BUNDLE_ID], timeout=20, check=False)
+        process = _invoke(run, ["adb", "shell", "pidof", bundle_id], timeout=20, check=False)
         if process.returncode != 0 or not process.stdout.strip():
             raise SmokeError("Android app exited during startup")
         diagnostics.mkdir(parents=True, exist_ok=True)
         _invoke(run, ["adb", "shell", "screencap", "-p", "/sdcard/geohazard-startup.png"], timeout=30)
         _invoke(run, ["adb", "pull", "/sdcard/geohazard-startup.png", str(diagnostics / "startup.png")], timeout=30)
-        _write_result(diagnostics, "android", "emulator", process.stdout.strip())
+        _write_result(diagnostics, "android", "emulator", process.stdout.strip(), bundle_id)
     except SmokeError:
         _capture_failure_log(run, ["adb", "logcat", "-d", "-t", "500"],
                              diagnostics / "app-logcat.txt")
@@ -156,10 +157,13 @@ def main(argv=None):
     parser.add_argument("--platform", choices=["android", "ios"], required=True)
     parser.add_argument("--artifact", type=Path, required=True)
     parser.add_argument("--diagnostics", type=Path, required=True)
+    parser.add_argument("--android-package", default=BUNDLE_ID)
+    parser.add_argument("--android-activity", default=".MainActivity")
     args = parser.parse_args(argv)
     try:
         if args.platform == "android":
-            run_android(args.artifact, args.diagnostics)
+            run_android(args.artifact, args.diagnostics, bundle_id=args.android_package,
+                        activity=args.android_activity)
         else:
             run_ios(args.artifact, args.diagnostics)
     except SmokeError as exc:
@@ -167,7 +171,7 @@ def main(argv=None):
         (args.diagnostics / "startup-failure.txt").write_text(str(exc) + "\n", encoding="utf-8")
         print(f"{args.platform} startup smoke failed: {exc}", file=sys.stderr)
         return 1
-    print(f"{args.platform} Release app survived startup; user flows remain unverified")
+    print(f"{args.platform} packaged app survived startup; user flows remain unverified")
     return 0
 
 

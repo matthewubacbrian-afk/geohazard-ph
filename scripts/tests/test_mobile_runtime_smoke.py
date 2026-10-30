@@ -36,6 +36,22 @@ class MobileRuntimeSmokeTests(unittest.TestCase):
         sleep.assert_called_once()
         self.assertGreaterEqual(sleep.call_args.args[0], 10)
 
+    def test_android_qa_identity_is_used_for_launch_liveness_and_record(self):
+        commands = []
+
+        def run(command, **kwargs):
+            commands.append(command)
+            return subprocess.CompletedProcess(command, 0, '1234\n', '')
+
+        package = f'{BUNDLE}.qa'
+        activity = f'{BUNDLE}.MainActivity'
+        smoke.run_android(self.artifact, self.diagnostics, run=run, sleep=lambda _: None,
+                          bundle_id=package, activity=activity)
+        self.assertIn(['adb', 'shell', 'am', 'start', '-W', '-n', f'{package}/{activity}'], commands)
+        self.assertIn(['adb', 'shell', 'pidof', package], commands)
+        record = json.loads((self.diagnostics / 'startup-result.json').read_text())
+        self.assertEqual(record['bundle_id'], package)
+
     def test_android_exited_process_is_a_failure(self):
         def run(command, **kwargs):
             if command[:3] == ["adb", "shell", "pidof"]:
