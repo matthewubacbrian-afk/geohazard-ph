@@ -145,9 +145,6 @@ export default function SceneAnalysisScreen({ apiBaseUrl, isActive }: Props) {
                   <Pressable accessibilityRole="button" disabled={isAnalyzing} onPress={() => void submitAnalysis(true)} style={styles.actionButton}>
                     <Text style={styles.actionText}>Continue anyway</Text>
                   </Pressable>
-                  <Pressable accessibilityRole="button" disabled={isCapturing || isAnalyzing} onPress={() => void capture(true)} style={styles.secondaryButton}>
-                    <Text style={styles.secondaryText}>Retake blurry photo</Text>
-                  </Pressable>
                 </View>
               ) : null}
               <Pressable accessibilityRole="button" disabled={isAnalyzing} onPress={() => void submitAnalysis()} style={styles.actionButton}>
@@ -194,11 +191,11 @@ export default function SceneAnalysisScreen({ apiBaseUrl, isActive }: Props) {
               )) : <Text style={styles.muted}>No listed object cues were detected in this image.</Text>}
               {result.limitations.map((item) => <Text key={item} style={styles.muted}>{item}</Text>)}
               <Text style={styles.muted}>Model: {result.modelVersion}</Text>
-              <Pressable accessibilityRole="button" onPress={() => void capture(true)} style={styles.secondaryButton}>
-                <Text style={styles.secondaryText}>Retake photo</Text>
-              </Pressable>
             </>
           )}
+          <Pressable accessibilityRole="button" disabled={isCapturing || isAnalyzing} onPress={() => void capture(true)} style={styles.secondaryButton}>
+            <Text style={styles.secondaryText}>{qualityWarning ? 'Retake blurry photo' : 'Retake photo'}</Text>
+          </Pressable>
         </>
       )}
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
