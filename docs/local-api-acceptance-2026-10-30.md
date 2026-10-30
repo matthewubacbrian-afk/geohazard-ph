@@ -30,9 +30,8 @@ replacement, or profile release was performed.
 
 ## Remaining acceptance
 
-- Observe a newly committed event reaching a connected WebSocket client.
-- Complete physical Android flows using the runtime checklist and explicitly
-  record both native app and JavaScript source versions.
+- Repeat acceptance on a freshly built native app and complete the remaining
+  capture/retake cases; record native and JavaScript source versions.
 - Complete camera and model checks separately; default model unavailability
   does not establish successful scene analysis.
 - Keep Oracle staging deferred and the regional profile quality hold in force.
@@ -51,10 +50,44 @@ which passed, followed by successful strict TypeScript checking under Node
 22.22.0. A temporary source snapshot and Metro launcher outside the repository
 produced a 6,722,780-byte development bundle. All 26 copied source and configuration
 files matched the worktree byte for byte. These checks do not establish a
-fresh native build or device-flow acceptance.
+fresh native build or device-flow acceptance by themselves.
 
 The installed app showed a blank surface after repeated reloads. Logs included
 `ReactInstance task returned null` and `reactInstance is null` following failed
 bundle loads. A manual close and reopen was requested because automatic approval
-review rejected the app restart command. A clean-start result is still required
-before classifying this observation as an application defect.
+review rejected the app restart command. A manual close/reopen subsequently
+recovered the app. The checks below did not reproduce a normal-startup defect;
+failed debug reload recovery remains a development-runtime observation.
+
+## Physical Android follow-up
+
+Runtime: Android 14 Infinix X6532. Native debug binary: `4e130fb8`; JavaScript
+snapshot: `18b9a0ac`. This is a mixed build, not a newly built APK.
+
+| Check | Result |
+| --- | --- |
+| Input validation | Rejected `bad` as API URL, blank name, latitude 91, longitude 181, and radius 0. Restored the existing API URL afterward. |
+| Live match | Temporary `QA-20261030` at `4.25, 125.75`, radius 1 km, matched the recorded PHIVOLCS event in Nearby and Alerts, with magnitude 2.7, distance 0 m, and correctly decoded `16° E`. |
+| Offline refresh | Stopped only `ghph-acceptance-api`; Nearby and Alerts kept the match and displayed the offline cached-data label. |
+| Process restart while offline | Dismissed only GeoHazard through Recent Apps. After its old process disappeared, relaunched it; the new process restored the saved location and cached match, retaining the offline label after refresh failed. Observed process changed from 8216 to 10589. |
+| Recovery | Restarted the acceptance API and refreshed; the match remained and the offline label cleared. |
+| No match and removal | Removed the first temporary location; a new 1 km `QA-no-match` location at `0, 0` displayed the no-match message. Removed it and verified the saved-location prompt returned. |
+| Camera opening and cancellation | Open camera launched the native CaptureActivity. Canceling returned to Scene review with no preview or error; navigating away and back retained the empty capture state. |
+| Denial and recovery | Changed this app's Camera permission to Don't allow. Scene review itself produced no prompt; tapping Open camera displayed the Android prompt. Declining displayed the instruction to enable camera access in system settings without a crash. Restored the original Allow only while using the app setting and verified the native camera opened again. Canceled and returned to Nearby. |
+
+No photos were captured during the unattended follow-up. Indoor/outdoor capture,
+retake, image analysis, candidate overlays, model calibration, and physical iOS
+remain open. No product defect was established by these completed foreground
+checks, so no application code was changed. Both temporary locations were removed,
+the original camera permission was restored, and the acceptance API was left running.
+
+## Realtime delivery follow-up
+
+A WebSocket client connected before a second bounded ingestion cycle. It received
+an ingestion-generated USGS update for `us6000tyq7`, canonical ID
+`d2b53a9f-112b-424f-a379-2e9dd21367b9`, magnitude 5.3. Its occurrence time was
+`2026-10-01T05:34:10.575000Z`; receiving this update does not establish a newly
+occurring earthquake. This verifies a live path from ingestion through Redis
+to the WebSocket client, beyond the initial connection-only observation.
+The second worker exited 0 after fetching/processing 39 USGS events and fetching
+1,769 PHIVOLCS rows with 1,767 unique events processed.

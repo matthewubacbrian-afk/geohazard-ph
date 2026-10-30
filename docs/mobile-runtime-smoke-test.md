@@ -140,3 +140,18 @@ see the focused device row above. This does not verify old rows or iOS.
 These foreground proximity matches are informational and are not official warnings
 or forecasts. A simulator run does not verify background push, physical-device
 behavior, production reliability, signing, or store distribution.
+
+## 2026-10-30 foreground and permission follow-up
+
+An Android 14 Infinix X6532 ran native debug binary `4e130fb8` with the matching
+native sources and a Metro JavaScript snapshot from `18b9a0ac`. This was not a
+fresh native build. The [acceptance record](local-api-acceptance-2026-10-30.md#physical-android-follow-up)
+details invalid input handling, a live 1 km match, offline caching in Nearby and
+Alerts, process restart while offline, restored API access, no-match state, and
+removal of both temporary locations. The existing API URL persisted.
+
+Camera opening, cancellation, navigation away/back, denied permission messaging,
+and recovery after restoring permission were verified. Camera permission was
+restored to its original setting. No new photos were captured; indoor/outdoor
+capture, retake, model overlays, and calibration remain unverified by this run.
+The initial blank debug surface recovered after closing and reopening the app.

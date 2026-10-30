@@ -202,3 +202,22 @@ historical records of their original scope and execution; unchecked boxes in
 those records do not define the current backlog unless the work is reconfirmed
 against current code and requirements. A code-complete row does not establish
 that external data is loaded or that a hosted deployment is healthy.
+
+## 2026-10-30 local API and physical Android follow-up
+
+The [dated acceptance record](local-api-acceptance-2026-10-30.md) verifies local
+API health and ingestion from `18b9a0ac`: 39 USGS events fetched/processed and
+1,768 PHIVOLCS rows fetched, with 1,766 unique events processed. The API returned
+1,864 events and an empty held-profile list. Redis connectivity and a WebSocket
+connection passed. A second bounded cycle delivered an ingestion-generated USGS
+update over the WebSocket; its October 1 occurrence time identifies it as a
+historical-event update, not a newly occurring earthquake.
+
+On Android 14 Infinix X6532, the October 28 native debug binary with current
+`18b9a0ac` JavaScript passed foreground validation, nearby matching, offline cache,
+process restart persistence, recovery, no-match state, and temporary-location
+removal. Camera opening/canceling and permission denial/recovery also passed.
+This mixed build does not replace a fresh native release acceptance run. No new
+photos were captured; scene capture/retake, model evaluation, and physical iOS
+remain open. All 61 mobile tests and strict TypeScript checking passed locally.
+See the [runtime checklist](mobile-runtime-smoke-test.md#2026-10-30-foreground-and-permission-follow-up).
