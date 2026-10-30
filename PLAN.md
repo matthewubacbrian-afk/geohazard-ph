@@ -1,6 +1,6 @@
 # Project completion plan
 
-Reviewed: 2026-10-28 (Asia/Manila). Initial audit baseline: origin/main `173f21be`.
+Reviewed: 2026-10-30 (Asia/Manila). Initial audit baseline: origin/main `173f21be`.
 
 ## Goal and completion rule
 
@@ -39,6 +39,29 @@ PR #71's dated reports have nine undetermined rows after three inherited chain
 rows disappeared from the audit feed. The direct `node-forge` row remains high
 and undetermined. No lockfile, source-map, native-inventory, or compact-trace
 change explains the row drop; it is not safety or device evidence.
+
+## Current local readiness checkpoint (2026-10-30)
+
+Main `18b9a0ac` passed Backend, Web, ML, and Mobile CI. PR #77 merged the
+PHIVOLCS UTF-8 fix with five passing checks. PR #78 merged the iOS root safe-area
+fix; simulator startup screenshots verified the iPhone heading and tab layout
+and unchanged Android layout. These are recorded CI and simulator observations,
+not a fresh physical-device acceptance run.
+
+Oracle staging is deferred at the user's request because account creation is
+currently unavailable. Resume local acceptance in this order:
+
+1. Restore a working Docker daemon and verify the local API, event feed, and
+   ingestion using the README and runbook; keep app data separate from test data.
+2. Connect an Android device and repeat the runtime checklist on the current app
+   commit, including remaining camera permission, retake, and cleanup flows.
+3. Complete iOS physical-device flows when a camera-capable device is available.
+   Model overlays still require a provisioned and evaluated scene model.
+
+At the local readiness inspection, Android SDK tooling was installed but no
+Android device was connected, and Docker Desktop was unavailable. No new device
+or API flow pass was recorded. The Windows README paths now match the documented
+`backend/.venv` setup; the full startup sequence remains unverified here.
 
 ## Prioritized delivery queue
 
@@ -88,14 +111,14 @@ Android APK hash. The advisory has no patched version recorded. This changed
 audit result is not app-safety or device evidence.
 
 - [x] P2 current-app maintenance gate: verified that the Android and iOS non-published Release apps install, launch, and remain alive on CI simulators via the startup smoke gate in Mobile CI ([PR #75](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/75), merged at `20fc771a`). The gate is startup-only (no flow or advisory clearance), records screenshots/logs, and fails closed. Keep React Native 0.75.5 and current OS minimums while repairing observed defects.
-- [x] P2 PHIVOLCS earthquake feed text correction: the 2026-10-28 Android check found `Â°` in both API and phone. Commit `67963987` decodes the source response as strict UTF-8 before parsing. A regression failed before and passed after; full backend tests passed 151/151 and Ruff passed. A local one-off poll updated 1,676 unique events, and the existing API returned a recent place name with `°`. On 2026-10-29, a physical Android 14 debug app showed the corrected text in Nearby and Alerts. The 27 older malformed rows were absent from the current feed and were not backfilled. Exact-head PR CI remains pending; see [runtime evidence](docs/mobile-runtime-smoke-test.md#2026-10-29-phivolcs-text-correction-check).
+- [x] P2 PHIVOLCS earthquake feed text correction: the 2026-10-28 Android check found `Â°` in both API and phone. Commit `67963987` decodes the source response as strict UTF-8 before parsing. A regression failed before and passed after; full backend tests passed 151/151 and Ruff passed. A local one-off poll updated 1,676 unique events, and the existing API returned a recent place name with `°`. On 2026-10-29, a physical Android 14 debug app showed the corrected text in Nearby and Alerts. The 27 older malformed rows were absent from the current feed and were not backfilled. PR #77 merged with all five checks passing; see [runtime evidence](docs/mobile-runtime-smoke-test.md#2026-10-29-phivolcs-text-correction-check).
 - [ ] P2 PHIVOLCS historical text backfill: decide whether older source rows with `Â°` need a separately reviewed repair. Do not infer the correct text from a character replacement without comparing source data; the current feed does not contain those 27 IDs.
 - [ ] P2 mobile New Architecture device-flow acceptance: verify saved-location persistence, offline cache, camera permission/capture, and SVG overlay rendering on actual Android/iOS devices with the exact app commit. CI simulator builds do not establish these flows.
 - [ ] P2 mobile supported framework migration (after current-app runtime and staging evidence): decide the Android SDK 24/iOS 15.1 support floor, then migrate React Native/React/Metro/native templates and tools coherently to a supported release; verify complete CI and release artifacts.
 - [ ] P2 mobile post-migration disposition: repeat advisory/artifact analysis and record Android/iOS device-flow evidence before release acceptance.
 - [ ] P2 scene training integration: review PR #36, resolve documentation conflicts while preserving Epic 6 records, rerun all checks and merge only after fresh CI.
 - [ ] P2 scene baseline CLI: implement same-held-out-sample baseline comparison with explicit label mapping; keep export fail-closed and test incomplete/mismatched comparisons. Derive a focused implementation plan from the integrated training code first.
-- [ ] P2 setup consistency: correct Windows README environment paths and outdated runtime/CI descriptions; verify commands against the documented environment layout.
+- [x] P2 setup documentation consistency: corrected the three Windows backend executable paths to match `backend/.venv`, refreshed the mobile summary, and reconciled merged CI evidence. Full local startup remains gated by the unavailable Docker daemon.
 - [ ] P3 release preparation: run available smoke checks, prepare exact operator/device/domain-review evidence requirements, and record unresolved external gates.
 
 ## Execution details

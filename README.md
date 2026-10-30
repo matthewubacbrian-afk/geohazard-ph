@@ -1,6 +1,6 @@
 # GeoHazard PH
 
-GeoHazard PH is a Project NOAH-inspired geologic hazard monitoring platform for the Philippines. The repository is a monorepo for the API, web dashboard, ML risk-profile pipeline, mobile starter shell, infrastructure, and source-data documentation.
+GeoHazard PH is a Project NOAH-inspired geologic hazard monitoring platform for the Philippines. The repository is a monorepo for the API, web dashboard, ML risk-profile pipeline, mobile app with foreground nearby alerts and offline cache, infrastructure, and source-data documentation.
 
 For the evidence-based status of each epic, its operational prerequisites, and deferred work, see the [current project status](docs/project-status.md).
 
@@ -11,7 +11,7 @@ To start the web app on Windows, follow the [local quick start](#run-the-project
 - `backend/` - FastAPI API, ingestion workers, services, database models, and backend tests.
 - `web/` - React, TypeScript, Vite, and MapLibre dashboard.
 - `ml/` - Kaggle-backed regional seismic risk profiling pipeline using K-Means and Random Forest.
-- `mobile/` - React Native starter shell.
+- `mobile/` - React Native app with saved locations, foreground nearby alerts, offline cache, and scene-review demonstrator.
 - `infra/` - reverse proxy configuration for the portable staging release.
 - `data/` - local static data drop zones.
 - `docs/` - project documentation, specs, implementation plans, ADRs, and runbooks.
@@ -83,8 +83,8 @@ starting, run that command again.
 
 ```powershell
 Set-Location backend
-..\.venv\Scripts\python.exe -m alembic upgrade head
-..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+.\.venv\Scripts\python.exe -m alembic upgrade head
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
 The first command applies the database migrations. Keep this window open; the API
@@ -118,7 +118,7 @@ open a fourth PowerShell window after the database is ready:
 
 ```powershell
 Set-Location backend
-..\.venv\Scripts\python.exe -m ingestion.scheduler
+.\.venv\Scripts\python.exe -m ingestion.scheduler
 ```
 
 The worker polls USGS and PHIVOLCS sources. It needs internet access and may take a
