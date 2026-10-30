@@ -135,9 +135,10 @@ untouched. New worktrees created by this session are archived only after verifyi
 
 ## Known gaps and constraints
 
-- Documentation: some historical Epic 7 and runtime descriptions and the Windows
-  quick-start virtual-environment path still need reconciliation. The staging/export
-  conflict is addressed by the held-export deployment mode.
+- Documentation: some historical Epic 7 and runtime descriptions still need
+  reconciliation. The Windows quick-start paths now match `backend/.venv`;
+  full local startup verification remains open. The staging/export conflict is
+  addressed by the held-export deployment mode.
 - Bugs: no known unresolved mobile cache correctness bug in the audited flows;
   runtime/device behavior still needs evidence.
 - Weak tests: no physical
