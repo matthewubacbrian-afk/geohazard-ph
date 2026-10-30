@@ -32,16 +32,16 @@ mocked, then move existing replacement behavior into one shared image-present ac
 - Consumes: SceneAnalysisScreen({apiBaseUrl, isActive}), captureSceneImage and analyzeScene.
 - Produces: deterministic visible-control tests using React.createElement and act.
 
-- [ ] **Step 1:** Install exact development dependencies with
+- [x] **Step 1:** Install exact development dependencies with
   `npm install --save-dev --save-exact react-test-renderer@18.3.1 @types/react-test-renderer@18.3.1`.
   Allow focused renderer interaction tests in mobile standards while retaining
   service tests as the default.
-- [ ] **Step 2:** Render the screen, press Open camera, resolve captured image A,
+- [x] **Step 2:** Render the screen, press Open camera, resolve captured image A,
   and assert one enabled Retake photo. Use deferred camera promises to assert
   removal before completion and Open camera after cancellation. Mock API rejection
   for typed 503/network errors; assert Retake survives and clears messages. Assert
   pending analysis disables Retake. Exercise quality-warning continuation and result.
-- [ ] **Step 3:** Run `npm test -- --runInBand tests/sceneAnalysisScreen.test.ts` on
+- [x] **Step 3:** Run `npm test -- --runInBand tests/sceneAnalysisScreen.test.ts` on
   original source; expect missing Retake assertions to fail, not setup errors.
 
 ### Task 2: Share the guarded Retake action
@@ -54,7 +54,7 @@ mocked, then move existing replacement behavior into one shared image-present ac
 - Consumes: existing capture(true), qualityWarning, isCapturing, isAnalyzing.
 - Produces: exactly one image-present replacement control; no service signature changes.
 
-- [ ] **Step 1:** Remove result and warning Retake blocks, then render after the
+- [x] **Step 1:** Remove result and warning Retake blocks, then render after the
   result conditional inside the captured image branch:
 
 ```tsx
@@ -66,9 +66,9 @@ mocked, then move existing replacement behavior into one shared image-present ac
 </Pressable>
 ```
 
-- [ ] **Step 2:** Run targeted tests and confirm all interaction cases pass.
-- [ ] **Step 3:** Run full mobile tests, TypeScript, structure and whitespace checks.
-- [ ] **Step 4:** Record red/green evidence below; commit code/tests/dependencies with
+- [x] **Step 2:** Run targeted tests and confirm all interaction cases pass.
+- [x] **Step 3:** Run full mobile tests, TypeScript, structure and whitespace checks.
+- [x] **Step 4:** Record red/green evidence below; commit code/tests/dependencies with
   `fix: keep scene retake available for every captured preview`, and documentation
   separately with `docs: document scene retake regression coverage`.
 
@@ -80,4 +80,19 @@ Reviewers should check one Retake per image state and disabled analysis behavior
 
 ## Execution evidence
 
-Verification results will be recorded after running the commands above.
+- Baseline: original screen, excluding the new regression file, passed 10 suites / 61 tests.
+- Red: `node node_modules/jest/bin/jest.js --runInBand tests/sceneAnalysisScreen.test.ts`
+  on unchanged original JSX failed 9 cases / passed 1. Failures were missing Retake
+  controls (expected one, received zero), not import/setup errors; existing result
+  replacement passed.
+- Green: the same targeted command passed all 10 cases after the shared-control fix.
+- Full package verification: `npm test -- --runInBand` passed 11 suites / 71 tests,
+  zero snapshots; `npx tsc --noEmit` exited 0.
+- Repository verification: Python 3.11 `scripts/verify_structure.py` passed all 140
+  expected paths; `git diff --check` exited 0.
+- Local tooling used Node 22.22.0 explicitly. Dependencies were copied into this
+  worktree and renderer packages installed there; shared device dependencies were
+  never modified. npm generated the pinned renderer/types lockfile graph.
+- Implementation commit: `aaad630b`; design/testing allowance commit: `ab2ce9a4`.
+- Physical standalone APK acceptance and independent reviews remain with the parent;
+  no PR or merge was performed.

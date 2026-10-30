@@ -78,12 +78,12 @@ mobile suite, strict TypeScript check, structure verifier, and git diff --check.
 
 ## Acceptance Criteria
 
-- [ ] Normal captured preview immediately exposes one enabled Retake.
-- [ ] Pending retake removes old preview and messages; cancellation shows Open camera.
-- [ ] Analysis errors preserve Retake and retake clears the error.
-- [ ] Analysis disables Retake; warning continuation and post-result retake work.
-- [ ] Regression fails on original JSX and passes with the shared control.
-- [ ] Mobile tests, strict TypeScript, structure and whitespace checks pass.
+- [x] Normal captured preview immediately exposes one enabled Retake.
+- [x] Pending retake removes old preview and messages; cancellation shows Open camera.
+- [x] Analysis errors preserve Retake and retake clears the error.
+- [x] Analysis disables Retake; warning continuation and post-result retake work.
+- [x] Regression fails on original JSX and passes with the shared control.
+- [x] Mobile tests, strict TypeScript, structure and whitespace checks pass.
 
 ## Out Of Scope (backlog)
 
