@@ -3,7 +3,7 @@
 This is the authoritative current status register. It separates implemented code
 from data preparation, live deployment verification, and deferred product work.
 Status is based on the repository and its recorded history, updated through
-2026-10-29. Counts attached to earlier PRs are dated observations, not a
+2026-10-30. Counts attached to earlier PRs are dated observations, not a
 promise that a live advisory feed will return the same rows today.
 
 | Epic or workstream | Current status | Evidence and remaining work |
@@ -171,8 +171,27 @@ No historical backfill was performed. On an Android 14 Infinix X6532 running
 the existing debug app `4e130fb8`, a fresh 1 km `EncodingCheck` location at
 `12.84, 123.03` showed `024 km S 73° W of Claveria (Masbate)` in both Nearby
 and Alerts. The test location was removed afterward. This verifies one corrected
-mobile display path through the local API; CI on the fix branch and iOS remain
-to be checked.
+mobile display path through the local API. [PR #77](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/77)
+merged with all five checks passing. The corrected text has not been verified
+on a physical iOS device.
+
+## 2026-10-30 local readiness checkpoint
+
+Main `18b9a0ac` passed [Backend CI](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40942275878),
+[Web CI](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40942275883),
+[ML CI](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40942275854),
+and [Mobile CI](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40942275873).
+[PR #78](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/78) merged the
+iOS root safe-area fix. Its simulator screenshot evidence covers startup layout;
+see the dated rows in the [runtime checklist](mobile-runtime-smoke-test.md#record-results).
+Physical iOS API/camera flows remain open.
+
+Oracle staging is deferred at the user's request while account creation is
+unavailable. The next active work is local API and device acceptance, ordered in
+[PLAN.md](../PLAN.md#current-local-readiness-checkpoint-2026-10-30). At this local
+inspection Docker Desktop was unavailable and Android SDK tooling reported no
+connected devices. These prerequisites prevent fresh local runtime evidence;
+they do not change prior recorded results or clear any release gate.
 
 ## Next integration milestone
 
@@ -188,7 +207,7 @@ to be checked.
    counts, and evaluation results. Follow the
    [training instructions](../README.md#regional-seismic-risk-profiles) and
    [data-source assumptions](data-sources.md#kaggle-historical-earthquake-datasets).
-2. Prepare a new staging release from `main` when an OCI host, DNS, and staging
+2. Deferred: prepare a new staging release from `main` when an OCI host, DNS, and staging
    configuration are available. Follow the
    [Oracle runbook](runbook.md#oracle-cloud-infrastructure-always-free-a1) to
    deploy and record live health and event-feed checks. Keep the risk-profile

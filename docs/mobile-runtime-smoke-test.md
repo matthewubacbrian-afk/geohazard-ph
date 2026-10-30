@@ -140,3 +140,17 @@ see the focused device row above. This does not verify old rows or iOS.
 These foreground proximity matches are informational and are not official warnings
 or forecasts. A simulator run does not verify background push, physical-device
 behavior, production reliability, signing, or store distribution.
+
+## Next local acceptance session (2026-10-30 checkpoint)
+
+The latest recorded physical Android foreground run used app `4e130fb8`; the
+later corrected-text check reused that app with the ingestion fix. The iOS
+safe-area check used `86d26cfa` in a simulator. Repeat the relevant flows using
+the current app commit and record it explicitly before extending those results.
+
+At the readiness inspection, the installed Android SDK reported no connected
+devices and Docker Desktop was unavailable. No new runtime-result row was added.
+Restore the local API first, then connect Android hardware for steps 1-9 and the
+remaining camera cases. Complete physical iOS checks when hardware is available.
+Candidate overlay checks also require a model-provisioned API; the default 503
+response does not establish successful scene analysis. Oracle staging is deferred.
