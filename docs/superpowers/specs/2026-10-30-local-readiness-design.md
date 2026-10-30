@@ -88,7 +88,7 @@ not infer pass or fail for the product flow.
 
 ## Rollout
 
-This is a documentation and verification slice on `codex/local-readiness` in a
+This is a documentation and verification slice on `docs/local-readiness` in a
 separate worktree. Review the focused diff, run structure and whitespace checks,
 commit with a Conventional Commit message, open a PR, and merge only after review
 and required CI. Keep the primary checkout's edit untouched. Staging stays held.
