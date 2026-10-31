@@ -184,3 +184,12 @@ result row. For the USB API path, forward the chosen local API port and configur
 its `/api/v1` URL in the QA app. Do not use the older debug app's data or a Metro
 bundle as evidence for this standalone build. Empty result rows remain unfilled
 until the downloaded binary is actually exercised on hardware.
+
+### 2026-10-31 standalone QA device result
+
+The [exact-artifact acceptance record](android-qa-acceptance-2026-10-31.md) identifies
+the downloaded APK commit and SHA-256. On Android 14 Infinix X6532, standalone
+startup without Metro, validation, matching, offline cache, process restart,
+recovery, no-match state, and test-location removal passed. A user-captured photo
+displayed a preview, and navigation cleared it. Initial-preview Retake was absent
+and is tracked as a separate fix; analysis/model and outdoor checks remain open.

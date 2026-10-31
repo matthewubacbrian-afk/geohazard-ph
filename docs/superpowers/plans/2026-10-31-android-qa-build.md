@@ -43,7 +43,7 @@ release APK and QA APK; artifact command writes `build-info.json` next to QA APK
 - [x] Add QA-only HTTP manifest and `GeoHazard QA` app-name resource.
 - [x] Add workflow checks, both builds, final APK inspection, API34 QA startup
   using custom package and fully qualified activity, then APK/metadata upload.
-- [ ] Run native CI and inspect manifests, embedded bundle, ABIs, metadata, and
+- [x] Run native CI and inspect manifests, embedded bundle, ABIs, metadata, and
   startup screenshot; fix failures before claiming an installable build.
 
 ### Task 3: Documentation, review, and integration
@@ -55,9 +55,10 @@ APK hash before installing. QA uses its own saved API URL and locations.
 
 - [x] Document artifact download, hash verification, installation, USB API
   forwarding, Metro-free startup, and physical acceptance limits.
-- [ ] Reconcile current main after readiness integration; rerun affected checks.
+- [x] Reconcile current main after readiness integration.
+- [ ] Pass final integrated-head CI checks.
 - [ ] Obtain independent review, open PR, and wait for all required checks.
-- [ ] If a phone is connected, verify startup with no Metro and repeat foreground
+- [x] If a phone is connected, verify startup with no Metro and repeat foreground
   acceptance. Otherwise keep this physical gate explicitly pending.
 - [ ] Merge only reviewed, passing work; record tested commit and artifact identity.
 
@@ -70,6 +71,13 @@ states false; unsupported resources fail verification. Independent recheck found
 no remaining source blockers. Local checks passed: 69 script tests plus eight
 subtests, 61 mobile tests, strict TypeScript, Ruff, structure, and whitespace.
 A real existing debug APK was parsed successfully with Android build tools.
-Local mobile checks reused a dependency set with the unchanged lockfile; clean
-native builds and final APK inspection remain CI gates. No phone was connected
-when this slice began, so physical QA acceptance remains pending.
+Local mobile checks reused a dependency set with the unchanged lockfile. All six
+checks passed on implementation head `8ad89fe8`, including clean native builds,
+final APK inspection, and Android/iOS startup. The downloaded QA artifact from
+merge checkout `c96b2080fbb6ebff347c5af7d2dea0add38de7d4` was hash-verified and
+tested on the connected Infinix phone without Metro. Foreground validation,
+matching, offline cache across process restart, recovery, and capture passed;
+the missing initial-preview Retake control is tracked in a separate fix branch.
+See `docs/android-qa-acceptance-2026-10-31.md` for exact identity and limits.
+Readiness PRs #79 and #80 are integrated locally; the final combined head still
+requires its own CI checks and review before merge.
