@@ -3,7 +3,7 @@
 This is the authoritative current status register. It separates implemented code
 from data preparation, live deployment verification, and deferred product work.
 Status is based on the repository and its recorded history, updated through
-2026-10-29. Counts attached to earlier PRs are dated observations, not a
+2026-10-31. Counts attached to earlier PRs are dated observations, not a
 promise that a live advisory feed will return the same rows today.
 
 | Epic or workstream | Current status | Evidence and remaining work |
@@ -171,8 +171,27 @@ No historical backfill was performed. On an Android 14 Infinix X6532 running
 the existing debug app `4e130fb8`, a fresh 1 km `EncodingCheck` location at
 `12.84, 123.03` showed `024 km S 73° W of Claveria (Masbate)` in both Nearby
 and Alerts. The test location was removed afterward. This verifies one corrected
-mobile display path through the local API; CI on the fix branch and iOS remain
-to be checked.
+mobile display path through the local API. [PR #77](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/77)
+merged with all five checks passing. The corrected text has not been verified
+on a physical iOS device.
+
+## 2026-10-30 local readiness checkpoint
+
+Main `18b9a0ac` passed [Backend CI](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40942275878),
+[Web CI](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40942275883),
+[ML CI](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40942275854),
+and [Mobile CI](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/40942275873).
+[PR #78](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/78) merged the
+iOS root safe-area fix. Its simulator screenshot evidence covers startup layout;
+see the dated rows in the [runtime checklist](mobile-runtime-smoke-test.md#record-results).
+Physical iOS API/camera flows remain open.
+
+Oracle staging is deferred at the user's request while account creation is
+unavailable. The next active work is local API and device acceptance, ordered in
+[PLAN.md](../PLAN.md#current-local-readiness-checkpoint-2026-10-30). At this local
+inspection Docker Desktop was unavailable and Android SDK tooling reported no
+connected devices. These prerequisites prevent fresh local runtime evidence;
+they do not change prior recorded results or clear any release gate.
 
 ## Next integration milestone
 
@@ -188,7 +207,7 @@ to be checked.
    counts, and evaluation results. Follow the
    [training instructions](../README.md#regional-seismic-risk-profiles) and
    [data-source assumptions](data-sources.md#kaggle-historical-earthquake-datasets).
-2. Prepare a new staging release from `main` when an OCI host, DNS, and staging
+2. Deferred: prepare a new staging release from `main` when an OCI host, DNS, and staging
    configuration are available. Follow the
    [Oracle runbook](runbook.md#oracle-cloud-infrastructure-always-free-a1) to
    deploy and record live health and event-feed checks. Keep the risk-profile
@@ -202,3 +221,36 @@ historical records of their original scope and execution; unchecked boxes in
 those records do not define the current backlog unless the work is reconfirmed
 against current code and requirements. A code-complete row does not establish
 that external data is loaded or that a hosted deployment is healthy.
+
+## 2026-10-30 local API and physical Android follow-up
+
+The [dated acceptance record](local-api-acceptance-2026-10-30.md) verifies local
+API health and ingestion from `18b9a0ac`: 39 USGS events fetched/processed and
+1,768 PHIVOLCS rows fetched, with 1,766 unique events processed. The API returned
+1,864 events and an empty held-profile list. Redis connectivity and a WebSocket
+connection passed. A second bounded cycle delivered an ingestion-generated USGS
+update over the WebSocket; its October 1 occurrence time identifies it as a
+historical-event update, not a newly occurring earthquake.
+
+On Android 14 Infinix X6532, the October 28 native debug binary with current
+`18b9a0ac` JavaScript passed foreground validation, nearby matching, offline cache,
+process restart persistence, recovery, no-match state, and temporary-location
+removal. Camera opening/canceling and permission denial/recovery also passed.
+This mixed build does not replace a fresh native release acceptance run. No new
+photos were captured; scene capture/retake, model evaluation, and physical iOS
+remain open. All 61 mobile tests and strict TypeScript checking passed locally.
+See the [runtime checklist](mobile-runtime-smoke-test.md#2026-10-30-foreground-and-permission-follow-up).
+
+## 2026-10-31 standalone Android QA build
+
+The dedicated Android QA workflow builds an independently installable APK with
+bundled JavaScript, a separate application ID, commit/checksum metadata, and
+QA-only local HTTP access. Its final-artifact verifier also requires an explicit
+Release HTTP denial. [Build and physical acceptance evidence](android-qa-acceptance-2026-10-31.md)
+records the exact downloaded binary, passing foreground/cache/restart/recovery
+checks without Metro, and user-assisted capture preview/cleanup.
+
+Testing exposed missing initial-preview Retake; that repair is a separate branch
+and acceptance gate. Scientific model evaluation, remaining camera cases, physical
+iOS, and store release remain open. These results do not establish deployment or
+scientific readiness.

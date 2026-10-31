@@ -140,3 +140,56 @@ see the focused device row above. This does not verify old rows or iOS.
 These foreground proximity matches are informational and are not official warnings
 or forecasts. A simulator run does not verify background push, physical-device
 behavior, production reliability, signing, or store distribution.
+
+## Next local acceptance session (2026-10-30 checkpoint)
+
+The latest recorded physical Android foreground run used app `4e130fb8`; the
+later corrected-text check reused that app with the ingestion fix. The iOS
+safe-area check used `86d26cfa` in a simulator. Repeat the relevant flows using
+the current app commit and record it explicitly before extending those results.
+
+At the readiness inspection, the installed Android SDK reported no connected
+devices and Docker Desktop was unavailable. No new runtime-result row was added.
+Restore the local API first, then connect Android hardware for steps 1-9 and the
+remaining camera cases. Complete physical iOS checks when hardware is available.
+Candidate overlay checks also require a model-provisioned API; the default 503
+response does not establish successful scene analysis. Oracle staging is deferred.
+
+## 2026-10-30 foreground and permission follow-up
+
+An Android 14 Infinix X6532 ran native debug binary `4e130fb8` with the matching
+native sources and a Metro JavaScript snapshot from `18b9a0ac`. This was not a
+fresh native build. The [acceptance record](local-api-acceptance-2026-10-30.md#physical-android-follow-up)
+details invalid input handling, a live 1 km match, offline caching in Nearby and
+Alerts, process restart while offline, restored API access, no-match state, and
+removal of both temporary locations. The existing API URL persisted.
+
+Camera opening, cancellation, navigation away/back, denied permission messaging,
+and recovery after restoring permission were verified. Camera permission was
+restored to its original setting. No new photos were captured; indoor/outdoor
+capture, retake, model overlays, and calibration remain unverified by this run.
+The initial blank debug surface recovered after closing and reopening the app.
+
+## Standalone Android QA acceptance
+
+Download the commit-specific APK and `build-info.json` from Android QA build.
+Verify its SHA-256 before installing, as documented in README. Confirm the
+`GeoHazard QA` label and package `com.geohazardph.mobile.qa`; QA uses its own saved
+API URL and locations. Start it with Metro stopped and without forwarding port
+8081. Use the fully qualified activity `com.geohazardph.mobile.MainActivity`.
+
+Repeat foreground steps 1-8 and the camera cases independently. Include the
+artifact run, source commit, APK SHA-256, phone/OS, and API environment in the
+result row. For the USB API path, forward the chosen local API port and configure
+its `/api/v1` URL in the QA app. Do not use the older debug app's data or a Metro
+bundle as evidence for this standalone build. Empty result rows remain unfilled
+until the downloaded binary is actually exercised on hardware.
+
+### 2026-10-31 standalone QA device result
+
+The [exact-artifact acceptance record](android-qa-acceptance-2026-10-31.md) identifies
+the downloaded APK commit and SHA-256. On Android 14 Infinix X6532, standalone
+startup without Metro, validation, matching, offline cache, process restart,
+recovery, no-match state, and test-location removal passed. A user-captured photo
+displayed a preview, and navigation cleared it. Initial-preview Retake was absent
+and is tracked as a separate fix; analysis/model and outdoor checks remain open.

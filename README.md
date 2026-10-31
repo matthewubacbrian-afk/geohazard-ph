@@ -1,6 +1,6 @@
 # GeoHazard PH
 
-GeoHazard PH is a Project NOAH-inspired geologic hazard monitoring platform for the Philippines. The repository is a monorepo for the API, web dashboard, ML risk-profile pipeline, mobile starter shell, infrastructure, and source-data documentation.
+GeoHazard PH is a Project NOAH-inspired geologic hazard monitoring platform for the Philippines. The repository is a monorepo for the API, web dashboard, ML risk-profile pipeline, mobile app with foreground nearby alerts and offline cache, infrastructure, and source-data documentation.
 
 For the evidence-based status of each epic, its operational prerequisites, and deferred work, see the [current project status](docs/project-status.md).
 
@@ -11,7 +11,7 @@ To start the web app on Windows, follow the [local quick start](#run-the-project
 - `backend/` - FastAPI API, ingestion workers, services, database models, and backend tests.
 - `web/` - React, TypeScript, Vite, and MapLibre dashboard.
 - `ml/` - Kaggle-backed regional seismic risk profiling pipeline using K-Means and Random Forest.
-- `mobile/` - React Native starter shell.
+- `mobile/` - React Native app with saved locations, foreground nearby alerts, offline cache, and scene-review demonstrator.
 - `infra/` - reverse proxy configuration for the portable staging release.
 - `data/` - local static data drop zones.
 - `docs/` - project documentation, specs, implementation plans, ADRs, and runbooks.
@@ -83,8 +83,8 @@ starting, run that command again.
 
 ```powershell
 Set-Location backend
-..\.venv\Scripts\python.exe -m alembic upgrade head
-..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+.\.venv\Scripts\python.exe -m alembic upgrade head
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
 The first command applies the database migrations. Keep this window open; the API
@@ -118,7 +118,7 @@ open a fourth PowerShell window after the database is ready:
 
 ```powershell
 Set-Location backend
-..\.venv\Scripts\python.exe -m ingestion.scheduler
+.\.venv\Scripts\python.exe -m ingestion.scheduler
 ```
 
 The worker polls USGS and PHIVOLCS sources. It needs internet access and may take a
@@ -445,6 +445,41 @@ In **Saved locations**, configure a device-reachable API URL ending in `/api/v1`
 default URL is empty. The in-app alert list checks for new events on startup or when refreshed;
 background push delivery is not configured. Saved coordinates stay on the device and are not
 sent to the backend.
+
+### Standalone Android QA app
+
+The **Android QA build** workflow creates an installable `GeoHazard QA` app with
+JavaScript bundled from the same checkout. It uses application ID
+`com.geohazardph.mobile.qa`, separate saved data, and the development signing key.
+Its QA-only manifest permits a local HTTP API. The Release manifest explicitly
+disables cleartext HTTP. This APK is for internal testing, not store release.
+
+After a successful workflow run, download artifact `android-qa-<commit>` from that
+run (available for seven days), or use:
+
+```powershell
+gh run download <run-id> --name android-qa-<commit> --dir android-qa-download
+Set-Location android-qa-download
+$buildInfo = Get-Content build-info.json -Raw | ConvertFrom-Json
+$apkHash = (Get-FileHash app-qa.apk -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($apkHash -ne $buildInfo.apk_sha256) { throw "APK checksum mismatch" }
+$buildInfo | Format-List
+adb install -r app-qa.apk
+adb reverse tcp:8000 tcp:8000
+adb shell am start -n com.geohazardph.mobile.qa/com.geohazardph.mobile.MainActivity
+```
+
+Use the run's recorded commit in the artifact name; PR runs may use a temporary
+merge commit. Verify that the build record identifies the intended commit and QA
+application ID. Choose a download directory outside the repository. Start the
+local API, then enter `http://localhost:8000/api/v1` in the QA app's Saved locations
+screen. Adjust the host side of the USB port mapping if the API uses another
+port. Reapply the mapping after reconnecting the phone. Metro is not required.
+
+The artifact is uploaded only after manifest, JavaScript bundle, native ABI, and
+emulator startup checks pass. Passing these checks does not verify physical
+camera behavior, model accuracy, or all foreground flows. Record device results
+using `docs/mobile-runtime-smoke-test.md` and include the build commit/APK hash.
 
 ### Native mobile development
 
