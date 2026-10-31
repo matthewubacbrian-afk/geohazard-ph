@@ -446,6 +446,41 @@ default URL is empty. The in-app alert list checks for new events on startup or 
 background push delivery is not configured. Saved coordinates stay on the device and are not
 sent to the backend.
 
+### Standalone Android QA app
+
+The **Android QA build** workflow creates an installable `GeoHazard QA` app with
+JavaScript bundled from the same checkout. It uses application ID
+`com.geohazardph.mobile.qa`, separate saved data, and the development signing key.
+Its QA-only manifest permits a local HTTP API. The Release manifest explicitly
+disables cleartext HTTP. This APK is for internal testing, not store release.
+
+After a successful workflow run, download artifact `android-qa-<commit>` from that
+run (available for seven days), or use:
+
+```powershell
+gh run download <run-id> --name android-qa-<commit> --dir android-qa-download
+Set-Location android-qa-download
+$buildInfo = Get-Content build-info.json -Raw | ConvertFrom-Json
+$apkHash = (Get-FileHash app-qa.apk -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($apkHash -ne $buildInfo.apk_sha256) { throw "APK checksum mismatch" }
+$buildInfo | Format-List
+adb install -r app-qa.apk
+adb reverse tcp:8000 tcp:8000
+adb shell am start -n com.geohazardph.mobile.qa/com.geohazardph.mobile.MainActivity
+```
+
+Use the run's recorded commit in the artifact name; PR runs may use a temporary
+merge commit. Verify that the build record identifies the intended commit and QA
+application ID. Choose a download directory outside the repository. Start the
+local API, then enter `http://localhost:8000/api/v1` in the QA app's Saved locations
+screen. Adjust the host side of the USB port mapping if the API uses another
+port. Reapply the mapping after reconnecting the phone. Metro is not required.
+
+The artifact is uploaded only after manifest, JavaScript bundle, native ABI, and
+emulator startup checks pass. Passing these checks does not verify physical
+camera behavior, model accuracy, or all foreground flows. Record device results
+using `docs/mobile-runtime-smoke-test.md` and include the build commit/APK hash.
+
 ### Native mobile development
 
 The native projects target the existing React Native 0.75.5 app. Install dependencies from

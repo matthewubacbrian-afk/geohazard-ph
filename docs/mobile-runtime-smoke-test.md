@@ -169,3 +169,27 @@ and recovery after restoring permission were verified. Camera permission was
 restored to its original setting. No new photos were captured; indoor/outdoor
 capture, retake, model overlays, and calibration remain unverified by this run.
 The initial blank debug surface recovered after closing and reopening the app.
+
+## Standalone Android QA acceptance
+
+Download the commit-specific APK and `build-info.json` from Android QA build.
+Verify its SHA-256 before installing, as documented in README. Confirm the
+`GeoHazard QA` label and package `com.geohazardph.mobile.qa`; QA uses its own saved
+API URL and locations. Start it with Metro stopped and without forwarding port
+8081. Use the fully qualified activity `com.geohazardph.mobile.MainActivity`.
+
+Repeat foreground steps 1-8 and the camera cases independently. Include the
+artifact run, source commit, APK SHA-256, phone/OS, and API environment in the
+result row. For the USB API path, forward the chosen local API port and configure
+its `/api/v1` URL in the QA app. Do not use the older debug app's data or a Metro
+bundle as evidence for this standalone build. Empty result rows remain unfilled
+until the downloaded binary is actually exercised on hardware.
+
+### 2026-10-31 standalone QA device result
+
+The [exact-artifact acceptance record](android-qa-acceptance-2026-10-31.md) identifies
+the downloaded APK commit and SHA-256. On Android 14 Infinix X6532, standalone
+startup without Metro, validation, matching, offline cache, process restart,
+recovery, no-match state, and test-location removal passed. A user-captured photo
+displayed a preview, and navigation cleared it. Initial-preview Retake was absent
+and is tracked as a separate fix; analysis/model and outdoor checks remain open.

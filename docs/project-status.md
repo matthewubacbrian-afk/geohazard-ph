@@ -3,7 +3,7 @@
 This is the authoritative current status register. It separates implemented code
 from data preparation, live deployment verification, and deferred product work.
 Status is based on the repository and its recorded history, updated through
-2026-10-30. Counts attached to earlier PRs are dated observations, not a
+2026-10-31. Counts attached to earlier PRs are dated observations, not a
 promise that a live advisory feed will return the same rows today.
 
 | Epic or workstream | Current status | Evidence and remaining work |
@@ -240,3 +240,17 @@ This mixed build does not replace a fresh native release acceptance run. No new
 photos were captured; scene capture/retake, model evaluation, and physical iOS
 remain open. All 61 mobile tests and strict TypeScript checking passed locally.
 See the [runtime checklist](mobile-runtime-smoke-test.md#2026-10-30-foreground-and-permission-follow-up).
+
+## 2026-10-31 standalone Android QA build
+
+The dedicated Android QA workflow builds an independently installable APK with
+bundled JavaScript, a separate application ID, commit/checksum metadata, and
+QA-only local HTTP access. Its final-artifact verifier also requires an explicit
+Release HTTP denial. [Build and physical acceptance evidence](android-qa-acceptance-2026-10-31.md)
+records the exact downloaded binary, passing foreground/cache/restart/recovery
+checks without Metro, and user-assisted capture preview/cleanup.
+
+Testing exposed missing initial-preview Retake; that repair is a separate branch
+and acceptance gate. Scientific model evaluation, remaining camera cases, physical
+iOS, and store release remain open. These results do not establish deployment or
+scientific readiness.

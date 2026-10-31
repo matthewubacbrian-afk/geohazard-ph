@@ -624,6 +624,7 @@ Current workflow responsibilities:
 - `ml-ci.yml`: install `ml[dev]` and run blocking ML pytest and Ruff.
 - `web-ci.yml`: install web dependencies and run web tests and build.
 - `mobile-ci.yml`: install mobile dependencies, run mobile tests and strict TypeScript checking, and build Android debug and iOS simulator apps.
+- `android-qa.yml`: build a standalone QA APK, verify its identity and development-only networking against Release, check emulator startup, and retain the APK with source/checksum metadata for seven days.
 - `deploy-staging.yml`: manually verifies and publishes versioned staging images and a portable deployment bundle.
 
 Run Ruff from the package directory with its explicit `pyproject.toml`. Both packages
