@@ -75,7 +75,8 @@ mocked, then move existing replacement behavior into one shared image-present ac
 ## Notes for the executor
 
 Tasks are sequential. Use isolated local dependencies; existing device dependencies
-may be read/copied but never modified. Hold PR/merge for parent integration order.
+may be read/copied but never modified. A draft PR may run CI while QA pipeline
+PR #81 is pending; merge this fix only after that dependency has merged.
 Reviewers should check one Retake per image state and disabled analysis behavior.
 
 ## Execution evidence
@@ -94,5 +95,8 @@ Reviewers should check one Retake per image state and disabled analysis behavior
   worktree and renderer packages installed there; shared device dependencies were
   never modified. npm generated the pinned renderer/types lockfile graph.
 - Implementation commit: `aaad630b`; design/testing allowance commit: `ab2ce9a4`.
-- Physical standalone APK acceptance and independent reviews remain with the parent;
-  no PR or merge was performed.
+- Independent spec and code-quality reviews found no blockers; reviewers reran
+  the full package or targeted interaction checks successfully.
+- Integrated QA pipeline head `3c3c0f73` to build a fresh standalone APK containing
+  this repair. The draft PR depends on #81; physical acceptance of the new APK
+  remains pending and must not be inferred from the older capture record.
