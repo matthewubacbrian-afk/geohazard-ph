@@ -146,7 +146,12 @@ describe('MapView', () => {
 ### Conventions
 
 - Offline-cache and mapping logic must be testable without a device: keep the behavior in pure functions that tests call directly.
-- Screens are thin; test the services and the mapping layer rather than rendering native components.
+- Screens are thin; prefer service and mapping-layer tests. For screen-interaction
+  regressions involving visible controls or state transitions, render the real
+  screen with `react-test-renderer` matching React's version, `React.createElement`,
+  and `act` in `mobile/tests/<screenName>.test.ts`. Mock camera/API services and
+  native rendering boundaries as needed; assert visible controls, messages, and
+  transitions rather than snapshots, source text, or extracted helpers alone.
 - API mapping tests assert field-by-field conversion from the snake_case wire contract to the UI-native type.
 - Test the failure path of each service, including "not configured" states.
 
