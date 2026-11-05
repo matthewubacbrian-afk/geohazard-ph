@@ -300,3 +300,10 @@ candidate; warm analysis reused weights without network writes. See
 The separate default Python endpoint/mobile prototype remains unavailable until
 its own model provisioning. This browser path is still an uncalibrated visual
 cue demonstrator; physical phone testing and real-world accuracy remain open.
+
+
+Browser Scene Review deployment: PR #89 merged; web CI passed 193 tests and
+build. The public staging browser test completed local inference and displayed a
+grass candidate (about 25 seconds cold / 11 seconds warm), with zero photo uploads
+and no additional weight requests on repeat. See the browser-scene-analysis
+record for the fixture, immutable model/runtime identifiers, and remaining limits.
