@@ -85,7 +85,35 @@ describe('scene review capture screen', () => {
     expect(screen.getByText(/visual cue demonstrator only/i)).toBeInTheDocument();
     expect(screen.getByText(/does not give emergency instructions, identify official shelters, or predict earthquakes/i)).toBeInTheDocument();
     expect(screen.getByText(/not a safety assessment or a production-ready emergency decision tool/i)).toBeInTheDocument();
-    expect(screen.getByText(/sent to this project’s python service for temporary analysis/i)).toBeInTheDocument();
+    expect(screen.getByText(/Analysis runs on your device with no per-picture analysis fee/i)).toBeInTheDocument();
+  });
+
+  it('uses a local worker by default without uploading the captured picture', async () => {
+    const fetchMock = vi.fn(), terminate = vi.fn(), posted = vi.fn();
+    class DeviceWorker {
+      onmessage: ((event: MessageEvent) => void) | null = null;
+      onerror = null;
+      terminate = terminate;
+      postMessage(message: { id: number }) {
+        posted(message);
+        queueMicrotask(() => this.onmessage?.(new MessageEvent('message', {
+          data: { id: message.id, type: 'result', result: responsePayload },
+        })));
+      }
+    }
+    vi.stubGlobal('Worker', DeviceWorker);
+    vi.stubGlobal('fetch', fetchMock);
+    const view = render(<SceneAnalysis onExit={vi.fn()} initialCapture={{
+      previewUrl: 'data:image/jpeg;base64,ZmFrZQ==', imageBase64: 'ZmFrZQ==',
+    }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analyze image' }));
+    expect(await screen.findByText(/Recognized visual cue: chair/)).toBeInTheDocument();
+    expect(posted).toHaveBeenCalledWith(expect.objectContaining({
+      request: expect.objectContaining({ image_base64: 'ZmFrZQ==' }),
+    }));
+    expect(fetchMock).not.toHaveBeenCalled();
+    view.unmount();
+    expect(terminate).toHaveBeenCalledTimes(1);
   });
 
   it('opens only one camera stream when the user clicks twice rapidly', async () => {

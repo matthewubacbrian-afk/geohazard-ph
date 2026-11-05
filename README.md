@@ -527,20 +527,19 @@ verification remains a Mac task.
 
 ## Epic 7: Camera scene review
 
-The web and mobile clients can capture a still image and request transient visual-cue
-analysis through `POST /api/v1/scene-analyses`. The result overlays ranked floor/ground
-candidate polygons on the same image and lists model-recognized cues with the evidence
-behind the ordering. Indoor and outdoor scenes use the same model path. Photos are sent
-only for the explicit analysis request and are not retained in server history.
-The API uses a provisional blur cue before segmentation; a warning lets the user
-retake or explicitly continue. Blur, obstruction, lighting, and viewpoint can hide
-visual cues. The threshold is not calibrated on real-world camera images, and no
-validated obstruction detector or custom-trained model is included.
+The web Scene Review page runs quantized image segmentation on the user's device
+in a browser worker. Photos are not uploaded and there is no per-picture inference
+fee. First use downloads about 44 MB of model weights plus runtime files; later
+analyses can reuse the browser cache and loaded worker. It overlays ranked
+floor/ground candidates and lists recognized visual cues. See the
+[browser model, privacy, cost, and verification record](docs/browser-scene-analysis.md).
 
-This is an educational visual review, not a safety assessment: the model cannot verify
-structural stability, hidden hazards, ground conditions, or route accessibility. Follow
-official emergency guidance. The default deployment currently does not include the
-large model runtime or cached weights, so the endpoint reports a typed unavailable
-response until deployment-target packaging and model provisioning are verified. See the
-[Epic 7 status](docs/project-status.md), [runbook](docs/runbook.md#epic-7-scene-review),
-and [camera smoke checklist](docs/mobile-runtime-smoke-test.md).
+The mobile prototype retains `POST /api/v1/scene-analyses`. The default API image
+still lacks its server runtime/weights and returns a typed unavailable response;
+the browser implementation does not enable that separate mobile/server path.
+Both paths retain a provisional blur choice and the visual demonstrator warning.
+No calibrated safety assessment or validated obstruction detector is provided.
+
+See [Epic 7 status](docs/project-status.md), the
+[runbook](docs/runbook.md#epic-7-scene-review), and the
+[camera smoke checklist](docs/mobile-runtime-smoke-test.md).

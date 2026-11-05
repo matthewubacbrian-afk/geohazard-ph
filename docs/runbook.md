@@ -75,6 +75,10 @@ worker does not initialize it.
 
 ## Epic 7 Scene Review
 
+The web page now defaults to [device-only browser analysis](browser-scene-analysis.md).
+The server setup below applies to the separate API/mobile path and is not needed
+for web analysis. Keep the distinction when checking the staging endpoint.
+
 Web and mobile clients capture a still JPEG only after the user taps **Open camera**.
 The client resizes the capture before sending it to `POST /api/v1/scene-analyses`; the
 backend enforces a 5,593,000-byte streamed request cap, 4 MiB decoded image cap, 4096
