@@ -6,6 +6,21 @@ Status is based on the repository and its recorded history, updated through
 2026-11-05. Counts attached to earlier PRs are dated observations, not a
 promise that a live advisory feed will return the same rows today.
 
+## Free Split Deployment Checkpoint (2026-11-05)
+
+The [deployment operations record](free-split-deployment.md) contains the public
+links, service/data flow, settings, release and ingestion process, dated account
+cost observations, recovery steps, and remaining acceptance checks. The
+[free split rollout plan](superpowers/plans/2026-11-04-free-split-staging-deployment.md)
+is now versioned alongside this register. Oracle is not the active path.
+
+The published worker image and manual ingestion succeeded: the live API returned
+299 PHIVOLCS and 40 USGS events. The six-hour workflow schedule is configured and
+`STAGING_INGEST_ENABLED=true` was verified. The first automatic trigger and
+browser realtime acceptance remain unrecorded. Risk clusters remain empty under
+the existing quality hold; no later approval record was supplied. Provider
+billing figures are dated observations, not a permanent zero-cost guarantee.
+
 | Epic or workstream | Current status | Evidence and remaining work |
 | --- | --- | --- |
 | Epic 1: Earthquake feed, API, and web map | Implemented | USGS ingestion and event API are in [backend ingestion](../backend/ingestion/sources/usgs.py), [event routes](../backend/app/api/v1/events.py), and the [web app](../web/src). The dashboard [interface refresh](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/22) and [map/feed event selection with a selected-event pulse](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/23) merged on 2026-10-10. Live operation still depends on reachable sources and a configured database. |
