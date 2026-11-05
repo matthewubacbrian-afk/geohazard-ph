@@ -204,3 +204,13 @@ When a spec or plan introduces a new concept:
   including offshore locations; no nearest-region attribution is inferred.
 - No matching records: no valid matching epicenters for that region and filter;
   it does not establish absence of earthquake hazard or complete source coverage.
+
+
+## Browser Scene Analysis
+
+- Device-only scene analysis: web camera inference in a local module worker using
+  quantized ONNX assets. Pictures are not uploaded and no inference-provider API
+  is called; model/runtime downloads are distinct from picture analysis.
+- Browser scene model version: immutable converted model revision plus q8,
+  bounded browser preprocessing and pinned COCO category mapping identifiers.
+  It does not imply equivalence to the separate Python model output.

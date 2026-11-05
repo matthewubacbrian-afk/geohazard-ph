@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { analyzeScene as requestSceneAnalysis } from '../api/sceneAnalysis';
-import { API_BASE_URL } from '../api/client';
+import { createBrowserSceneAnalyzer } from '../services/browserSceneAnalysis';
 import TopNav from '../components/layout/TopNav';
 import type { SceneAnalysisRequest, SceneAnalysisResponse, SceneCapture } from '../types/sceneAnalysis';
 import type { View } from '../types/views';
@@ -26,9 +25,11 @@ export default function SceneAnalysis({
   onExit,
   onNavigate,
   onSettings,
-  analyze = (request, signal) => requestSceneAnalysis(API_BASE_URL, request, signal),
+  analyze,
   initialCapture,
 }: SceneAnalysisProps) {
+  const localAnalyzer = useRef<ReturnType<typeof createBrowserSceneAnalyzer> | null>(null);
+  const [analysisProgress, setAnalysisProgress] = useState('Preparing on-device analysis…');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const cameraOpeningRef = useRef(false);
@@ -74,6 +75,8 @@ export default function SceneAnalysis({
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       controllerRef.current?.abort();
+      localAnalyzer.current?.dispose();
+      localAnalyzer.current = null;
     };
   }, []);
 
@@ -258,10 +261,13 @@ export default function SceneAnalysis({
     setAnalysisError(null);
     setQualityWarning(false);
     try {
-      const result = await analyze(
-        { image_base64: capture.imageBase64, mime_type: 'image/jpeg', accept_quality_warning: acceptQualityWarning },
-        controller.signal,
-      );
+      const request: SceneAnalysisRequest = {
+        image_base64: capture.imageBase64, mime_type: 'image/jpeg', accept_quality_warning: acceptQualityWarning,
+      };
+      setAnalysisProgress('Preparing on-device analysis…');
+      localAnalyzer.current ??= createBrowserSceneAnalyzer();
+      const result = analyze ? await analyze(request, controller.signal)
+        : await localAnalyzer.current.analyze(request, controller.signal, setAnalysisProgress);
       if (!controller.signal.aborted) setAnalysis(result);
     } catch (error) {
       if (!controller.signal.aborted) {
@@ -299,7 +305,7 @@ export default function SceneAnalysis({
 
         <div className={styles.safetyNotes}>
           <p className={styles.notice} role="note"><strong>For situational awareness</strong><span>{DISCLAIMER}</span></p>
-          <p className={styles.privacy}><span aria-hidden="true">▣</span> The image is sent to this project’s Python service for temporary analysis. The captured preview stays on this screen and is cleared when you retake or leave.</p>
+          <p className={styles.privacy}><span aria-hidden="true">▣</span> Analysis runs on your device with no per-picture analysis fee. Your photo is not uploaded. First use downloads about 44 MB of model weights plus runtime files; later runs can reuse the browser cache. The captured preview is cleared when you retake or leave.</p>
         </div>
         {cameraError && <p className={styles.error} role="alert">{cameraError}</p>}
 
@@ -380,13 +386,13 @@ export default function SceneAnalysis({
             <section className={styles.guideCard} aria-labelledby="capture-guide-title">
               <p className={styles.eyebrow}>QUICK GUIDE</p>
               <h2 id="capture-guide-title">Get a clearer review</h2>
-              <ol><li>Hold the camera steady and include the full area.</li><li>Use good lighting and avoid blur or obstructions.</li><li>Review the capture before sending it for analysis.</li></ol>
+              <ol><li>Hold the camera steady and include the full area.</li><li>Use good lighting and avoid blur or obstructions.</li><li>Review the capture before analyzing it on your device.</li></ol>
               <p>Scene Review identifies visual cues only. It cannot determine whether a place is safe.</p>
             </section>
           </aside>
         </div>
 
-        {loading && <p role="status">Analyzing the image in temporary memory…</p>}
+        {loading && <p role="status">{analysisProgress}</p>}
         {analysisError && <div className={styles.notice}>
           <p className={styles.error} role="alert">{analysisError}</p>
           <button type="button" className={styles.button} onClick={() => void submitAnalysis()}>Retry analysis</button>
@@ -399,6 +405,7 @@ export default function SceneAnalysis({
         {analysis && <section aria-labelledby="evidence-title">
           <h2 id="evidence-title">Evidence checklist</h2>
           {analysis.candidate_regions.length === 0 ? <p>No clear open-area candidate was identified in this image.</p> : <>
+            <p>Candidate outlines are simplified and may include objects or gaps inside them. Inspect the actual photo.</p>
             <p>Visible candidate regions are ranked by image cues for review. The review-order heuristic is: (relative area × 0.50) + (shape compactness × 0.30) + (model confidence × 0.20), where relative area = min(candidate visible pixel area ÷ largest candidate visible pixel area, 1). The score is a heuristic review-order value, not a percent or probability of safety.</p>
             <ul className={styles.candidateList} aria-label="Candidate areas">
               {analysis.candidate_regions.map((candidate) => <li key={candidate.rank}>

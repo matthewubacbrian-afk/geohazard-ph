@@ -287,3 +287,16 @@ and build. The Render public bundle now contains the activity feature. The
 live-record aggregation assigned 82 of 339 events to 14 regions and left 257
 outside/offshore on 2026-11-05. Full browser visual acceptance remains open;
 see the deployment record for the evidence boundary.
+
+
+## Browser Scene Review (2026-11-05)
+
+The web analysis default now uses a local module worker, pinned quantized ONNX
+model, bounded device inference, provisional blur choices, component contours,
+and existing evidence/caveats. It uploads no picture and invokes no paid inference
+API. Actual Edge production-build checks recognized sample-photo cues and a grass
+candidate; warm analysis reused weights without network writes. See
+[browser architecture, model provenance, cost boundary and checks](browser-scene-analysis.md).
+The separate default Python endpoint/mobile prototype remains unavailable until
+its own model provisioning. This browser path is still an uncalibrated visual
+cue demonstrator; physical phone testing and real-world accuracy remain open.

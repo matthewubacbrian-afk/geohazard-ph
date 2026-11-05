@@ -188,3 +188,12 @@ regional polygons across 14 regions, 257 offshore/outside, and zero invalid.
 These are dated counts, not completeness claims. Browser visual verification
 was unavailable because the browser automation runtime failed to initialize;
 deployed bundle verification does not prove GPU rendering on every device.
+
+
+## Web Scene Review On Device
+
+The web page now uses [local browser inference](browser-scene-analysis.md), with
+no per-picture inference service or photo upload. This requires the new static
+web build, not paid API compute or a server-model download. The Python scene API
+can still return 503; its availability is separate from the web worker. Physical
+mobile/browser capability and broader model accuracy remain acceptance checks.
