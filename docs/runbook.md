@@ -2,6 +2,12 @@
 
 ## Free Split Staging Ingestion
 
+Start with the [current deployment record](free-split-deployment.md) for live
+service links, data flow, release ownership, cost controls, recovery, and open
+acceptance checks. The [rollout plan](superpowers/plans/2026-11-04-free-split-staging-deployment.md)
+preserves setup history. This section is the ingestion procedure.
+
+
 The active staging web site and API are hosted separately on Render. The API uses
 the Singapore Supabase PostGIS database and Upstash Redis provisioned for staging.
 The scheduled worker is `.github/workflows/ingest-staging.yml`; it runs one bounded
