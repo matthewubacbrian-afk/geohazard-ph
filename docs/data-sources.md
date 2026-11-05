@@ -519,3 +519,36 @@ The clearance-first scope is tracked in the
 | Caraga | 5062 |
 
 <!-- REGION_BOUNDARY_PROVENANCE:END -->
+
+
+## Recorded regional earthquake activity (web)
+
+The dashboard's Regional activity view and Activity shading layer summarize the
+filtered earthquake records returned by the events API. They do not consume the
+held ML risk-profile export. The existing `view=risk` URL key is retained for
+bookmark compatibility; it opens the activity view.
+
+- Count unique earthquakes by canonical ID when present; otherwise use the source
+  and external/event ID. Prefer the primary catalog record when supplied.
+- Include only valid earthquake coordinates and timestamps. Count invalid records
+  separately. Source totals describe selected catalog records, not completeness.
+- Join epicenters inside the pinned 17-region web polygon snapshot. Exclude holes;
+  include outer edges. Shared-edge/overlap ties go to the first boundary in the
+  pinned file, so one earthquake is counted at most once.
+- Offshore/outside events remain unassigned. This differs deliberately from the
+  offline ML pipeline's nearest-region-within-100-km rule.
+- Show raw count bins: zero, 1-9, 10-49, 50-99, and 100+. These are display bins,
+  not scientifically validated activity classes or seismic-risk thresholds.
+- Display observed dates in UTC, region/source counts, and unassigned/invalid
+  totals. Observed dates are the extent of available matching records, not proof
+  of continuous observation. Zero matches mean insufficient matching data, never
+  low hazard. Small samples remain explicit counts without a risk/confidence label.
+- Apply source/date/magnitude/hazard filters to the same records as the map.
+  Hiding event markers does not clear activity counts. Entering the activity view
+  enables shading; the layer checkbox can then hide it.
+- Loading/failure states suppress the shading and counts. The implementation
+  adds browser computation without another source ingestion job or paid service.
+
+The boundary snapshot may differ from current administrative divisions. The
+existing boundary provenance in this document remains authoritative for the geometry.
+The ML risk export and its review hold remain separate and unchanged.

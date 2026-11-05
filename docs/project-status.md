@@ -268,3 +268,15 @@ Testing exposed missing initial-preview Retake; that repair is a separate branch
 and acceptance gate. Scientific model evaluation, remaining camera cases, physical
 iOS, and store release remain open. These results do not establish deployment or
 scientific readiness.
+
+
+## Regional Activity Shading (2026-11-05)
+
+The web activity view summarizes filtered earthquake records with count-based
+regional shading, UTC observed dates, per-region source totals, and explicit
+unassigned/invalid counts. It replaces the dashboard's empty ML-profile view,
+while the risk-profile API/export remains on hold. Uses existing source records
+and pinned boundaries with no new provider cost. See
+[method and limitations](data-sources.md#recorded-regional-earthquake-activity-web).
+Deployment verification must confirm the new web bundle; the previous API-only
+PHIVOLCS verification does not establish that the updated frontend is live.

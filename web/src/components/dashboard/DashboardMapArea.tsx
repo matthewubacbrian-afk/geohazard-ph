@@ -7,7 +7,9 @@ import DashboardSummaryBar from './DashboardSummaryBar';
 import MapView from "../map/MapView";
 import type { BasemapId } from "../map/basemaps";
 import type { HazardEvent } from "../../types/hazard";
-import { useRiskProfiles } from "../../hooks/useRiskProfiles";
+import { useMemo } from "react";
+import { buildRegionalActivity } from "../map/regionalActivity";
+import { PHILIPPINE_REGIONS } from "../../data/philippine-regions";
 
 type DashboardMapAreaProps = {
   events: HazardEvent[];
@@ -30,13 +32,6 @@ type DashboardMapAreaProps = {
   showRiskLayer?: boolean;
 };
 
-const RISK_LABELS = [
-  { label: 'Very High', swatch: 'swatch--very-high' },
-  { label: 'High', swatch: 'swatch--high' },
-  { label: 'Moderate', swatch: 'swatch--medium' },
-  { label: 'Low', swatch: 'swatch--low' },
-] as const;
-
 export default function DashboardMapArea({
   events,
   faults, volcanoZones, showFaults, showVolcanoZones,
@@ -53,11 +48,7 @@ export default function DashboardMapArea({
   showEvents = true,
   showRiskLayer = true,
 }: DashboardMapAreaProps) {
-  const {
-    data: riskProfiles = [],
-    error: riskProfilesError,
-    refetch: refetchRiskProfiles,
-  } = useRiskProfiles();
+  const activity = useMemo(() => buildRegionalActivity(showRiskLayer ? events : [], PHILIPPINE_REGIONS), [events, showRiskLayer]);
 
   return (
     <main className={styles.mapArea} aria-label="Geospatial risk dashboard map">
@@ -74,7 +65,7 @@ export default function DashboardMapArea({
         selectedEvent={selectedEvent}
         onSelectEvent={onSelectEvent}
         showEvents={showEvents}
-        riskProfiles={riskProfiles}
+        activityRegions={isLoading || error ? { type: "FeatureCollection", features: [] } : activity.features}
         showRiskLayer={showRiskLayer}
       />
 
@@ -96,29 +87,18 @@ export default function DashboardMapArea({
         </div>
       )}
 
-      {showRiskLayer && riskProfilesError && (
-        <div className={`${styles.status} ${styles["status--error"]}`} role="alert">
-          <p className={styles.statusText}>Risk overlay unavailable.</p>
-          <button
-            type="button"
-            className={styles.retryBtn}
-            onClick={() => { void refetchRiskProfiles(); }}
-          >
-            Retry risk overlay
-          </button>
-        </div>
-      )}
-
-      {showRiskLayer && <div className={styles.legend}>
-        <h4 className={styles.legendTitle}>Regional risk profile</h4>
-        {RISK_LABELS.map(({ label, swatch }) => (
+      {showRiskLayer && !isLoading && !error && <div className={styles.legend}>
+        <h4 className={styles.legendTitle}>Recorded earthquakes</h4>
+        {[['#d9d9d9', 'No matching records'], ['#c6dbef', '1–9'], ['#6baed6', '10–49'],
+          ['#2171b5', '50–99'], ['#08306b', '100+']].map(([color, label]) => (
           <div className={styles.legendRow} key={label}>
             <div className={styles.legendLabel}>
-              <span className={`${styles.swatch} ${styles[swatch]}`} />
+              <span className={styles.swatch} style={{ backgroundColor: color }} />
               <span>{label}</span>
             </div>
           </div>
         ))}
+        <p className={styles.legendTitle}>Selected filters · counts, not risk</p>
       </div>}
 
     </main>

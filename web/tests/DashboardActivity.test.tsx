@@ -110,6 +110,17 @@ function renderDashboard() {
 }
 
 describe('Dashboard activity layout', () => {
+  it('opens recorded regional activity and enables its shading independently of event markers', () => {
+    renderDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'Regional activity' }));
+    expect(screen.getByRole('heading', { name: 'Regional earthquake activity' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Activity shading')).toBeChecked();
+    expect(screen.getAllByText(/2026-10-14 to 2026-10-14/).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByLabelText('Live events'));
+    expect(screen.getByLabelText('Activity shading')).toBeChecked();
+    expect(screen.getAllByText(/2026-10-14 to 2026-10-14/).length).toBeGreaterThan(0);
+  });
+
   it('keeps the NASA reference disabled by default and toggles it independently', () => {
     renderDashboard();
 

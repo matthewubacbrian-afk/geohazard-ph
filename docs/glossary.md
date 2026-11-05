@@ -192,3 +192,15 @@ When a spec or plan introduces a new concept:
 | coherence | Similarity of radar phase between repeat acquisitions; low coherence or decorrelation can make an InSAR displacement estimate unavailable or unreliable. |
 | landslide susceptibility reference | A mapped, coarse indication of relative susceptibility; not measured ground motion, a site-specific assessment, forecast, or warning. |
 | research-grade ground-motion estimate | A sourced, date-bounded InSAR measurement with quality and maturity caveats; not an operational alert or safety determination. |
+
+
+## Recorded regional activity
+
+- Regional earthquake activity: raw counts of unique available earthquake
+  epicenters inside each pinned regional polygon, for the dashboard filters.
+  It is a descriptive catalog summary, not seismic risk, hazard probability,
+  a forecast, or an official warning.
+- Unassigned activity record: a valid earthquake outside the regional polygons,
+  including offshore locations; no nearest-region attribution is inferred.
+- No matching records: no valid matching epicenters for that region and filter;
+  it does not establish absence of earthquake hazard or complete source coverage.
