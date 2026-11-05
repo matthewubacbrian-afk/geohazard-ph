@@ -95,7 +95,7 @@ export default function About({ onNavigate, onSettings }: AboutProps) {
           </header>
           <div className={about.teamGrid}>
             {developers.map((person) => <article key={person.id}
-              className={`${about.member} ${person.id === "matthew" ? about.leader : ""}`}
+              className={about.member}
               aria-labelledby={`${person.id}-name`}>
               <div className={about.portraitFrame}>
                 <img src={person.portrait} alt={`Portrait of ${person.name}`}
