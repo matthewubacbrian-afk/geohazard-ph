@@ -107,3 +107,19 @@ weight request, made zero HTTP writes, and cleared the preview on retake. These
 checks used a fake camera feed and explicit public/synthetic fixtures; physical
 camera quality, phone memory limits, and adverse scene conditions still require
 real-device evaluation.
+
+
+## Staging Verification (2026-11-05)
+
+[PR #89](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/89) merged as
+`5415fe62c9ca6e1d369ab37d80a603b5de63b4c0`.
+[Web CI](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/42026884501)
+passed all 193 tests and the production build. Render served
+`/assets/index-Z5B4pfKc.js` with the browser-analysis worker and privacy text.
+
+An actual headless Edge run against the [public staging page](https://geohazard-ph-staging-web.onrender.com/scene-analysis)
+used the public ADE20K fixture above through a fake camera capture. It displayed
+one grass candidate and the recognized house/grass/sky/tree/wall cues. Cold/warm
+analyses took about 25/11 seconds. Network interception observed zero HTTP writes
+and no additional model-weight requests on repeat. This verifies deployed local
+inference; it is not a physical-phone test or an accuracy evaluation.
