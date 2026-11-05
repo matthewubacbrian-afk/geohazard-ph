@@ -163,3 +163,15 @@ Regional shading remains blocked by the [profile quality hold](risk-profile-qual
 and [domain review record](epic5-domain-review-decision-record.md). A later approval
 record identifying the exact reviewed export version/hash has not been supplied.
 Do not load the held export just to make the map shaded.
+
+
+## Regional Activity Display
+
+The web dashboard now supports Regional activity / Activity shading using the
+filtered events API data. No regional risk-profile export is required. See the
+[recorded activity method](data-sources.md#recorded-regional-earthquake-activity-web)
+for counting, boundaries, offshore exclusions, date coverage, and limitations.
+The held Low/Moderate/High export remains unavailable; the new count shading does
+not lift its scientific review hold. Deploy the updated web build through the
+existing Render Static Site. No backend image, migration, worker schedule,
+provider, or paid add-on is required for this display change.

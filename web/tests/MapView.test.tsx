@@ -482,3 +482,23 @@ describe('map symbol palette', () => {
     for (const name of Object.keys(tokens)) document.documentElement.style.removeProperty(name);
   });
 });
+
+
+describe('recorded activity shading', () => {
+  it('paints event counts without reading risk labels and updates filtered data', () => {
+    const activity = { type: 'FeatureCollection' as const, features: [{
+      type: 'Feature' as const, properties: { region_name: 'Example', event_count: 12 },
+      geometry: { type: 'Polygon' as const, coordinates: [[[120, 14], [121, 14], [121, 15], [120, 14]]] },
+    }] };
+    const view = render(<MapView events={[]} activityRegions={activity} showRiskLayer />);
+    act(() => emit('style.load'));
+    const fill = mapInstance.addLayer.mock.calls.find(([layer]) => layer.id === 'risk-regions-fill');
+    expect(fill?.[0].paint?.['fill-color']).toEqual([
+      'step', ['get', 'event_count'], '#d9d9d9',
+      1, '#c6dbef', 10, '#6baed6', 50, '#2171b5', 100, '#08306b',
+    ]);
+    expect(sources.get('risk-regions')?.setData).toBeDefined();
+    view.rerender(<MapView events={[]} activityRegions={{ type: 'FeatureCollection', features: [] }} showRiskLayer />);
+    expect(sources.get('risk-regions')?.setData).toHaveBeenCalledWith({ type: 'FeatureCollection', features: [] });
+  });
+});

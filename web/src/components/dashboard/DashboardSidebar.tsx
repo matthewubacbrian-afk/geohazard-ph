@@ -13,7 +13,7 @@ const VIEWS: { key: DashboardView; label: string; icon: IconName }[] = [
   { key: 'filters', label: 'Seismic filters', icon: 'filter' },
   { key: 'history', label: 'Historical data', icon: 'history' },
   { key: 'volcanoes', label: 'Volcano bulletins', icon: 'volcano' },
-  { key: 'risk', label: 'Risk reports', icon: 'assessment' },
+  { key: 'risk', label: 'Regional activity', icon: 'assessment' },
 ];
 
 type LayerDef = {
@@ -24,7 +24,7 @@ type LayerDef = {
 
 const LAYERS: LayerDef[] = [
   { key: 'events', label: 'Live events', available: true },
-  { key: 'risk', label: 'Risk overlay', available: true },
+  { key: 'risk', label: 'Activity shading', available: true },
   { key: 'faults', label: 'Fault lines', available: true },
   { key: 'volcanoes', label: 'Volcano zones', available: true },
   { key: 'landslideSusceptibility', label: 'Landslide susceptibility', available: true },

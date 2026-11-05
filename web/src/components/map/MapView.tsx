@@ -1,3 +1,4 @@
+import type { ActivityRegions } from "./regionalActivity";
 import type { StaticLayer } from "../../types/staticLayer";
 import { useEffect, useId, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
@@ -40,6 +41,7 @@ type MapViewProps = {
   onSelectEvent?: (event: HazardEvent) => void;
   showEvents?: boolean;
   riskProfiles?: RiskProfile[];
+  activityRegions?: ActivityRegions;
   showRiskLayer?: boolean;
 };
 
@@ -111,6 +113,7 @@ export default function MapView({
   onSelectEvent,
   showEvents = true,
   riskProfiles = [],
+  activityRegions,
   showRiskLayer = false,
 }: MapViewProps) {
   const eventSummaryId = useId();
@@ -268,6 +271,8 @@ export default function MapView({
         ]
       : [],
   });
+  const activityRegionsRef = useRef(activityRegions);
+  activityRegionsRef.current = activityRegions;
   const riskProfilesRef = useRef(riskProfiles);
   riskProfilesRef.current = riskProfiles;
 
@@ -386,7 +391,7 @@ export default function MapView({
   };
 
   const syncRiskLayer = (map: maplibregl.Map) => {
-    const data = riskProfilesToFeatureCollection(
+    const data = activityRegionsRef.current ?? riskProfilesToFeatureCollection(
       riskProfilesRef.current,
       PHILIPPINE_REGIONS,
     );
@@ -403,7 +408,10 @@ export default function MapView({
           type: "fill",
           source: "risk-regions",
           paint: {
-            "fill-color": [
+            "fill-color": activityRegionsRef.current ? [
+              "step", ["get", "event_count"], "#d9d9d9",
+              1, "#c6dbef", 10, "#6baed6", 50, "#2171b5", 100, "#08306b",
+            ] : [
               "match",
               ["get", "label"],
               "Very High",
@@ -416,7 +424,7 @@ export default function MapView({
               cssVar("--risk-low"),
               cssVar("--text-faint"),
             ],
-            "fill-opacity": [
+            "fill-opacity": activityRegionsRef.current ? 0.55 : [
               "match",
               ["get", "label"],
               "Very High",
@@ -573,7 +581,7 @@ export default function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (map?.getLayer("event-circles")) syncReferenceLayers(map);
-  }, [faults, volcanoZones, showFaults, showVolcanoZones, riskProfiles, showRiskLayer]);
+  }, [faults, volcanoZones, showFaults, showVolcanoZones, riskProfiles, activityRegions, showRiskLayer]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -589,7 +597,7 @@ export default function MapView({
     const map = mapRef.current;
     if (!map || !map.getLayer("event-circles")) return;
     syncRiskLayer(map);
-  }, [riskProfiles, showRiskLayer]);
+  }, [riskProfiles, activityRegions, showRiskLayer]);
 
   useEffect(() => {
     const map = mapRef.current;
