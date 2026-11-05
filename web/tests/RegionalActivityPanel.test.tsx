@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import RegionalActivityPanel from '../src/components/activity/RegionalActivityPanel';
 
@@ -7,6 +7,7 @@ describe('regional activity panel', () => {
     render(<RegionalActivityPanel events={[]} isLoading={false} error={null} />);
     expect(screen.getByRole('heading', { name: 'Regional earthquake activity' })).toBeVisible();
     expect(screen.getByText('No matching earthquake records.', { exact: false })).toBeVisible();
+    fireEvent.click(screen.getByText('Coverage and limitations'));
     expect(screen.getByText(/No matching records does not mean no risk/)).toBeVisible();
     expect(screen.getAllByText(/0 recorded earthquakes/)).toHaveLength(17);
   });
