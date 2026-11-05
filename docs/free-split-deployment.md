@@ -175,3 +175,16 @@ The held Low/Moderate/High export remains unavailable; the new count shading doe
 not lift its scientific review hold. Deploy the updated web build through the
 existing Render Static Site. No backend image, migration, worker schedule,
 provider, or paid add-on is required for this display change.
+
+
+Deployment checkpoint (2026-11-05):
+[PR #86](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/86) merged as
+`dfee1af3c935db6dedce1d9bc2122efcf9d3a894`.
+[Web CI](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/42015974823)
+passed all 182 tests and the production build. Render served
+`/assets/index-C8Ayn264.js` containing the new activity panel and toggle.
+A live-data check of the same aggregation helper counted 339 events: 82 inside
+regional polygons across 14 regions, 257 offshore/outside, and zero invalid.
+These are dated counts, not completeness claims. Browser visual verification
+was unavailable because the browser automation runtime failed to initialize;
+deployed bundle verification does not prove GPU rendering on every device.

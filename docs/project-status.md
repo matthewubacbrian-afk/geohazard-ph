@@ -280,3 +280,10 @@ and pinned boundaries with no new provider cost. See
 [method and limitations](data-sources.md#recorded-regional-earthquake-activity-web).
 Deployment verification must confirm the new web bundle; the previous API-only
 PHIVOLCS verification does not establish that the updated frontend is live.
+
+
+Regional activity deployment evidence: PR #86 merged; web CI passed 182 tests
+and build. The Render public bundle now contains the activity feature. The
+live-record aggregation assigned 82 of 339 events to 14 regions and left 257
+outside/offshore on 2026-11-05. Full browser visual acceptance remains open;
+see the deployment record for the evidence boundary.
