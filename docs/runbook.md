@@ -10,7 +10,7 @@ the job fail after the other source has been attempted. The earthquake adapter
 uses the checked-in GlobalSign intermediate with the standard CA bundle, keeping
 TLS verification enabled for the PHIVOLCS host's incomplete certificate chain.
 
-Before enabling the 30-minute schedule:
+Before enabling the six-hour schedule:
 
 1. Publish a backend image containing the current ingestion code through
    **Prepare Staging Release** on `main`.
@@ -28,6 +28,11 @@ Before enabling the 30-minute schedule:
    source, release SHA, and job URL; a green job alone is insufficient.
 5. Review Supabase storage and Upstash command/bandwidth use after a representative
    batch. Set `STAGING_INGEST_ENABLED=true` only after the free-tier budget is confirmed.
+
+The six-hour schedule runs at most four cycles per day (about 120 in a 30-day
+month). Each cycle republishes the fetched events to Redis, so compare the
+per-cycle event count with the remaining Upstash command allowance before
+enabling it, and revisit that estimate if the source feed grows.
 
 Scheduled runs stay skipped while `STAGING_INGEST_ENABLED` is absent or not `true`.
 If either source fails, inspect the job's source-specific error and verify the
