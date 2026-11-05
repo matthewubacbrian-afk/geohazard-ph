@@ -34,7 +34,7 @@ describe('application routes', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'About' }));
 
-    expect(screen.getByRole('heading', { name: 'About GeoHazard' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'About GeoHazard PH' })).toBeTruthy();
     expect(window.location.pathname).toBe('/about');
   });
 
@@ -51,7 +51,7 @@ describe('application routes', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close settings' }));
     fireEvent.click(screen.getByRole('button', { name: 'About' }));
     expect(window.location.pathname).toBe('/about');
-    expect(screen.getByRole('heading', { name: 'About GeoHazard' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'About GeoHazard PH' })).toBeInTheDocument();
   });
 
   it('links the hero footer to the existing About and Data Sources routes', () => {
