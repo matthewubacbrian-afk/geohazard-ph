@@ -1,3 +1,5 @@
+import gzip
+import ssl
 from pathlib import Path
 
 import pytest
@@ -13,12 +15,18 @@ FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
 
 class FakeResponse:
-    def __init__(self, content: bytes):
+    def __init__(self, content: bytes, headers=None):
         self.content = content
-        self.text = content.decode("latin-1")
+        self.headers = headers or {}
 
-    def raise_for_status(self) -> None:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
         return None
+
+    def read(self):
+        return self.content
 
 
 def test_parse_bulletin_table_maps_all_earthquake_rows():
@@ -46,19 +54,17 @@ def test_parse_bulletin_table_rejects_missing_data_table():
 
 
 def test_fetch_recent_events_uses_configured_feed(monkeypatch):
-    import requests
-
     captured: dict[str, object] = {}
     html = (FIXTURES / "phivolcs_earthquake_sample.html").read_text(encoding="utf-8")
 
-    def fake_get(url: str, **kwargs: object) -> FakeResponse:
-        captured["url"] = url
+    def fake_urlopen(request, **kwargs: object) -> FakeResponse:
+        captured["url"] = request.full_url
         captured["timeout"] = kwargs["timeout"]
-        captured["headers"] = kwargs["headers"]
-        captured["verify"] = kwargs["verify"]
+        captured["user_agent"] = request.get_header("User-agent")
+        captured["verify_mode"] = kwargs["context"].verify_mode
         return FakeResponse(html.encode("utf-8"))
 
-    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr("ingestion.sources.phivolcs_earthquake.urlopen", fake_urlopen)
     get_settings.cache_clear()
     settings = get_settings()
 
@@ -70,27 +76,49 @@ def test_fetch_recent_events_uses_configured_feed(monkeypatch):
     assert captured == {
         "url": settings.phivolcs_earthquake_feed_url,
         "timeout": 30,
-        "headers": {"User-Agent": "GeoHazard-PH/0.1"},
-        "verify": settings.phivolcs_ssl_verify,
+        "user_agent": "GeoHazard-PH/0.1",
+        "verify_mode": ssl.CERT_REQUIRED,
     }
 
 
-def test_fetch_recent_events_wraps_http_errors(monkeypatch):
+def test_fetch_recent_events_accepts_verified_gzip_feed(monkeypatch):
     import requests
 
-    def fake_get(url: str, **kwargs: object) -> FakeResponse:
+    html = (FIXTURES / "phivolcs_earthquake_sample.html").read_bytes()
+    captured = {}
+
+    def fake_urlopen(request, *, context, timeout):
+        captured.update(url=request.full_url, context=context, timeout=timeout)
+        return FakeResponse(gzip.compress(html), {"Content-Encoding": "gzip"})
+
+    monkeypatch.setattr(requests, "get", lambda *_args, **_kwargs: (_ for _ in ()).throw(
+        requests.exceptions.SSLError("incomplete certificate chain")
+    ))
+    monkeypatch.setattr("ingestion.sources.phivolcs_earthquake.urlopen", fake_urlopen, raising=False)
+
+    events = fetch_recent_events(get_settings())
+
+    assert len(events) == 2
+    assert captured["url"] == get_settings().phivolcs_earthquake_feed_url
+    assert captured["timeout"] == 30
+    assert captured["context"].verify_mode == ssl.CERT_REQUIRED
+
+
+def test_fetch_recent_events_wraps_http_errors(monkeypatch):
+    def fake_urlopen(request, **kwargs: object) -> FakeResponse:
         raise RuntimeError("connection failed")
 
-    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr("ingestion.sources.phivolcs_earthquake.urlopen", fake_urlopen)
 
     with pytest.raises(PhivolcsFetchError, match="request failed"):
         fetch_recent_events(get_settings())
 
 
 def test_fetch_recent_events_rejects_invalid_utf8(monkeypatch):
-    import requests
-
-    monkeypatch.setattr(requests, "get", lambda _url, **_kwargs: FakeResponse(b"\xff"))
+    monkeypatch.setattr(
+        "ingestion.sources.phivolcs_earthquake.urlopen",
+        lambda _request, **_kwargs: FakeResponse(b"\xff"),
+    )
 
     with pytest.raises(PhivolcsFetchError, match="parsing failed"):
         fetch_recent_events(get_settings())

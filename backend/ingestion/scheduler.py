@@ -33,7 +33,8 @@ def run_phivolcs_ingest() -> tuple[int, int]:
     return len(events), processed
 
 
-def run_cycle() -> None:
+def run_cycle() -> bool:
+    failed = False
     try:
         usgs_fetched, usgs_processed = run_usgs_ingest()
         logger.info(
@@ -41,6 +42,7 @@ def run_cycle() -> None:
             extra={"source": "usgs", "fetched": usgs_fetched, "processed": usgs_processed},
         )
     except Exception:
+        failed = True
         logger.exception("ingest source failed", extra={"source": "usgs"})
 
     try:
@@ -54,7 +56,9 @@ def run_cycle() -> None:
             },
         )
     except Exception:
+        failed = True
         logger.exception("ingest source failed", extra={"source": "phivolcs"})
+    return failed
 
 
 def main(
@@ -78,6 +82,7 @@ def main(
 
     previous_handlers = {}
     cycle_count = 0
+    had_source_error = False
     logger.info(
         "ingest worker starting",
         extra={"poll_interval_seconds": interval_seconds},
@@ -88,7 +93,7 @@ def main(
             for sig in (signal.SIGTERM, signal.SIGINT):
                 previous_handlers[sig] = signal.signal(sig, handle_signal)
         while not effective_stop_event.is_set():
-            run_cycle()
+            had_source_error = bool(run_cycle()) or had_source_error
             cycle_count += 1
             if cycle_limit is not None and cycle_count >= cycle_limit:
                 break
@@ -99,6 +104,8 @@ def main(
         for sig, handler in previous_handlers.items():
             signal.signal(sig, handler)
         logger.info("ingest worker stopping")
+    if had_source_error and getattr(effective_settings, "ingest_fail_on_source_error", False):
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

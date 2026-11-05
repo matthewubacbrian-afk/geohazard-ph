@@ -1,5 +1,39 @@
 # Runbook
 
+## Free Split Staging Ingestion
+
+The active staging web site and API are hosted separately on Render. The API uses
+the Singapore Supabase PostGIS database and Upstash Redis provisioned for staging.
+The scheduled worker is `.github/workflows/ingest-staging.yml`; it runs one bounded
+USGS and PHIVOLCS cycle using the published backend image. A source failure makes
+the job fail after the other source has been attempted. The earthquake adapter
+uses the checked-in GlobalSign intermediate with the standard CA bundle, keeping
+TLS verification enabled for the PHIVOLCS host's incomplete certificate chain.
+
+Before enabling the 30-minute schedule:
+
+1. Publish a backend image containing the current ingestion code through
+   **Prepare Staging Release** on `main`.
+2. In GitHub's `staging` environment, set `STAGING_DATABASE_URL` to the
+   SQLAlchemy `postgresql+psycopg` Supabase session-pooler URL and
+   `STAGING_REDIS_URL` to the Upstash TLS TCP URL. Set the environment variable
+   `STAGING_RELEASE_SHA` to the exact published 40-character commit SHA. Enter
+   secrets directly in GitHub; never paste them into a log or repository file.
+3. Run **Ingest Staging Events** manually once while the repository variable
+   `STAGING_INGEST_ENABLED` remains absent or `false`. Inspect the per-source
+   fetched and processed counts and confirm a successful job.
+4. Check `GET /api/v1/events?source=phivolcs` and
+   `GET /api/v1/events?source=usgs` on the staging API. Check a browser WebSocket
+   subscriber for an ingestion-generated event. Record the last event time,
+   source, release SHA, and job URL; a green job alone is insufficient.
+5. Review Supabase storage and Upstash command/bandwidth use after a representative
+   batch. Set `STAGING_INGEST_ENABLED=true` only after the free-tier budget is confirmed.
+
+Scheduled runs stay skipped while `STAGING_INGEST_ENABLED` is absent or not `true`.
+If either source fails, inspect the job's source-specific error and verify the
+source endpoint before changing parsing or TLS behavior. The regional risk-profile
+export remains a separate, review-gated release and is not loaded by ingestion.
+
 ## Epic 7 Model Packaging Preflight (2026-10-13)
 
 The pinned source `facebook/detr-resnet-50-panoptic@d53b52a799403a8867920f82c869e40732b47037`
