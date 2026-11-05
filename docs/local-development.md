@@ -69,7 +69,6 @@ the ingestion job has not populated the database yet.
 
 ## PHIVOLCS TLS Note
 
-The local `.env` may set `PHIVOLCS_SSL_VERIFY=false` because the PHIVOLCS
-endpoint has served an incomplete certificate chain in this development
-environment. Keep TLS verification enabled in shared or production
-configuration and prefer configuring a trusted CA bundle when available.
+The PHIVOLCS earthquake and volcano adapters use the checked-in GlobalSign
+intermediate with the standard CA bundle to verify the source's incomplete
+certificate chain. `PHIVOLCS_SSL_VERIFY=false` is no longer supported or needed.

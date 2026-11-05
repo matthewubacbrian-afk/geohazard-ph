@@ -54,6 +54,23 @@ def test_scheduler_honors_configured_cycle_limit(monkeypatch):
     assert cycles == [True]
 
 
+def test_strict_one_cycle_exits_nonzero_when_a_source_fails(monkeypatch):
+    cycles = []
+    monkeypatch.setattr(scheduler, "run_cycle", lambda: cycles.append(True) or True)
+
+    with pytest.raises(SystemExit) as exit_status:
+        scheduler.main(
+            settings=SimpleNamespace(
+                ingest_poll_interval_seconds=60,
+                ingest_max_cycles=1,
+                ingest_fail_on_source_error=True,
+            ),
+        )
+
+    assert exit_status.value.code == 1
+    assert cycles == [True]
+
+
 def test_scheduler_restores_signal_handlers(monkeypatch):
     previous = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGINT)}
     monkeypatch.setattr(scheduler, "run_cycle", lambda: None)
