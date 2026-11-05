@@ -1,5 +1,11 @@
 # Local Readiness — Implementation Plan
 
+**Superseded milestone (2026-11-06):** The local-only/Oracle-deferred context below
+predates active split staging. Retain its exact-build local evidence; use
+[current operations](../../free-split-deployment.md), [current acceptance](../../staging-acceptance-2026-11-06.md)
+and [the completion queue](../../../PLAN.md#current-delivery-queue-2026-11-06)
+for remaining work. No physical staging/device pass is inferred.
+
 > **For agentic workers:** Use superpowers:executing-plans to execute this approved documentation slice. Track completed steps below.
 
 **Goal:** Reconcile local setup and readiness statements with recorded implementation and CI evidence.

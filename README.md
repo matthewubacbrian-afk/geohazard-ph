@@ -21,10 +21,16 @@ To start the web app on Windows, follow the [local quick start](#run-the-project
 
 All human-written and generated changes should follow [CODING_STANDARDS.md](CODING_STANDARDS.md). Coding agents should also read [AGENTS.md](AGENTS.md) before modifying the repository.
 
-Staging images and a portable Compose deployment bundle can be produced by the
-manual workflow in `.github/workflows/deploy-staging.yml`. See
-[docs/runbook.md](docs/runbook.md) for host setup, reconciliation, deployment,
-and rollback commands.
+Active staging uses Render web/API, Supabase PostGIS, Upstash Redis and a bounded
+GitHub Actions ingestion worker. Start with the [deployment operations record](docs/free-split-deployment.md)
+and [latest acceptance evidence](docs/staging-acceptance-2026-11-06.md).
+Staging ingestion is configured on a six-hour schedule; automatic triggering
+remains unverified. A LIVE badge indicates WebSocket connectivity, not source
+freshness or official warning status.
+
+The manual `.github/workflows/deploy-staging.yml` publishes versioned images and
+an alternative portable Compose bundle. Publishing images does not redeploy
+Render. See the [runbook](docs/runbook.md) for topology-specific procedures.
 
 ## Run The Project Locally (Windows)
 

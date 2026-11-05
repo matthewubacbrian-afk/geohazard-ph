@@ -6,6 +6,13 @@ The detailed quantitative evidence is in the [technical quality
 review](risk-profile-quality-review-2026-10-14.md); project progress is tracked
 in the [project status register](project-status.md).
 
+## Status reconciliation (2026-11-06)
+
+No completed stakeholder decision or export approval is recorded. The staging
+cluster endpoint remains empty. The newer regional activity display summarizes
+event counts and is independent of these held ML labels. Complete the review
+fields only from an actual domain review; this status update selects no policy.
+
 ## Review record
 
 - Reviewer name and role: ______________________________

@@ -51,28 +51,34 @@ to the photo library or retain a server-side image/history.
 
 ## Epic 7 Scene Review (Browser)
 
-Run these checks in a camera-capable browser on `localhost` or HTTPS with the API model
-provisioned. A browser test suite does not exercise actual permission prompts, camera
-hardware, or API/model availability.
+Run these checks in a camera-capable browser on `localhost` or HTTPS. The current
+web default uses [local browser inference](browser-scene-analysis.md), not the Python
+API. First use needs public runtime/model downloads and sufficient device memory.
+No photo upload or server model is required. Physical permission/camera behavior,
+scene accuracy and phone performance remain separate from automated fixture checks.
 
 - [ ] Open `/scene-analysis` and confirm the page does not request camera permission before **Open camera** is selected.
 - [ ] Allow permission, capture indoor and outdoor scenes, and confirm the preview aspect ratio is preserved and the camera track stops after capture.
 - [ ] Analyze a capture and confirm the normalized polygon overlays the correct preview area; selection, absolute/relative area, compactness, model class confidence, ranking formula/value, evidence checklist, and caveat agree.
-- [ ] Use a deliberately defocused capture; confirm the warning offers **Retake blurry photo** and **Continue anyway**, and that continuing sends `accept_quality_warning: true`.
+- [ ] Use a deliberately defocused capture; confirm the warning offers **Retake blurry photo** and **Continue anyway**, and continuing explicitly accepts the local provisional quality warning without uploading the photo.
 - [ ] Use a smooth or dim scene and record any false warning; the threshold is provisional and requires held-out benchmark calibration.
 - [ ] Retake and leave the page during pending capture/analysis; confirm old preview/results are cleared, tracks stop, and pending requests are aborted.
 - [ ] Deny camera permission or use an unsupported/insecure context; confirm an actionable state appears without a crash.
-- [ ] Make the API unavailable, retry after restoring it, and confirm a safe error/retry state and no image data in logs or history.
+- [ ] Exercise unavailable model/runtime downloads and retry. Confirm a safe error state, no image POST or Python API fallback, and no image data in logs/history. With weights already warm, confirm analysis can proceed without additional weight requests.
 - [ ] Confirm a no-candidate response still shows its limitation caveat.
 
 | Runtime | Camera/permission | API/overlay/checklist | Cleanup | Date / notes |
 | --- | --- | --- | --- | --- |
-| Browser | Not run | Not run | Not run | Requires camera-capable browser and model-provisioned API; current default API image returns typed unavailable response |
+| Browser, public staging, 2026-11-05 | Headless Edge with fake camera/public ADE20K fixture; physical permission/hardware not tested | Grass candidate and expected cues displayed; about 25 s cold / 11 s warm; zero HTTP writes and no repeated weight requests | Local blank-JPEG fixture check verified Retake cleared preview; physical camera cleanup remains open | See [browser evidence](browser-scene-analysis.md#staging-verification-2026-11-05). This verifies the demonstrator path, not accuracy or real-phone performance. |
 
 ## Prepare a runtime and API
 
-1. Start a development or staging API with `GET /api/v1/events` and
-   `POST /api/v1/scene-analyses` reachable from the runtime. Confirm the events endpoint returns a JSON array. To exercise a nearby match,
+1. For mobile monitoring, use a development or staging API with `GET /api/v1/events`
+   reachable from the runtime; the hosted base is
+   `https://geohazard-ph-staging-api.onrender.com/api/v1`. Mobile scene overlays
+   additionally require provisioned `POST /api/v1/scene-analyses`; the typed 503
+   is expected on current staging and is not a successful analysis. Web inference
+   is separate and local. Confirm the events endpoint returns a JSON array. To exercise a nearby match,
    choose one event in that array and note its `latitude`, `longitude`, and
    `place_name`. If there are no events, mark the data-dependent checks blocked.
 2. On Android, use JDK 17 and the Android SDK (Android Studio or command-line tools),
@@ -153,7 +159,10 @@ devices and Docker Desktop was unavailable. No new runtime-result row was added.
 Restore the local API first, then connect Android hardware for steps 1-9 and the
 remaining camera cases. Complete physical iOS checks when hardware is available.
 Candidate overlay checks also require a model-provisioned API; the default 503
-response does not establish successful scene analysis. Oracle staging is deferred.
+response does not establish successful scene analysis. This is the October 30
+checkpoint; the later [split staging deployment](free-split-deployment.md) supersedes
+its local-only/Oracle-deferred milestone. The API model requirement applies to mobile,
+not the local browser worker.
 
 ## 2026-10-30 foreground and permission follow-up
 
