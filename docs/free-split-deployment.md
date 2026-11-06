@@ -15,8 +15,9 @@ published worker SHA below. Post-run API totals were 404 retained events
 (362 PHIVOLCS, 42 USGS), latest PHIVOLCS occurrence November 6 at 03:24 Manila.
 The bounding-box summary returned 399; its scope differs from the full list.
 
-The six-hour workflow is active and enabled, but GitHub returned manual runs only;
-automatic triggering is not yet accepted. Sleep/restart reconnection, mobile staging,
+The six-hour workflow recorded its first successful automatic cycle at 04:00
+Manila. The acceptance record includes the worker SHA, source counts and API
+freshness. Sustained cadence, sleep/restart reconnection, mobile staging,
 managed backup/restore, migration repeatability and fresh provider usage remain open.
 The server scene endpoint returned its expected typed 503 for a synthetic JPEG;
 that does not affect the web page's separate local inference path. The risk-profile
@@ -102,8 +103,8 @@ browser WSS delivery checks passed; sleep/restart recovery and mobile staging re
    free quota budget are verified. See [the ingestion runbook](runbook.md#free-split-staging-ingestion).
 
 The configured cron is `17 */6 * * *` in UTC: 02:17, 08:17, 14:17, and 20:17
-in Asia/Manila. GitHub can delay or skip scheduled triggers. The first automatic
-trigger has not yet been recorded as successful in this checkpoint.
+in Asia/Manila. GitHub can delay or skip scheduled triggers. The successful
+November 6 run started at 04:00 Manila. Track later runs for sustained cadence.
 Each run has a 15-minute timeout, concurrency group `staging-ingest`, one cycle
 (`INGEST_MAX_CYCLES=1`), and strict source failure reporting
 (`INGEST_FAIL_ON_SOURCE_ERROR=true`). A failed source still allows the other
@@ -174,7 +175,7 @@ Official references, reviewed 2026-11-05:
   and paid monitoring are not required by this deployment.
 
 Still open: measured post-ingestion Redis usage and Supabase size/egress;
-first scheduled-trigger evidence; reconnect after API sleep;
+sustained scheduled ingestion and freshness; reconnect after API sleep;
 physical/emulated mobile staging checks;
 repeatable split-deployment migrations; a securely stored database backup and
 tested restore procedure; deployed scene-analysis availability/resource checks.

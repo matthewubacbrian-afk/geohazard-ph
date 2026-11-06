@@ -24,9 +24,9 @@ All human-written and generated changes should follow [CODING_STANDARDS.md](CODI
 Active staging uses Render web/API, Supabase PostGIS, Upstash Redis and a bounded
 GitHub Actions ingestion worker. Start with the [deployment operations record](docs/free-split-deployment.md)
 and [latest acceptance evidence](docs/staging-acceptance-2026-11-06.md).
-Staging ingestion is configured on a six-hour schedule; automatic triggering
-remains unverified. A LIVE badge indicates WebSocket connectivity, not source
-freshness or official warning status.
+Staging ingestion is configured on a six-hour schedule. One automatic cycle
+succeeded on November 6, and sustained freshness remains an acceptance gate.
+The LIVE badge indicates WebSocket connectivity.
 
 The manual `.github/workflows/deploy-staging.yml` publishes versioned images and
 an alternative portable Compose bundle. Publishing images does not redeploy

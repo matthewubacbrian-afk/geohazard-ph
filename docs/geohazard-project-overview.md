@@ -10,9 +10,9 @@ it does not issue official warnings, predict earthquakes or determine safe place
 ## Implemented monitoring scope
 
 - Earthquake ingestion from USGS and PHIVOLCS, canonical event matching, REST API
-  and browser realtime delivery. Staging has a six-hour ingestion schedule configured;
-  manual refresh is verified and automatic triggering remains unverified. Browser
-  REST refresh and WSS do not themselves fetch new source data.
+  and browser realtime delivery. Staging has a six-hour ingestion schedule with
+  one successful automatic cycle recorded on November 6. Source refresh runs in
+  the ingestion worker.
 - PHIVOLCS volcano bulletins and sourced reference overlays. GVP is part of the
   source architecture; it is not established here as an accepted live staging feed.
 - Interactive web map, imported GEM fault references, recorded regional activity
