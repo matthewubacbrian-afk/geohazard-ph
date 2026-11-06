@@ -27,6 +27,7 @@ const mapInstance = {
   getCenter: vi.fn(() => ({ toArray: () => [121.774, 12.8797] })),
   getBearing: vi.fn(() => 0), getPitch: vi.fn(() => 0),
   flyTo: vi.fn(),
+  jumpTo: vi.fn(),
   on: vi.fn((name: string, layerOrCallback: string | ((event?: unknown) => void), maybeCallback?: (event: { features?: Array<{ properties?: Record<string, unknown> }> }) => void) => {
     if (typeof layerOrCallback === 'string' && maybeCallback) { layerHandlers.set(layerOrCallback, maybeCallback); return; }
     const callback = layerOrCallback as (event?: unknown) => void;
@@ -50,6 +51,9 @@ const mapInstance = {
 };
 const maplibreMock = vi.hoisted(() => ({
   workerUrl: undefined as string | undefined,
+  setLngLat: vi.fn(),
+  addTo: vi.fn(),
+  removeMarker: vi.fn(),
 }));
 vi.mock('maplibre-gl', () => {
   const Map = vi.fn(function Map() { return mapInstance; });
@@ -58,6 +62,13 @@ vi.mock('maplibre-gl', () => {
     default: { Map, NavigationControl },
     Map,
     NavigationControl,
+    Marker: vi.fn(function Marker() {
+      return {
+        setLngLat: maplibreMock.setLngLat.mockReturnThis(),
+        addTo: maplibreMock.addTo.mockReturnThis(),
+        remove: maplibreMock.removeMarker,
+      };
+    }),
     setWorkerUrl: vi.fn((url: string) => { maplibreMock.workerUrl = url; }),
   };
 });
@@ -88,6 +99,27 @@ beforeEach(() => {
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
 });
 describe('MapView style lifecycle', () => {
+  it('passes a wrapped map point to the pin picker and leaves event selection alone', () => {
+    const onPickLocation = vi.fn();
+    const onSelectEvent = vi.fn();
+    render(<MapView events={[event]} onPickLocation={onPickLocation} onSelectEvent={onSelectEvent} />);
+    act(() => emit('style.load'));
+    act(() => {
+      layerHandlers.get('event-circles')?.({ features: [{ properties: { eventId: event.id } }] });
+      emit('click', { lngLat: { lat: 14.6, wrap: () => ({ lng: 120.97 }) } });
+    });
+    expect(onPickLocation).toHaveBeenCalledWith({ latitude: 14.6, longitude: 120.97 });
+    expect(onSelectEvent).not.toHaveBeenCalled();
+  });
+
+  it('centers a distinct location marker and removes it when the location is cleared', () => {
+    const view = render(<MapView events={[]} location={{ latitude: 14.6, longitude: 120.97 }} />);
+    expect(maplibreMock.setLngLat).toHaveBeenCalledWith([120.97, 14.6]);
+    expect(mapInstance.jumpTo).toHaveBeenCalledWith({ center: [120.97, 14.6], zoom: 9 });
+    view.rerender(<MapView events={[]} />);
+    expect(maplibreMock.removeMarker).toHaveBeenCalled();
+  });
+
   it('configures the bundled map worker before constructing a map', () => {
     expect(maplibreMock.workerUrl).toContain('maplibre-gl-worker');
     render(<MapView events={[]} />);

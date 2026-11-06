@@ -6,6 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { HazardEvent } from "../../types/hazard";
 import type { RiskProfile } from "../../types/hazard";
+import type { LocationPoint } from "../../lib/savedLocations";
 import {
   isLandslideOverlay,
   removeLandslideOverlay,
@@ -25,6 +26,8 @@ import {
   type VolcanoOverlayState,
 } from "./volcanoOverlays";
 
+export type PickMapLocation = (point: LocationPoint, fromMapCenter?: boolean) => void;
+
 type MapViewProps = {
   events: HazardEvent[];
   faults?: StaticLayer[];
@@ -39,6 +42,8 @@ type MapViewProps = {
   basemap?: BasemapId;
   selectedEvent?: HazardEvent | null;
   onSelectEvent?: (event: HazardEvent) => void;
+  location?: LocationPoint | null;
+  onPickLocation?: PickMapLocation;
   showEvents?: boolean;
   riskProfiles?: RiskProfile[];
   activityRegions?: ActivityRegions;
@@ -111,6 +116,8 @@ export default function MapView({
   basemap = "streets",
   selectedEvent,
   onSelectEvent,
+  location,
+  onPickLocation,
   showEvents = true,
   riskProfiles = [],
   activityRegions,
@@ -223,6 +230,9 @@ export default function MapView({
   selectEventRef.current = onSelectEvent;
   const selectedEventRef = useRef(selectedEvent);
   selectedEventRef.current = selectedEvent;
+  const pickLocationRef = useRef(onPickLocation);
+  pickLocationRef.current = onPickLocation;
+  const pickingLocation = Boolean(onPickLocation);
   const clickHandlerRef = useRef<
     ((event: maplibregl.MapLayerMouseEvent) => void) | null
   >(null);
@@ -360,6 +370,7 @@ export default function MapView({
 
     if (clickHandlerRef.current) map.off("click", "event-circles", clickHandlerRef.current);
     const handleEventClick = (event: maplibregl.MapLayerMouseEvent) => {
+      if (pickLocationRef.current) return;
       const eventId = event.features?.[0]?.properties?.eventId;
       if (typeof eventId !== "string") return;
       const selected = eventsRef.current.find((row) => row.id === eventId);
@@ -498,6 +509,11 @@ export default function MapView({
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
+    const pickLocation = (event: maplibregl.MapMouseEvent) => {
+      pickLocationRef.current?.({ latitude: event.lngLat.lat, longitude: event.lngLat.wrap().lng });
+    };
+    map.on("click", pickLocation);
+
     const restoreEvents = () => {
       overlayFailed.current = false;
       if (remoteOverlaysEnabled()) overlayCallback.current?.("loading");
@@ -562,6 +578,7 @@ export default function MapView({
     appliedBasemap.current = basemap;
 
     return () => {
+      map.off("click", pickLocation);
       map.off("style.load", restoreEvents);
       map.off("error", overlayError);
       map.off("idle", overlayIdle);
@@ -685,6 +702,21 @@ export default function MapView({
     });
   }, [selectedEvent]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !location) return;
+    const center: [number, number] = [location.longitude, location.latitude];
+    const marker = new maplibregl.Marker({ color: cssVar("--surface-brand") })
+      .setLngLat(center)
+      .addTo(map);
+    map.jumpTo({ center, zoom: Math.max(map.getZoom(), 9) });
+    return () => { marker.remove(); };
+  }, [location]);
+
+  useEffect(() => {
+    if (pickingLocation) mapContainer.current?.scrollIntoView?.({ block: "nearest" });
+  }, [pickingLocation]);
+
   if (mapUnavailable) {
     return (
       <div className={styles.canvas} role="region" aria-label="Hazard event map">
@@ -703,7 +735,16 @@ export default function MapView({
       aria-label="Hazard event map"
       aria-describedby={eventSummaryId}
     >
-      <div ref={mapContainer} className={styles.container} />
+      <div ref={mapContainer} className={pickingLocation ? `${styles.container} ${styles.picking}` : styles.container} />
+      {pickingLocation && <>
+        <span className={styles.crosshair} aria-hidden="true">+</span>
+        <button type="button" className={styles.pickCenter} onClick={() => {
+          const center = mapRef.current?.getCenter().wrap();
+          if (center) onPickLocation?.({ latitude: center.lat, longitude: center.lng }, true);
+        }}>
+          Place pin at map center
+        </button>
+      </>}
       <span id={eventSummaryId} className="sr-only">
         {showEvents
           ? `${events.length} events shown on the map.`
