@@ -11,6 +11,7 @@ from ml.scene_review.evaluate import (
     EvaluationThresholds,
     compare_to_baseline,
     evaluate_model,
+    evaluate_pinned_baseline,
 )
 from ml.scene_review.manifest import (
     DatasetValidationReport,
@@ -96,7 +97,7 @@ class _Model:
 
 def _passing_gate(dataset, splits):
     return DatasetValidationReport(
-        image_count=3,
+        image_count=len(dataset.manifest.records),
         pixel_counts={},
         unsupported_pixel_counts={},
         unsupported_pixel_counts_by_split={},
@@ -220,6 +221,52 @@ def test_evaluation_decodes_pinned_detr_style_outputs_offline():
 
     assert report.per_label_iou == {"open_ground": 1.0, "obstacle": 1.0}
     assert report.per_label_recall == {"open_ground": 1.0, "obstacle": 1.0}
+
+
+def test_pinned_baseline_reports_ground_and_unavailable_cues():
+    torch = pytest.importorskip("torch")
+    truth = np.array([[0, 1, 1]], dtype=np.uint8)
+    dataset = _Dataset([truth])
+    other_record = _record("other")
+    dataset.manifest.records += (other_record,)
+    dataset.samples[0]["pixel_values"] = torch.ones((3, 1, 3))
+    candidate = _evaluate(
+        _Model([truth]),
+        dataset,
+        _thresholds(minimum_prediction_score=0.1),
+        splits=DatasetSplits(("train-only", "other"), ("validation-only",), ("0",)),
+    )
+
+    class BaselineModel:
+        config = SimpleNamespace(id2label={0: "floor-tile", 1: "person"})
+
+        def eval(self):
+            return self
+
+        def __call__(self, **kwargs):
+            return SimpleNamespace(
+                logits=torch.tensor([[[10.0, 0.0, -10.0], [8.0, 10.0, -10.0], [8.0, 0.0, 9.0]]]),
+                pred_masks=torch.tensor([[[[10.0, -10.0, -10.0]],
+                                          [[-10.0, 10.0, -10.0]],
+                                          [[-10.0, -10.0, 10.0]]]]),
+            )
+
+    comparison = evaluate_pinned_baseline(BaselineModel(), dataset, candidate)
+    assert comparison.baseline_metrics["per_label_iou"] == {
+        "open_ground": 1.0, "obstacle": None,
+    }
+    assert comparison.baseline_metrics["false_visual_cue_rate"] is None
+    assert comparison.per_label_metric_deltas["open_ground"]["iou"] == 0.0
+    assert comparison.per_label_metric_deltas["obstacle"]["iou"] is None
+    assert comparison.open_ground_component_coverage_delta == 0.0
+    assert not comparison.passed_required_non_regression
+    assert "obstacle iou comparison unavailable" in comparison.failures
+    assert "false visual-cue rate comparison unavailable" in comparison.failures
+
+    changed_dataset = _Dataset([truth], records=[other_record])
+    changed_dataset.manifest = dataset.manifest
+    with pytest.raises(ValueError, match="same held-out"):
+        evaluate_pinned_baseline(BaselineModel(), changed_dataset, candidate)
 
 
 def test_evaluation_requires_test_split_passing_gate_and_predeclared_thresholds():

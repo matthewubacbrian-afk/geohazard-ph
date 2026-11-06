@@ -35,15 +35,15 @@ Oracle/colocated Compose is an alternative, not the active staging topology.
 The [training PR](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
 includes dataset and rights validation, source-group splits, offline training,
 held-out evaluation, and versioned artifact export. Synthetic fixtures exercise
-the pipeline and export checks. The evaluation command currently produces a
-candidate-only report. Export requires a passing comparison with the pinned
-baseline on the identical held-out images. The CLI still needs a mapping from
-baseline outputs to the Scene Review label set and a comparison step.
+the pipeline and export checks. The offline evaluation CLI can compare the
+pinned baseline on identical held-out images and masks. It reports ground
+metrics, unavailable cue metrics and the pinned model revision. Export still
+requires a complete passing comparison.
 
 Inspection of the local pinned DETR configuration at `d53b52a7` found floor
 and ground categories used by the current candidate detector. Its taxonomy has
-no direct glass-facade, overhead-line, or visible-building-damage class. The
-comparison needs to report which target labels the baseline can evaluate.
+no direct glass-facade, overhead-line, or visible-building-damage class. A
+release comparison requires a baseline that covers the declared cue metrics.
 
 The existing source-rights review has not cleared images for training. Real-scene
 evaluation and any artifact release also require approved inputs and thresholds.

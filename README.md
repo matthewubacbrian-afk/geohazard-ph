@@ -348,6 +348,7 @@ scene-review evaluate --manifest data/manifest.json --data-root data --splits da
   --sufficiency-policy data/sufficiency-policy.json `
   --checkpoint model_artifacts/scene_review/runs/run-1/checkpoint-epoch-1 `
   --training-metadata model_artifacts/scene_review/runs/run-1/training_metadata.json `
+  --baseline-model-cache model-cache `
   --thresholds data/evaluation-thresholds.json --output data/evaluation.json
 Set-Location ..
 ```
@@ -358,12 +359,15 @@ prints aggregate counts, not per-image identifiers, source URLs, attribution,
 or local paths. Training and evaluation must pass their declared gates, and
 export requires training from a clean, committed code revision. Exports contain
 model weights, model/processor configuration, and scrubbed provenance; version
-directories cannot be overwritten. The current `evaluate` command emits
-candidate metrics without a baseline comparison, so `export` rejects that report.
-Do not run the export command until the pinned baseline has been evaluated on the
-same held-out samples and the comparison is attached to the candidate report.
-The CLI does not yet generate this comparison; wiring the baseline model's label
-mapping and evaluation into the offline command is a follow-up. As of
+directories cannot be overwritten. With `--baseline-model-cache`, evaluation
+loads the pinned pretrained DETR and its processor offline and compares the
+same held-out images and masks. The baseline maps floor and ground classes to
+`open_ground`. The report identifies its model revision, comparable labels,
+and unsupported labels. Cue metrics without baseline support are null.
+The report is written even when the comparison fails and the command exits 2.
+Export requires all comparison metrics, including a supported false visual-cue
+rate. The current pinned baseline cannot satisfy that requirement. Omitting the
+option still produces candidate metrics for diagnostics. As of
 2026-10-16, no candidate image source is approved and no evaluation thresholds
 have been declared, so real-scene training and model-quality evaluation remain
 pending. Synthetic pipeline tests verify mechanics only and do not establish

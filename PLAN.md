@@ -128,7 +128,7 @@ audit result is not app-safety or device evidence.
 - [ ] P2 mobile supported framework migration (after current-app runtime and staging evidence): decide the Android SDK 24/iOS 15.1 support floor, then migrate React Native/React/Metro/native templates and tools coherently to a supported release; verify complete CI and release artifacts.
 - [ ] P2 mobile post-migration disposition: repeat advisory/artifact analysis and record Android/iOS device-flow evidence before release acceptance.
 - [ ] P2 scene training integration: review PR #36 and rerun all checks on the branch reconciled with main. Preserve the baseline comparison and data rights gates.
-- [ ] P2 scene baseline CLI: implement same-held-out-sample baseline comparison with explicit label mapping; keep export fail-closed and test incomplete/mismatched comparisons. Derive a focused implementation plan from the integrated training code first.
+- [x] P2 scene baseline CLI: PR #36 compares the pinned DETR baseline and candidate on the same held-out inputs. It reports ground metrics and marks unsupported cue metrics unavailable, keeping export blocked. See the [implementation plan](docs/superpowers/plans/2026-11-06-scene-review-baseline-comparison.md).
 - [x] P2 setup documentation consistency: corrected the three Windows backend executable paths to match `backend/.venv`, refreshed the mobile summary, and reconciled merged CI evidence. Full local startup remains gated by the unavailable Docker daemon.
 - [ ] P3 release preparation: run available smoke checks, prepare exact operator/device/domain-review evidence requirements, and record unresolved external gates.
 

@@ -223,7 +223,8 @@ def test_export_rejects_failed_gate_evaluation_and_overwrite(tmp_path):
         export_artifact(**args)
 
 
-def test_export_rejects_evaluation_without_baseline_comparison(tmp_path):
+@pytest.mark.parametrize("with_unavailable_cue_rate", [False, True])
+def test_export_requires_complete_baseline_comparison(tmp_path, with_unavailable_cue_rate):
     checkpoint = tmp_path / "checkpoint"
     checkpoint.mkdir()
     (checkpoint / "config.json").write_text('{"model_type":"detr"}', encoding="utf-8")
@@ -233,10 +234,18 @@ def test_export_rejects_evaluation_without_baseline_comparison(tmp_path):
     (checkpoint / "model.safetensors").write_bytes(b"weights")
     metadata = _training_metadata()
     report = _Evaluation()
-    report.baseline_comparison = None
+    if with_unavailable_cue_rate:
+        report.baseline_comparison["baseline_metrics"]["false_visual_cue_rate"] = None
+        report.baseline_comparison["false_visual_cue_rate_delta"] = None
+        report.baseline_comparison["passed_required_non_regression"] = False
+        report.baseline_comparison["failures"] = ["false visual-cue rate comparison unavailable"]
+        expected_error = "baseline comparison is incomplete"
+    else:
+        report.baseline_comparison = None
+        expected_error = "baseline comparison is required"
     _bind_checkpoint(checkpoint, metadata, report)
 
-    with pytest.raises(ValueError, match="baseline comparison is required"):
+    with pytest.raises(ValueError, match=expected_error):
         export_artifact(
             checkpoint_path=checkpoint,
             evaluation_report=report,

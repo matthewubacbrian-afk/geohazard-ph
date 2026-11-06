@@ -31,6 +31,10 @@ _SLICE_CATEGORIES = {
     "image_quality": frozenset({"good", "fair", "poor", "unknown"}),
 }
 _METRICS = ("iou", "precision", "recall")
+_BASELINE_GROUND_CLASSES = frozenset({
+    "floor-other", "floor-stone", "floor-tile", "floor-wood",
+    "ground-other", "road", "pavement", "grass", "gravel",
+})
 
 
 @dataclass(frozen=True)
@@ -287,26 +291,7 @@ def evaluate_model(
         != split_assignments_fingerprint(splits)
     ):
         raise ValueError("sufficiency report must cover the same manifest and split assignment")
-    test_input_identity = {
-        "records": sorted(
-            (
-                record.image_id,
-                record.image_sha256.lower(),
-                record.mask_sha256.lower(),
-            )
-            for record in records
-        ),
-        "schema_version": getattr(manifest, "schema_version", None),
-        "label_schema_version": getattr(manifest, "label_schema_version", None),
-        "supported_labels": tuple(sorted(labels)),
-    }
-    test_split_sha256 = hashlib.sha256(
-        json.dumps(
-            test_input_identity,
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
-    ).hexdigest()
+    test_split_sha256 = _test_split_fingerprint(manifest, records, labels)
 
     aggregate_counts = {label: [0, 0, 0, 0] for label in labels}
     slice_counts: dict[str, dict[str, dict[str, list[int]]]] = {
@@ -522,6 +507,80 @@ def evaluate_model(
     )
 
 
+def _test_split_fingerprint(
+    manifest: object, records: tuple, labels: tuple[str, ...],
+) -> str:
+    identity = {
+        "records": sorted(
+            (record.image_id, record.image_sha256.lower(), record.mask_sha256.lower())
+            for record in records
+        ),
+        "schema_version": getattr(manifest, "schema_version", None),
+        "label_schema_version": getattr(manifest, "label_schema_version", None),
+        "supported_labels": tuple(sorted(labels)),
+    }
+    return hashlib.sha256(
+        json.dumps(identity, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def evaluate_pinned_baseline(
+    model: object, dataset: object, candidate: EvaluationReport,
+) -> BaselineComparison:
+    """Compare mapped ground metrics on the candidate's exact held-out inputs."""
+    manifest = getattr(dataset, "_manifest", getattr(dataset, "manifest", None))
+    labels = candidate.supported_labels
+    records = _record_groups(dataset)
+    if (
+        getattr(manifest, "supported_labels", None) != labels
+        or manifest_fingerprint(manifest) != candidate.manifest_sha256
+        or _test_split_fingerprint(manifest, records, labels) != candidate.test_split_sha256
+    ):
+        raise ValueError("candidate and baseline must evaluate the same held-out inputs")
+    id_to_label = getattr(getattr(model, "config", None), "id2label", None)
+    if not isinstance(id_to_label, Mapping) or set(id_to_label) != set(range(len(id_to_label))):
+        raise ValueError("baseline requires a contiguous DETR class taxonomy")
+    ground_id = LABEL_IDS["open_ground"]
+    class_ids = tuple(
+        ground_id if id_to_label[index] in _BASELINE_GROUND_CLASSES else BACKGROUND_ID
+        for index in range(len(id_to_label))
+    )
+    if ground_id not in class_ids:
+        raise ValueError("baseline taxonomy is missing the mapped ground classes")
+
+    ground_counts = [0, 0, 0, 0]
+    covered = total = 0
+    for index in range(len(records)):
+        sample = dataset[index]
+        truth = np.asarray(sample["run_mask"])
+        valid = np.asarray(sample.get("evaluation_mask", truth != IGNORE_ID), dtype=bool)
+        if truth.ndim != 2 or valid.shape != truth.shape:
+            raise ValueError("evaluation masks must be two-dimensional and aligned")
+        valid = valid & (truth != IGNORE_ID)
+        prediction = _predict_detr_mask(
+            model, sample, truth.shape, class_ids, candidate.thresholds.minimum_prediction_score,
+        )
+        for position, count in enumerate(_counts_for_label(truth, prediction, valid, ground_id)):
+            ground_counts[position] += count
+        matched, actual, _, _ = _component_metrics(
+            truth, prediction, valid, candidate.thresholds.open_ground_component_overlap_iou,
+        )
+        covered += matched
+        total += actual
+
+    ground = _metrics(tuple(ground_counts))
+    return _compare_baseline_metrics(candidate, {
+        **{
+            f"per_label_{metric}": {
+                label: ground[metric] if label == "open_ground" else None for label in labels
+            }
+            for metric in _METRICS
+        },
+        "false_visual_cue_rate": None,
+        "open_ground_component_coverage": covered / total if total else None,
+    })
+
+
 def _predict_mask(
     model: object,
     sample: Mapping[str, Any],
@@ -536,6 +595,18 @@ def _predict_mask(
             raise ValueError("predict_scene_mask must return a two-dimensional integer mask")
         return prediction
 
+    return _predict_detr_mask(
+        model, sample, target_shape, tuple(LABEL_IDS[label] for label in labels), minimum_score,
+    )
+
+
+def _predict_detr_mask(
+    model: object,
+    sample: Mapping[str, Any],
+    target_shape: tuple[int, int],
+    class_ids: tuple[int, ...],
+    minimum_score: float,
+) -> np.ndarray:
     try:
         import torch
         from torch.nn import functional
@@ -555,21 +626,23 @@ def _predict_mask(
         output = model(**arguments)
     logits = output.logits[0]
     masks = output.pred_masks[0]
-    class_probabilities = logits.softmax(dim=-1)[:, : len(labels)]
-    scores, class_indices = class_probabilities.max(dim=-1)
+    if logits.shape[-1] != len(class_ids) + 1:
+        raise ValueError("DETR logits must match the model taxonomy and no-object class")
+    scores, class_indices = logits.softmax(dim=-1).max(dim=-1)
     masks = functional.interpolate(
         masks[:, None], size=target_shape, mode="bilinear", align_corners=False
     )[:, 0].sigmoid()
     score_map = torch.zeros(target_shape, dtype=torch.float32, device=masks.device)
     class_map = torch.full(target_shape, BACKGROUND_ID, dtype=torch.int64, device=masks.device)
     for query in range(len(scores)):
-        if scores[query] < minimum_score:
+        class_index = int(class_indices[query])
+        if class_index == len(class_ids) or scores[query] < minimum_score:
             continue
         selected = masks[query] >= 0.5
         weighted_score = masks[query] * scores[query]
         replace = selected & (weighted_score > score_map)
         score_map[replace] = weighted_score[replace]
-        class_map[replace] = LABEL_IDS[labels[int(class_indices[query])]]
+        class_map[replace] = class_ids[class_index]
     return class_map.cpu().numpy()
 
 
@@ -590,6 +663,19 @@ def compare_to_baseline(
         != baseline.thresholds.open_ground_component_overlap_iou
     ):
         raise ValueError("candidate and baseline must use the same prediction and overlap thresholds")
+    return _compare_baseline_metrics(candidate, {
+        "per_label_iou": dict(baseline.per_label_iou),
+        "per_label_precision": dict(baseline.per_label_precision),
+        "per_label_recall": dict(baseline.per_label_recall),
+        "false_visual_cue_rate": baseline.false_visual_cue_rate,
+        "open_ground_component_coverage": baseline.open_ground_component_coverage,
+    })
+
+
+def _compare_baseline_metrics(
+    candidate: EvaluationReport, baseline_metrics: Mapping[str, Any],
+) -> BaselineComparison:
+    thresholds = candidate.thresholds
     if not thresholds.maximum_metric_regression_by_label:
         raise ValueError("baseline non-regression thresholds must be declared")
     deltas: dict[str, dict[str, float | None]] = {}
@@ -600,9 +686,9 @@ def compare_to_baseline(
             raise ValueError("baseline non-regression threshold missing for supported label")
         deltas[label] = {}
         for metric_name, candidate_values, baseline_values in (
-            ("iou", candidate.per_label_iou, baseline.per_label_iou),
-            ("precision", candidate.per_label_precision, baseline.per_label_precision),
-            ("recall", candidate.per_label_recall, baseline.per_label_recall),
+            ("iou", candidate.per_label_iou, baseline_metrics["per_label_iou"]),
+            ("precision", candidate.per_label_precision, baseline_metrics["per_label_precision"]),
+            ("recall", candidate.per_label_recall, baseline_metrics["per_label_recall"]),
         ):
             candidate_value, baseline_value = candidate_values[label], baseline_values[label]
             delta = (
@@ -611,38 +697,34 @@ def compare_to_baseline(
                 else None
             )
             deltas[label][metric_name] = delta
-            if delta is None or delta < -allowed_drop:
+            if delta is None:
+                failures.append(f"{label} {metric_name} comparison unavailable")
+            elif delta < -allowed_drop:
                 failures.append(f"{label} {metric_name} regressed beyond declared maximum")
+    baseline_false_cue_rate = baseline_metrics["false_visual_cue_rate"]
     false_cue_delta = (
-        candidate.false_visual_cue_rate - baseline.false_visual_cue_rate
+        candidate.false_visual_cue_rate - baseline_false_cue_rate
         if candidate.false_visual_cue_rate is not None
-        and baseline.false_visual_cue_rate is not None
+        and baseline_false_cue_rate is not None
         else None
     )
-    if (
-        false_cue_delta is None
-        or false_cue_delta > thresholds.maximum_false_cue_rate_regression
-    ):
+    if false_cue_delta is None:
+        failures.append("false visual-cue rate comparison unavailable")
+    elif false_cue_delta > thresholds.maximum_false_cue_rate_regression:
         failures.append("false visual-cue rate regressed beyond declared maximum")
+    baseline_coverage = baseline_metrics["open_ground_component_coverage"]
     coverage_delta = (
-        candidate.open_ground_component_coverage - baseline.open_ground_component_coverage
+        candidate.open_ground_component_coverage - baseline_coverage
         if candidate.open_ground_component_coverage is not None
-        and baseline.open_ground_component_coverage is not None
+        and baseline_coverage is not None
         else None
     )
-    if (
-        coverage_delta is None
-        or coverage_delta < -thresholds.maximum_open_ground_component_coverage_regression
-    ):
+    if coverage_delta is None:
+        failures.append("open-ground component coverage comparison unavailable")
+    elif coverage_delta < -thresholds.maximum_open_ground_component_coverage_regression:
         failures.append("open-ground component coverage regressed beyond declared maximum")
     return BaselineComparison(
-        {
-            "per_label_iou": dict(baseline.per_label_iou),
-            "per_label_precision": dict(baseline.per_label_precision),
-            "per_label_recall": dict(baseline.per_label_recall),
-            "false_visual_cue_rate": baseline.false_visual_cue_rate,
-            "open_ground_component_coverage": baseline.open_ground_component_coverage,
-        },
+        baseline_metrics,
         deltas,
         false_cue_delta,
         coverage_delta,

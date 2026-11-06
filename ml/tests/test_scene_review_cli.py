@@ -1,4 +1,5 @@
 import json
+import sys
 from dataclasses import dataclass
 from types import SimpleNamespace
 
@@ -12,6 +13,13 @@ class _FakeEvaluation:
     passed_thresholds: bool
     sample_counts: dict
     threshold_failures: tuple = ()
+    baseline_comparison: object = None
+    test_split_sha256: str = "a" * 64
+
+
+@dataclass
+class _FakeComparison:
+    passed_required_non_regression: bool = False
 
 
 def _policy():
@@ -103,6 +111,40 @@ def test_cli_commands_report_counts_and_keep_artifact_root_fixed(tmp_path, monke
     ]) == 0
     assert json.loads(evaluation_path.read_text(encoding="utf-8"))["passed_thresholds"]
 
+    evaluation_inputs = []
+    baseline_cache = tmp_path / "model-cache"
+    baseline_model, baseline_processor = object(), object()
+
+    def make_dataset(dataset_manifest, data_root, ids, image_processor):
+        evaluation_inputs.append((dataset_manifest, data_root, ids, image_processor))
+        return object()
+
+    def load_baseline(cache):
+        assert cache == baseline_cache
+        return baseline_model, baseline_processor
+
+    def compare_baseline(model, dataset, candidate):
+        assert model is baseline_model
+        assert candidate.passed_thresholds
+        return _FakeComparison()
+
+    monkeypatch.setattr(cli, "SceneReviewDataset", make_dataset)
+    monkeypatch.setattr(cli, "_make_baseline_inputs", load_baseline)
+    monkeypatch.setattr(cli, "evaluate_pinned_baseline", compare_baseline)
+    comparison_path = tmp_path / "comparison.json"
+    assert cli.main([
+        "evaluate", "--manifest", "m.json", "--data-root", str(tmp_path),
+        "--splits", str(splits_file), "--sufficiency-policy", "policy.json",
+        "--checkpoint", str(tmp_path / "checkpoint"), "--thresholds", "thresholds.json",
+        "--training-metadata", str(training_metadata_path),
+        "--baseline-model-cache", str(baseline_cache), "--output", str(comparison_path),
+    ]) == 2
+    report = json.loads(comparison_path.read_text(encoding="utf-8"))
+    assert report["baseline_comparison"]["passed_required_non_regression"] is False
+    assert report["baseline_coverage"]["comparable_labels"] == ["open_ground"]
+    assert evaluation_inputs[0][:3] == evaluation_inputs[1][:3] == (manifest, tmp_path, ("c",))
+    assert evaluation_inputs[1][3] is baseline_processor
+
     artifact_root = tmp_path / "repo" / "ml" / "model_artifacts" / "scene_review"
     monkeypatch.setattr(cli, "ARTIFACT_ROOT", artifact_root)
     def fake_export(**kwargs):
@@ -129,6 +171,30 @@ def test_cli_requires_predeclared_sufficiency_policy_for_training(capsys):
         "--splits", "splits.json", "--model-cache", "cache", "--output-dir", "run",
     ]) == 2
     assert "invalid command arguments" in capsys.readouterr().err.lower()
+
+
+def test_baseline_loader_pins_cached_revision_and_disables_backbone_fetch(tmp_path, monkeypatch):
+    calls = {}
+
+    def loader(name):
+        def load(model_id, **options):
+            calls[name] = model_id, options
+            return SimpleNamespace()
+
+        return SimpleNamespace(from_pretrained=load)
+
+    monkeypatch.setitem(sys.modules, "transformers", SimpleNamespace(
+        DetrConfig=loader("config"),
+        DetrForSegmentation=loader("model"),
+        DetrImageProcessor=loader("processor"),
+    ))
+    cli._make_baseline_inputs(tmp_path)
+    for model_id, options in calls.values():
+        assert model_id == "facebook/detr-resnet-50-panoptic"
+        assert options["revision"] == "d53b52a799403a8867920f82c869e40732b47037"
+        assert options["cache_dir"] == tmp_path
+        assert options["local_files_only"] is True
+    assert calls["model"][1]["config"].use_pretrained_backbone is False
 
 
 def test_argparse_errors_do_not_echo_private_argument_values(capsys):

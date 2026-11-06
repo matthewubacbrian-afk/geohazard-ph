@@ -12,14 +12,19 @@ from typing import Any
 
 from ml.scene_review.artifacts import export_artifact
 from ml.scene_review.dataset import SceneReviewDataset
-from ml.scene_review.evaluate import EvaluationThresholds, evaluate_model
+from ml.scene_review.evaluate import EvaluationThresholds, evaluate_model, evaluate_pinned_baseline
 from ml.scene_review.manifest import (
     SufficiencyPolicy,
     load_manifest,
     validate_dataset,
 )
 from ml.scene_review.splits import DatasetSplits, make_grouped_splits, splits_to_json
-from ml.scene_review.train import TrainingConfig, train_model
+from ml.scene_review.train import (
+    DEFAULT_MODEL_ID,
+    DEFAULT_MODEL_REVISION,
+    TrainingConfig,
+    train_model,
+)
 
 ARTIFACT_ROOT = Path(__file__).resolve().parents[3] / "model_artifacts" / "scene_review"
 
@@ -51,10 +56,8 @@ def _parser() -> argparse.ArgumentParser:
     train.add_argument("--epochs", type=int, default=5)
     train.add_argument("--batch-size", type=int, default=2)
     train.add_argument("--learning-rate", type=float, default=1e-5)
-    train.add_argument("--model-id", default="facebook/detr-resnet-50-panoptic")
-    train.add_argument(
-        "--model-revision", default="d53b52a799403a8867920f82c869e40732b47037"
-    )
+    train.add_argument("--model-id", default=DEFAULT_MODEL_ID)
+    train.add_argument("--model-revision", default=DEFAULT_MODEL_REVISION)
     evaluate = commands.add_parser("evaluate", help="evaluate an explicit held-out local split")
     _add_manifest_root(evaluate)
     evaluate.add_argument("--splits", type=Path, required=True)
@@ -65,6 +68,10 @@ def _parser() -> argparse.ArgumentParser:
         help="metadata file produced by the matching training run",
     )
     evaluate.add_argument("--thresholds", type=Path, required=True)
+    evaluate.add_argument(
+        "--baseline-model-cache", type=Path,
+        help="compare against the pinned pretrained DETR revision in this local cache",
+    )
     evaluate.add_argument("--output", type=Path, required=True)
     export = commands.add_parser("export", help="write an immutable reviewed model artifact")
     export.add_argument("--checkpoint", type=Path, required=True)
@@ -188,15 +195,38 @@ def _run_evaluate(args: argparse.Namespace) -> int:
         training_metadata=training_metadata,
         checkpoint_path=args.checkpoint,
     )
-    output = _json_value(report)
-    _write_new_file(args.output, json.dumps(output, sort_keys=True, indent=2) + "\n")
-    _print_json({
+    summary = {
         "status": "evaluated",
         "passed_thresholds": report.passed_thresholds,
         "evaluated_sample_count": report.sample_counts.get("evaluated", 0),
         "threshold_failure_count": len(report.threshold_failures),
-    })
-    return 0 if report.passed_thresholds else 2
+    }
+    baseline_passed = True
+    output = asdict(report)
+    if args.baseline_model_cache is not None:
+        baseline_model, baseline_processor = _make_baseline_inputs(args.baseline_model_cache)
+        baseline_dataset = SceneReviewDataset(
+            manifest, args.data_root, splits.test_ids, image_processor=baseline_processor
+        )
+        comparison = evaluate_pinned_baseline(baseline_model, baseline_dataset, report)
+        output["baseline_comparison"] = asdict(comparison)
+        output["baseline_coverage"] = {
+            "model_id": DEFAULT_MODEL_ID,
+            "model_revision": DEFAULT_MODEL_REVISION,
+            "test_split_sha256": report.test_split_sha256,
+            "comparable_labels": [
+                label for label in manifest.supported_labels if label == "open_ground"
+            ],
+            "unsupported_labels": [
+                label for label in manifest.supported_labels if label != "open_ground"
+            ],
+            "false_visual_cue_rate_available": False,
+        }
+        baseline_passed = comparison.passed_required_non_regression
+        summary["passed_baseline_comparison"] = baseline_passed
+    _write_new_file(args.output, json.dumps(_json_value(output), sort_keys=True, indent=2) + "\n")
+    _print_json(summary)
+    return 0 if report.passed_thresholds and baseline_passed else 2
 
 
 def _run_export(args: argparse.Namespace) -> int:
@@ -259,6 +289,23 @@ def _make_evaluation_inputs(checkpoint: Path) -> tuple[object, object]:
         raise RuntimeError("install the scene-review optional extra") from exc
     model = DetrForSegmentation.from_pretrained(checkpoint, local_files_only=True)
     processor = DetrImageProcessor.from_pretrained(checkpoint, local_files_only=True)
+    return model, processor
+
+
+def _make_baseline_inputs(cache: Path) -> tuple[object, object]:
+    try:
+        from transformers import DetrConfig, DetrForSegmentation, DetrImageProcessor
+    except ImportError as exc:
+        raise RuntimeError("install the scene-review optional extra") from exc
+    options = {
+        "revision": DEFAULT_MODEL_REVISION,
+        "cache_dir": cache,
+        "local_files_only": True,
+    }
+    config = DetrConfig.from_pretrained(DEFAULT_MODEL_ID, **options)
+    config.use_pretrained_backbone = False
+    model = DetrForSegmentation.from_pretrained(DEFAULT_MODEL_ID, config=config, **options)
+    processor = DetrImageProcessor.from_pretrained(DEFAULT_MODEL_ID, **options)
     return model, processor
 
 
