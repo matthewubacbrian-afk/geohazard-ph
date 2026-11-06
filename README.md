@@ -438,6 +438,18 @@ The Epic 2 integration and event-feed hover fixes are already merged. Standards
 remediation adds consistent API errors, structured startup logging, portable ML tests,
 Testing Library web tests, and a typed mobile API mapping boundary.
 
+## Explore earthquakes near a location
+
+In the web dashboard, open **Map view → My locations**. Choose **Use my location**
+and grant your browser permission, or choose **Drop a pin** and select a point on
+the map. You can also pan the map and choose **Place pin at map center**.
+Device location requires a secure context such as HTTPS or localhost.
+
+Choose a radius to see recent recorded earthquakes from the events loaded under
+the current dashboard filters. Each result shows distance from the pin, reported
+magnitude, and time. The list shows recorded activity only. Enter a name and choose
+**Save location** to reopen the point and radius later in the same browser.
+
 ## Epic 4: Mobile nearby alerts
 
 The mobile starter now has **Nearby**, **Saved locations**, and **Alerts** tabs. Enter

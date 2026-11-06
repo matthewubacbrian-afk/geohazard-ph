@@ -105,7 +105,7 @@ Risk labels are descriptive statistical profiles of historical records. They are
 | --- | --- |
 | events summary | `EventSummary`, endpoint `/events/summary` — region/bounding-box rollup: `event_count`, `avg_magnitude`, `max_magnitude`, `latest_occurred_at`. |
 | offline cache | `mobile/src/services/offlineCache.ts` — AsyncStorage-backed JSON values for saved locations, API settings, and the latest event list. |
-| saved location | `SavedLocation` in `mobile/src/types/hazard.ts` — user-entered name and coordinates with a `radius_km` threshold for foreground nearby-event matching. |
+| saved location | `SavedLocation` — named coordinates with a `radius_km` threshold for nearby-event matching. Mobile stores them on the device for foreground alerts. The web dashboard stores them in the browser for exploring recorded earthquakes. |
 | radius_km | `radius_km` on `SavedLocation` — user-selected distance in kilometers from saved coordinates; it is not an official hazard boundary. |
 | risk profile explorer | `web/src/pages/RiskProfileExplorer.tsx` — dashboard panel for region lookup and profile cards. |
 | realtime alerts | Mobile foreground view of fetched events matching saved-location radii; background push remains unconfigured (`mobile/src/services/pushNotifications.ts`). |
