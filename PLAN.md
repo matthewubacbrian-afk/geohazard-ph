@@ -23,7 +23,7 @@ future code changes; use an isolated feature branch and Conventional Commits.
 | 4: mobile | Foreground Android QA/local API acceptance; native CI; Retake repair merged | Current-build staging and physical Retake/camera checks; physical iOS; unresolved advisory/framework decisions; background push/store release deferred |
 | 5: regional profiles | Historical training, validation/sensitivity reports and serving contracts | Domain-reviewed policy, reproducible versioned inputs and a newly validated/approved export; current artifact held |
 | 6: stretch | NASA susceptibility reference; InSAR metadata screening | InSAR footprint/reuse, processing and independent validation; outside core acceptance milestone |
-| 7: scene review | Local browser inference deployed and exercised on a fixture | Representative real-scene evaluation, blur calibration and phone performance; mobile/server inference remains unprovisioned; PR #36 conflicts |
+| 7: scene review | Local browser inference deployed and exercised on a fixture | Representative real-scene evaluation, blur calibration, phone performance, mobile/server provisioning, and same-sample baseline comparison in the offline training track |
 | Staging | Render web/API + Supabase PostGIS + Upstash; published worker and manual ingestion | Automatic-trigger evidence, recovery, mobile staging, managed backup/restore, migration repeatability and current usage |
 
 See [project status](docs/project-status.md), [deployment operations](docs/free-split-deployment.md)
@@ -59,8 +59,8 @@ The browser scene worker does not provision the separate mobile Python model.
    do not silently mark GEM/raster coverage nationally complete.
 5. **P2: Evaluate Epic 7.** Establish same-sample baseline comparison, lawful and
    representative evaluation images, blur/candidate metrics and physical phone
-   performance. Review/reconcile PR #36 before integration; do not merge conflicts
-   mechanically or treat the demonstrator's rankings as safety probabilities.
+   performance. Review PR #36 and its fresh CI before integration. Treat the
+   demonstrator's rankings as visible scene cues.
 6. **Deferred: InSAR research.** Resume only after reusable footprint, reproducible
    source inputs and a time-aligned independent reference exist. No download or
    processing is required to finish the core monitoring pilot.
@@ -127,8 +127,8 @@ audit result is not app-safety or device evidence.
 - [ ] P2 mobile New Architecture device-flow acceptance: verify saved-location persistence, offline cache, camera permission/capture, and SVG overlay rendering on actual Android/iOS devices with the exact app commit. CI simulator builds do not establish these flows.
 - [ ] P2 mobile supported framework migration (after current-app runtime and staging evidence): decide the Android SDK 24/iOS 15.1 support floor, then migrate React Native/React/Metro/native templates and tools coherently to a supported release; verify complete CI and release artifacts.
 - [ ] P2 mobile post-migration disposition: repeat advisory/artifact analysis and record Android/iOS device-flow evidence before release acceptance.
-- [ ] P2 scene training integration: review PR #36, resolve documentation conflicts while preserving Epic 6 records, rerun all checks and merge only after fresh CI.
-- [ ] P2 scene baseline CLI: implement same-held-out-sample baseline comparison with explicit label mapping; keep export fail-closed and test incomplete/mismatched comparisons. Derive a focused implementation plan from the integrated training code first.
+- [ ] P2 scene training integration: review PR #36 and rerun all checks on the branch reconciled with main. Preserve the baseline comparison and data rights gates.
+- [x] P2 scene baseline CLI: PR #36 compares the pinned DETR baseline and candidate on the same held-out inputs. It reports ground metrics and marks unsupported cue metrics unavailable, keeping export blocked. See the [implementation plan](docs/superpowers/plans/2026-11-06-scene-review-baseline-comparison.md).
 - [x] P2 setup documentation consistency: corrected the three Windows backend executable paths to match `backend/.venv`, refreshed the mobile summary, and reconciled merged CI evidence. Full local startup remains gated by the unavailable Docker daemon.
 - [ ] P3 release preparation: run available smoke checks, prepare exact operator/device/domain-review evidence requirements, and record unresolved external gates.
 

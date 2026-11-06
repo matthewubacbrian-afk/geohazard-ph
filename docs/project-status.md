@@ -27,8 +27,28 @@ Oracle/colocated Compose is an alternative, not the active staging topology.
 | Epic 4: Mobile nearby alerts and offline cache | Foreground Android flow verified on dated builds; release acceptance incomplete | Saved locations, radius matching, ordered URL-scoped cache and native CI are implemented. October 31 standalone QA passed foreground/cache/restart/recovery checks against the local API. PR #82 merged the Retake repair with 71 mobile tests; a fresh binary's physical Retake acceptance remains open. Current-build staging, physical iOS, unresolved advisory/framework decisions and post-migration evidence remain. Background push, signing and store publishing are deferred. See [QA evidence](android-qa-acceptance-2026-10-31.md), [device checklist](mobile-runtime-smoke-test.md), and [advisory evidence](mobile-advisory-attack-path-gates-2026-10-21.md). Historical audit totals are not fresh security clearance. |
 | Epic 5: Regional seismic risk profiles | Pipeline/validation implemented; scientific export held | A local bundle produced 17 schema-valid profiles, but sparse-region sensitivity remains material: excluding NCR at count threshold 4 changed 10 of 16 included labels. No cutoff or export approval is selected. [Domain review](epic5-domain-review-decision-record.md), versioned inputs, policy and a newly validated/approved artifact remain required. [Recorded activity shading](data-sources.md#recorded-regional-earthquake-activity-web) counts events and does not complete this epic or lift the hold. |
 | Epic 6: Landslide and InSAR stretch work | NASA reference overlay implemented; InSAR research-only | PR #37 delivered the coarse informational overlay. InSAR screening found candidate metadata, but no reusable source-area footprint, independent time-aligned validation, download, processing or displacement result. Keep InSAR outside the core monitoring acceptance milestone; see [screening report](epic6-insar-pilot-report.md). |
-| Epic 7: Camera scene review | Browser demonstrator deployed and exercised; mobile/server inference unprovisioned | PR #89 delivered local quantized browser inference; November 5 public staging tests displayed a grass candidate, about 25 seconds cold / 11 seconds warm, with zero photo uploads. These are fixture-path checks, not accuracy evidence. Physical phone/browser performance, representative-scene evaluation and blur calibration remain. Mobile still uses the separate Python endpoint whose default image lacks runtime/weights. PR #36 remains open and conflicting. See [browser architecture/evidence](browser-scene-analysis.md), [model preflight](runbook.md#epic-7-model-packaging-preflight-2026-10-13), and [device checklist](mobile-runtime-smoke-test.md). |
+| Epic 7: Camera scene review | Browser demonstrator deployed and exercised; mobile/server inference unprovisioned | PR #89 delivered local quantized browser inference; November 5 public staging tests displayed a grass candidate, about 25 seconds cold / 11 seconds warm, with zero photo uploads. These are fixture-path checks, not accuracy evidence. Physical phone/browser performance, representative-scene evaluation and blur calibration remain. Mobile still uses the separate Python endpoint whose default image lacks runtime/weights. The offline training pipeline is under review in PR #36. See [browser architecture/evidence](browser-scene-analysis.md), [model preflight](runbook.md#epic-7-model-packaging-preflight-2026-10-13), and [device checklist](mobile-runtime-smoke-test.md). |
 | Free split staging | Public API/web and manual ingestion live; operational acceptance incomplete | Worker image `5c33057841dd9ae1a2df91926b626b94a78bed0a` published successfully. November 6 health, read endpoints and exact allowed-origin CORS passed; ingestion-generated browser notifications were observed. Six-hour schedule is configured and enabled, but no automatic run was returned at the initial inspection. Sleep/restart recovery, mobile staging, managed backup/restore, repeatable migrations and fresh provider usage evidence remain open. Risk clusters remain empty under the quality hold. |
+
+## Epic 7 offline training branch
+
+The [training PR](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
+includes dataset and rights validation, source-group splits, offline training,
+held-out evaluation, and versioned artifact export. Synthetic fixtures exercise
+the pipeline and export checks. The offline evaluation CLI can compare the
+pinned baseline on identical held-out images and masks. It reports ground
+metrics, unavailable cue metrics and the pinned model revision. Export still
+requires a complete passing comparison.
+
+Inspection of the local pinned DETR configuration at `d53b52a7` found floor
+and ground categories used by the current candidate detector. Its taxonomy has
+no direct glass-facade, overhead-line, or visible-building-damage class. A
+release comparison requires a baseline that covers the declared cue metrics.
+
+The existing source-rights review has not cleared images for training. Real-scene
+evaluation and any artifact release also require approved inputs and thresholds.
+See the [vision-training plan](superpowers/plans/2026-10-15-scene-review-vision-training.md)
+and the [rights and annotation guide](superpowers/scene-review-annotation-guide.md).
 
 ## Latest development and evidence boundaries
 
@@ -93,9 +113,6 @@ This audit-feed change gives no safety or device clearance. Main-branch image
 publication under the updated actions and a live staging host remain unverified.
 This closeout updates the [focused plan](superpowers/plans/2026-10-27-staging-action-runtime.md)
 with the final gate and cleanup evidence.
-[PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
-is still open with conflicts against `main` and has not been merged.
-
 ## Historical delivery checkpoints (October 2026)
 
 [PR #72](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/72) merged
