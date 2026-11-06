@@ -17,9 +17,8 @@ not a service-availability, national-coverage, scientific-accuracy or release-re
   `STAGING_INGEST_ENABLED=true`, the selected staging image SHA above, and the
   presence of both staging connection-secret names. Secret values were not read.
 - Cron remains `17 */6 * * *` UTC: 02:17, 08:17, 14:17 and 20:17 Manila time.
-  At initial inspection and the post-run check, GitHub returned manual runs only.
-  **No successful automatic `schedule` run is evidenced.** Root cause is not
-  established by these checks; do not describe the scheduler as accepted or fixed.
+  The initial inspection showed manual runs only. The follow-up below records
+  a successful automatic cycle.
 - Render's exact current deployment SHA/settings were not inspected in its
   authenticated dashboard. Public behavior and separately recorded frontend
   deployment evidence do not prove that every service runs the latest Git commit.
@@ -133,11 +132,29 @@ event coordinate for a temporary saved location; record matching, offline
 restart, recovery, Retake and cleanup. This session verified the artifact and
 its CI evidence only; it did not install the APK or exercise a physical device.
 
+## Scheduled ingestion follow-up
+
+The [scheduled run 42099225507](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/42099225507)
+started on November 6 at **04:00:12 Manila** and completed at **04:02:26**.
+GitHub reported event `schedule` and a successful `ingest` job. The job used
+published worker SHA `5c33057841dd9ae1a2df91926b626b94a78bed0a`.
+
+- USGS fetched and processed 41 records.
+- PHIVOLCS fetched and processed 340 records.
+- A subsequent public API check returned 42 retained USGS records and 366
+  retained PHIVOLCS records. The bounding-box summary returned 402 records.
+  The latest PHIVOLCS occurrence was **03:50 Manila**, up from **03:24**
+  after the manual run. The latest USGS occurrence remained November 4 at
+  **15:40:12 Manila**.
+
+This closes the first automatic-trigger gate. Sustained cadence, recovery and
+browser reconnection after sleep remain open.
+
 ## Remaining gates and next evidence
 
 | Gate | Required next evidence |
 | --- | --- |
-| Automatic ingestion | A successful run with event `schedule`, selected worker SHA, both source counts and post-run source freshness; investigate missing triggers before changing cadence |
+| Sustained ingestion | Later `schedule` runs with both source counts and API freshness over multiple intervals |
 | Cold-start/reconnect and failure handling | Bounded check after natural API sleep or controlled restart, reconnect and a later real ingestion message; source/Redis failure behavior without secret exposure |
 | Mobile staging | A current identified APK/device and the hosted base URL; foreground match, offline cache, restart, recovery and Retake; physical iOS separately |
 | Database recovery | Secure backup and a verified restore into an isolated target; no restore test against the active database |

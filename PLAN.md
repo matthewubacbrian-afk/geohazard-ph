@@ -17,14 +17,14 @@ future code changes; use an isolated feature branch and Conventional Commits.
 
 | Epic | Implemented or accepted evidence | Remaining acceptance gates |
 | --- | --- | --- |
-| 1: feed/API/map | Hosted feed, API and rendered web map | Sustained freshness, automatic ingestion and recovery |
-| 2: PHIVOLCS/realtime | Verified TLS fix, canonical ingestion, hosted WSS and browser notifications | First automatic run, reconnect after sleep/restart and failure acceptance |
+| 1: feed/API/map | Hosted feed, API, rendered web map and first scheduled ingestion | Sustained freshness and recovery |
+| 2: PHIVOLCS/realtime | Verified TLS fix, canonical ingestion, hosted WSS and browser notifications | Reconnect after sleep/restart and failure acceptance |
 | 3: reference layers | Importer/API/toggles; 155 GEM faults on staging | PHIVOLCS vector reuse permission, reviewed imports and coverage evidence |
 | 4: mobile | Foreground Android QA/local API acceptance; native CI; Retake repair merged | Current-build staging and physical Retake/camera checks; physical iOS; unresolved advisory/framework decisions; background push/store release deferred |
 | 5: regional profiles | Historical training, validation/sensitivity reports and serving contracts | Domain-reviewed policy, reproducible versioned inputs and a newly validated/approved export; current artifact held |
 | 6: stretch | NASA susceptibility reference; InSAR metadata screening | InSAR footprint/reuse, processing and independent validation; outside core acceptance milestone |
 | 7: scene review | Local browser inference deployed and exercised on a fixture | Representative real-scene evaluation, blur calibration and phone performance; mobile/server inference remains unprovisioned; PR #36 conflicts |
-| Staging | Render web/API + Supabase PostGIS + Upstash; published worker and manual ingestion | Automatic-trigger evidence, recovery, mobile staging, managed backup/restore, migration repeatability and current usage |
+| Staging | Render web/API + Supabase PostGIS + Upstash; published worker and verified scheduled ingestion | Sustained cadence, recovery, mobile staging, managed backup/restore, migration repeatability and current usage |
 
 See [project status](docs/project-status.md), [deployment operations](docs/free-split-deployment.md)
 and [November 6 acceptance](docs/staging-acceptance-2026-11-06.md) for dated evidence.
@@ -33,9 +33,9 @@ The browser scene worker does not provision the separate mobile Python model.
 
 ## Current delivery queue (2026-11-06)
 
-1. **P0: Close staging operations acceptance.** Verify the enabled six-hour cron
-   actually produces a successful `schedule` run; preserve its run ID, image SHA,
-   per-source counts and API freshness. Manual dispatch cannot close that gate.
+1. **P0: Close staging operations acceptance.** One scheduled cycle succeeded
+   on November 6. Track later scheduled runs and event freshness to establish
+   sustained operation.
    Retain the verified CORS and ingestion-generated browser delivery evidence;
    test sleep/restart reconnection separately. Record post-run usage and a managed-database
    backup/restore using an isolated restore target before claiming recoverability.
