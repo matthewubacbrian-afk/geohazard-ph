@@ -1,0 +1,10 @@
+# Include only after domain review approves a validated, versioned export.
+services:
+  api:
+    volumes:
+      - type: bind
+        source: ${RISK_PROFILE_EXPORT_FILE:?set RISK_PROFILE_EXPORT_FILE}
+        target: /data/risk_profiles.json
+        read_only: true
+        bind:
+          create_host_path: false

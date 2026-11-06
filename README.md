@@ -1,6 +1,6 @@
 # GeoHazard PH
 
-GeoHazard PH is a Project NOAH-inspired geologic hazard monitoring platform for the Philippines. The repository is a monorepo for the API, web dashboard, ML risk-profile pipeline, mobile starter shell, infrastructure, and source-data documentation.
+GeoHazard PH is a Project NOAH-inspired geologic hazard monitoring platform for the Philippines. The repository is a monorepo for the API, web dashboard, ML risk-profile pipeline, mobile app with foreground nearby alerts and offline cache, infrastructure, and source-data documentation.
 
 For the evidence-based status of each epic, its operational prerequisites, and deferred work, see the [current project status](docs/project-status.md).
 
@@ -11,7 +11,7 @@ To start the web app on Windows, follow the [local quick start](#run-the-project
 - `backend/` - FastAPI API, ingestion workers, services, database models, and backend tests.
 - `web/` - React, TypeScript, Vite, and MapLibre dashboard.
 - `ml/` - Kaggle-backed regional seismic risk profiling pipeline using K-Means and Random Forest.
-- `mobile/` - React Native starter shell.
+- `mobile/` - React Native app with saved locations, foreground nearby alerts, offline cache, and scene-review demonstrator.
 - `infra/` - reverse proxy configuration for the portable staging release.
 - `data/` - local static data drop zones.
 - `docs/` - project documentation, specs, implementation plans, ADRs, and runbooks.
@@ -21,10 +21,16 @@ To start the web app on Windows, follow the [local quick start](#run-the-project
 
 All human-written and generated changes should follow [CODING_STANDARDS.md](CODING_STANDARDS.md). Coding agents should also read [AGENTS.md](AGENTS.md) before modifying the repository.
 
-Staging images and a portable Compose deployment bundle can be produced by the
-manual workflow in `.github/workflows/deploy-staging.yml`. See
-[docs/runbook.md](docs/runbook.md) for host setup, reconciliation, deployment,
-and rollback commands.
+Active staging uses Render web/API, Supabase PostGIS, Upstash Redis and a bounded
+GitHub Actions ingestion worker. Start with the [deployment operations record](docs/free-split-deployment.md)
+and [latest acceptance evidence](docs/staging-acceptance-2026-11-06.md).
+Staging ingestion is configured on a six-hour schedule; automatic triggering
+remains unverified. A LIVE badge indicates WebSocket connectivity, not source
+freshness or official warning status.
+
+The manual `.github/workflows/deploy-staging.yml` publishes versioned images and
+an alternative portable Compose bundle. Publishing images does not redeploy
+Render. See the [runbook](docs/runbook.md) for topology-specific procedures.
 
 ## Run The Project Locally (Windows)
 
@@ -37,7 +43,7 @@ Install:
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it.
 - [Python 3.11](https://www.python.org/downloads/) with the Python launcher (`py`).
-- [Node.js LTS](https://nodejs.org/) (npm is included).
+- [Node.js 22.12+](https://nodejs.org/) (npm is included; current LTS recommended for the web toolchain).
 - Git, if you still need to clone the repository.
 
 Open PowerShell in the repository folder. Confirm Python and Node are available:
@@ -83,8 +89,8 @@ starting, run that command again.
 
 ```powershell
 Set-Location backend
-..\.venv\Scripts\python.exe -m alembic upgrade head
-..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+.\.venv\Scripts\python.exe -m alembic upgrade head
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
 The first command applies the database migrations. Keep this window open; the API
@@ -107,6 +113,10 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 
 Restart the web development server after changing its environment file.
 
+The interactive map requires browser and device support for WebGL2. When WebGL2
+is unavailable, the dashboard shows an explanation and the event list remains
+usable.
+
 ### Show live earthquake events (optional)
 
 The API and dashboard can start without the ingestion worker. To fetch live events,
@@ -114,7 +124,7 @@ open a fourth PowerShell window after the database is ready:
 
 ```powershell
 Set-Location backend
-..\.venv\Scripts\python.exe -m ingestion.scheduler
+.\.venv\Scripts\python.exe -m ingestion.scheduler
 ```
 
 The worker polls USGS and PHIVOLCS sources. It needs internet access and may take a
@@ -134,7 +144,7 @@ the database data too, use `docker compose down --volumes`.
 
 ### Linux/macOS
 
-Install Python 3.11, Node.js, Docker Compose, and Git. From the repository root, run
+Install Python 3.11, Node.js 22.12+, Docker Compose, and Git. From the repository root, run
 these setup commands (keep an existing `.env` file):
 
 ```bash
@@ -165,7 +175,7 @@ To run the API, ingestion worker, database, and cache in containers, first make 
 
 ```powershell
 docker compose up -d postgres redis
-docker compose run --rm api alembic upgrade head
+docker compose run --rm api python -m alembic upgrade head
 docker compose up --build
 ```
 
@@ -211,7 +221,9 @@ The ML module trains descriptive regional seismic risk profiles from two Kaggle 
 - `bwandowando/philippine-earthquakes-from-phivolcs`
 - `bwandowando/philippine-earthquakes-1900-2025-from-usgs`
 
-Set Kaggle credentials in `.env` or in your shell:
+Set Kaggle credentials in the repository-root `.env` or in your shell. The ML
+downloader reads these two entries from `.env`; non-empty shell variables take
+precedence. Kaggle's `~/.kaggle/kaggle.json` configuration file is also supported:
 
 ```env
 KAGGLE_USERNAME=
@@ -489,13 +501,54 @@ default URL is empty. The in-app alert list checks for new events on startup or 
 background push delivery is not configured. Saved coordinates stay on the device and are not
 sent to the backend.
 
+### Standalone Android QA app
+
+The **Android QA build** workflow creates an installable `GeoHazard QA` app with
+JavaScript bundled from the same checkout. It uses application ID
+`com.geohazardph.mobile.qa`, separate saved data, and the development signing key.
+Its QA-only manifest permits a local HTTP API. The Release manifest explicitly
+disables cleartext HTTP. This APK is for internal testing, not store release.
+
+After a successful workflow run, download artifact `android-qa-<commit>` from that
+run (available for seven days), or use:
+
+```powershell
+gh run download <run-id> --name android-qa-<commit> --dir android-qa-download
+Set-Location android-qa-download
+$buildInfo = Get-Content build-info.json -Raw | ConvertFrom-Json
+$apkHash = (Get-FileHash app-qa.apk -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($apkHash -ne $buildInfo.apk_sha256) { throw "APK checksum mismatch" }
+$buildInfo | Format-List
+adb install -r app-qa.apk
+adb reverse tcp:8000 tcp:8000
+adb shell am start -n com.geohazardph.mobile.qa/com.geohazardph.mobile.MainActivity
+```
+
+Use the run's recorded commit in the artifact name; PR runs may use a temporary
+merge commit. Verify that the build record identifies the intended commit and QA
+application ID. Choose a download directory outside the repository. Start the
+local API, then enter `http://localhost:8000/api/v1` in the QA app's Saved locations
+screen. Adjust the host side of the USB port mapping if the API uses another
+port. Reapply the mapping after reconnecting the phone. Metro is not required.
+
+The artifact is uploaded only after manifest, JavaScript bundle, native ABI, and
+emulator startup checks pass. Passing these checks does not verify physical
+camera behavior, model accuracy, or all foreground flows. Record device results
+using `docs/mobile-runtime-smoke-test.md` and include the build commit/APK hash.
+
 ### Native mobile development
 
 The native projects target the existing React Native 0.75.5 app. Install dependencies from
-`mobile/` with `npm ci`. For Android, install JDK 17 and Android Studio with Android SDK
-Platform 34, Build Tools 34.0.0, Platform Tools, and NDK 26.1.10909125. Set `JAVA_HOME` and
+`mobile/` with `npm ci`. For Android, install JDK 17 and the Android SDK (through Android
+Studio or the official command-line tools) with Platform 34, Build Tools 34.0.0, Platform
+Tools, and NDK 26.1.10909125. Set `JAVA_HOME` and
 `ANDROID_HOME` to those installations, start an Android emulator (or connect a device with USB
 debugging), and run the Metro server and app in separate terminals:
+
+On Windows, use Node.js 22.x for this mobile setup and place the checkout at a path without
+spaces. In the 2026-10-28 physical-device check, Node 24.15.0 started Metro but its status
+endpoint did not respond; Node 22.22.0 served the bundle. The native build from a path with
+spaces failed in generated CMake autolinking, while the same commit built from `C:\ghph-device`.
 
 ```powershell
 Set-Location mobile
@@ -510,6 +563,15 @@ npm run android
 On an Android emulator, the development computer's localhost is available at `10.0.2.2`; on a
 physical phone, use a LAN address reachable from the phone. Android permits cleartext HTTP only
 in the debug manifest; production deployments must use HTTPS. Do not commit a local API URL.
+With a USB-debugging phone, you can instead forward the laptop's API and Metro ports:
+
+```powershell
+adb reverse tcp:8000 tcp:8000
+adb reverse tcp:8081 tcp:8081
+```
+
+Then save `http://localhost:8000/api/v1` in Saved locations. Reapply these forwards after a USB
+reconnect or ADB restart. This USB option is for local debug builds only.
 
 iOS builds require macOS, Xcode, and CocoaPods. On a Mac, run `npm ci` from `mobile/`, then
 run `pod install` from `mobile/ios/` and `npm run ios` from `mobile/`. The project uses
@@ -520,20 +582,19 @@ verification remains a Mac task.
 
 ## Epic 7: Camera scene review
 
-The web and mobile clients can capture a still image and request transient visual-cue
-analysis through `POST /api/v1/scene-analyses`. The result overlays ranked floor/ground
-candidate polygons on the same image and lists model-recognized cues with the evidence
-behind the ordering. Indoor and outdoor scenes use the same model path. Photos are sent
-only for the explicit analysis request and are not retained in server history.
-The API uses a provisional blur cue before segmentation; a warning lets the user
-retake or explicitly continue. Blur, obstruction, lighting, and viewpoint can hide
-visual cues. The threshold is not calibrated on real-world camera images, and no
-validated obstruction detector or custom-trained model is included.
+The web Scene Review page runs quantized image segmentation on the user's device
+in a browser worker. Photos are not uploaded and there is no per-picture inference
+fee. First use downloads about 44 MB of model weights plus runtime files; later
+analyses can reuse the browser cache and loaded worker. It overlays ranked
+floor/ground candidates and lists recognized visual cues. See the
+[browser model, privacy, cost, and verification record](docs/browser-scene-analysis.md).
 
-This is an educational visual review, not a safety assessment: the model cannot verify
-structural stability, hidden hazards, ground conditions, or route accessibility. Follow
-official emergency guidance. The default deployment currently does not include the
-large model runtime or cached weights, so the endpoint reports a typed unavailable
-response until deployment-target packaging and model provisioning are verified. See the
-[Epic 7 status](docs/project-status.md), [runbook](docs/runbook.md#epic-7-scene-review),
-and [camera smoke checklist](docs/mobile-runtime-smoke-test.md).
+The mobile prototype retains `POST /api/v1/scene-analyses`. The default API image
+still lacks its server runtime/weights and returns a typed unavailable response;
+the browser implementation does not enable that separate mobile/server path.
+Both paths retain a provisional blur choice and the visual demonstrator warning.
+No calibrated safety assessment or validated obstruction detector is provided.
+
+See [Epic 7 status](docs/project-status.md), the
+[runbook](docs/runbook.md#epic-7-scene-review), and the
+[camera smoke checklist](docs/mobile-runtime-smoke-test.md).

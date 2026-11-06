@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { analyzeScene as requestSceneAnalysis } from '../api/sceneAnalysis';
-import { API_BASE_URL } from '../api/client';
+import { createBrowserSceneAnalyzer } from '../services/browserSceneAnalysis';
 import TopNav from '../components/layout/TopNav';
 import type { SceneAnalysisRequest, SceneAnalysisResponse, SceneCapture } from '../types/sceneAnalysis';
 import type { View } from '../types/views';
@@ -26,13 +25,18 @@ export default function SceneAnalysis({
   onExit,
   onNavigate,
   onSettings,
-  analyze = (request, signal) => requestSceneAnalysis(API_BASE_URL, request, signal),
+  analyze,
   initialCapture,
 }: SceneAnalysisProps) {
+  const localAnalyzer = useRef<ReturnType<typeof createBrowserSceneAnalyzer> | null>(null);
+  const [analysisProgress, setAnalysisProgress] = useState('Preparing on-device analysis…');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const cameraOpeningRef = useRef(false);
   const zoomOperationRef = useRef(0);
+  const pendingZoomRef = useRef<{ stream: MediaStream; track: MediaStreamTrack; value: number; operation: number } | null>(null);
+  const zoomQueueRunningRef = useRef(false);
+  const zoomValueRef = useRef(1);
   const controllerRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const [capture, setCapture] = useState<SceneCapture | null>(initialCapture ?? null);
@@ -56,7 +60,9 @@ export default function SceneAnalysis({
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setCameraActive(false);
+    pendingZoomRef.current = null;
     setZoom(1);
+    zoomValueRef.current = 1;
     setNativeZoomMax(null);
     setDigitalZoom(false);
     setZoomBusy(false);
@@ -69,6 +75,8 @@ export default function SceneAnalysis({
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       controllerRef.current?.abort();
+      localAnalyzer.current?.dispose();
+      localAnalyzer.current = null;
     };
   }, []);
 
@@ -110,6 +118,7 @@ export default function SceneAnalysis({
       streamRef.current = stream;
       setFacingMode(nextFacing);
       setZoom(1);
+      zoomValueRef.current = 1;
       setNativeZoomMax(supportedZoom && supportedZoom.max > 1 ? supportedZoom.max : null);
       setDigitalZoom(!supportedZoom || supportedZoom.max <= 1);
       setCameraActive(true);
@@ -133,6 +142,7 @@ export default function SceneAnalysis({
     setCameraBusy(true);
     setFacingMode(nextFacing);
     setZoom(1);
+    zoomValueRef.current = 1;
     setNativeZoomMax(null);
     setDigitalZoom(false);
     await startCamera(nextFacing);
@@ -141,20 +151,39 @@ export default function SceneAnalysis({
   async function changeZoom(value: number) {
     const nextZoom = Math.min(nativeZoomMax ?? 3, Math.max(1, value));
     setZoom(nextZoom);
+    zoomValueRef.current = nextZoom;
     const activeStream = streamRef.current;
     const track = activeStream?.getVideoTracks?.()[0] ?? activeStream?.getTracks().find((item) => item.kind === 'video');
-    if (!track || digitalZoom) return;
-    const zoomOperation = ++zoomOperationRef.current;
+    if (!activeStream || !track || digitalZoom) return;
+    pendingZoomRef.current = { stream: activeStream, track, value: nextZoom, operation: zoomOperationRef.current };
     setZoomBusy(true);
+    void applyPendingZoom();
+  }
+
+  async function applyPendingZoom() {
+    if (zoomQueueRunningRef.current) return;
+    zoomQueueRunningRef.current = true;
     try {
-      await track.applyConstraints({ advanced: [{ zoom: nextZoom } as unknown as MediaTrackConstraintSet] });
-    } catch {
-      if (streamRef.current === activeStream) {
-        setDigitalZoom(true);
-        setNativeZoomMax(null);
+      while (pendingZoomRef.current) {
+        const request = pendingZoomRef.current;
+        pendingZoomRef.current = null;
+        if (request.operation !== zoomOperationRef.current || streamRef.current !== request.stream) continue;
+        try {
+          await request.track.applyConstraints({ advanced: [{ zoom: request.value } as unknown as MediaTrackConstraintSet] });
+        } catch {
+          if (request.operation === zoomOperationRef.current && streamRef.current === request.stream && !pendingZoomRef.current) {
+            const fallbackZoom = Math.min(3, zoomValueRef.current);
+            zoomValueRef.current = fallbackZoom;
+            setZoom(fallbackZoom);
+            setDigitalZoom(true);
+            setNativeZoomMax(null);
+          }
+        }
       }
     } finally {
-      if (mountedRef.current && zoomOperationRef.current === zoomOperation) setZoomBusy(false);
+      zoomQueueRunningRef.current = false;
+      if (mountedRef.current && !pendingZoomRef.current) setZoomBusy(false);
+      if (pendingZoomRef.current) void applyPendingZoom();
     }
   }
 
@@ -232,10 +261,13 @@ export default function SceneAnalysis({
     setAnalysisError(null);
     setQualityWarning(false);
     try {
-      const result = await analyze(
-        { image_base64: capture.imageBase64, mime_type: 'image/jpeg', accept_quality_warning: acceptQualityWarning },
-        controller.signal,
-      );
+      const request: SceneAnalysisRequest = {
+        image_base64: capture.imageBase64, mime_type: 'image/jpeg', accept_quality_warning: acceptQualityWarning,
+      };
+      setAnalysisProgress('Preparing on-device analysis…');
+      localAnalyzer.current ??= createBrowserSceneAnalyzer();
+      const result = analyze ? await analyze(request, controller.signal)
+        : await localAnalyzer.current.analyze(request, controller.signal, setAnalysisProgress);
       if (!controller.signal.aborted) setAnalysis(result);
     } catch (error) {
       if (!controller.signal.aborted) {
@@ -273,7 +305,7 @@ export default function SceneAnalysis({
 
         <div className={styles.safetyNotes}>
           <p className={styles.notice} role="note"><strong>For situational awareness</strong><span>{DISCLAIMER}</span></p>
-          <p className={styles.privacy}><span aria-hidden="true">▣</span> The image is sent to this project’s Python service for temporary analysis. The captured preview stays on this screen and is cleared when you retake or leave.</p>
+          <p className={styles.privacy}><span aria-hidden="true">▣</span> Analysis runs on your device with no per-picture analysis fee. Your photo is not uploaded. First use downloads about 44 MB of model weights plus runtime files; later runs can reuse the browser cache. The captured preview is cleared when you retake or leave.</p>
         </div>
         {cameraError && <p className={styles.error} role="alert">{cameraError}</p>}
 
@@ -341,7 +373,7 @@ export default function SceneAnalysis({
                 </label>
                 <div className={styles.zoomControl}>
                   <div className={styles.zoomLabel}><label htmlFor="camera-zoom">Zoom</label><output htmlFor="camera-zoom">{zoom.toFixed(1)}×</output></div>
-                  <input id="camera-zoom" aria-label="Camera zoom" type="range" min="1" max={nativeZoomMax ?? 3} step="0.1" value={zoom} disabled={zoomBusy}
+                  <input id="camera-zoom" aria-label="Camera zoom" type="range" min="1" max={nativeZoomMax ?? 3} step="0.1" value={zoom}
                     onChange={(event) => void changeZoom(Number(event.target.value))} />
                   <div className={styles.zoomScale}><span>1×</span><span>{(nativeZoomMax ?? 3).toFixed(1)}×</span></div>
                   <small>{zoomBusy ? 'Adjusting camera zoom…' : digitalZoom ? 'Digital zoom · included in captured image' : 'Device camera zoom'}</small>
@@ -354,13 +386,13 @@ export default function SceneAnalysis({
             <section className={styles.guideCard} aria-labelledby="capture-guide-title">
               <p className={styles.eyebrow}>QUICK GUIDE</p>
               <h2 id="capture-guide-title">Get a clearer review</h2>
-              <ol><li>Hold the camera steady and include the full area.</li><li>Use good lighting and avoid blur or obstructions.</li><li>Review the capture before sending it for analysis.</li></ol>
+              <ol><li>Hold the camera steady and include the full area.</li><li>Use good lighting and avoid blur or obstructions.</li><li>Review the capture before analyzing it on your device.</li></ol>
               <p>Scene Review identifies visual cues only. It cannot determine whether a place is safe.</p>
             </section>
           </aside>
         </div>
 
-        {loading && <p role="status">Analyzing the image in temporary memory…</p>}
+        {loading && <p role="status">{analysisProgress}</p>}
         {analysisError && <div className={styles.notice}>
           <p className={styles.error} role="alert">{analysisError}</p>
           <button type="button" className={styles.button} onClick={() => void submitAnalysis()}>Retry analysis</button>
@@ -373,6 +405,7 @@ export default function SceneAnalysis({
         {analysis && <section aria-labelledby="evidence-title">
           <h2 id="evidence-title">Evidence checklist</h2>
           {analysis.candidate_regions.length === 0 ? <p>No clear open-area candidate was identified in this image.</p> : <>
+            <p>Candidate outlines are simplified and may include objects or gaps inside them. Inspect the actual photo.</p>
             <p>Visible candidate regions are ranked by image cues for review. The review-order heuristic is: (relative area × 0.50) + (shape compactness × 0.30) + (model confidence × 0.20), where relative area = min(candidate visible pixel area ÷ largest candidate visible pixel area, 1). The score is a heuristic review-order value, not a percent or probability of safety.</p>
             <ul className={styles.candidateList} aria-label="Candidate areas">
               {analysis.candidate_regions.map((candidate) => <li key={candidate.rank}>

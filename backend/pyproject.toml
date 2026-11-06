@@ -42,6 +42,18 @@ pythonpath = ["."]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+src = ["."]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "BLE", "DTZ", "RUF", "PERF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "ingestion"]
+
+[tool.ruff.lint.per-file-ignores]
+# Applied migrations are immutable; retain only their existing style deviations.
+"db/migrations/versions/0001_create_hazard_events.py" = ["I001", "UP007", "UP035"]
+"db/migrations/versions/0002_add_hazard_event_canonical.py" = ["I001", "UP007", "UP035"]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]

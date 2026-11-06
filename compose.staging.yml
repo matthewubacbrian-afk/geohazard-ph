@@ -40,8 +40,6 @@ services:
   api:
     image: ${IMAGE_PREFIX}-api:${IMAGE_TAG}
     environment: *backend_environment
-    volumes:
-      - ${RISK_PROFILE_EXPORT_FILE:?set RISK_PROFILE_EXPORT_FILE}:/data/risk_profiles.json:ro
     depends_on:
       migrate:
         condition: service_completed_successfully

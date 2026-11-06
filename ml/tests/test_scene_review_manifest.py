@@ -490,7 +490,7 @@ def test_rejects_corrupt_mask_dimension_mismatch_duplicate_ids_and_all_ignore(tm
     add_hashes(data["records"][0], image_path, mask_path)
     loaded = load_manifest(save_manifest(tmp_path, data))
     Image.fromarray(np.array([[99, 0]], dtype=np.uint8)).save(mask_path)
-    with pytest.raises(ValueError, match="hash|mask"):
+    with pytest.raises(ValueError, match=r"hash|mask"):
         validate_dataset(loaded, root)
     data["records"][0]["mask_sha256"] = hashlib.sha256(mask_path.read_bytes()).hexdigest()
     loaded = load_manifest(save_manifest(tmp_path, data))

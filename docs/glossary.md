@@ -150,6 +150,16 @@ When a spec or plan introduces a new concept:
   and lahar reference images used when local `VolcanoZone` vectors are absent.
   These are remotely rendered hazard maps, not imported polygons or live alert levels.
 
+## Epic 6 landslide reference layer
+
+- landslide susceptibility overlay: optional NASA Global Landslide Susceptibility Map
+  credited and linked in the UI as a coarse, informational global susceptibility
+  reference (about 1 km pixels; values 0–5). NASA warns it may be research-grade and
+  unsuitable for operational use. It is an awareness aid, not an early-warning
+  authority, live warning, event probability, site assessment, or evidence that a
+  location is safe; missing pixels do not mean low susceptibility. A higher-resolution
+  MGB reference may complement it later after reuse rights and coverage are confirmed.
+
 ## 7. Camera scene analysis
 
 | Term | Canonical field / meaning |
@@ -178,3 +188,35 @@ When a spec or plan introduces a new concept:
 | scene image quality warning | API error `scene_image_quality_warning`; advisory result for a low provisional sharpness score, with retake and explicit continue actions. |
 | result_status | `result_status`; `candidates_found` when candidate regions exist, otherwise `no_clear_candidate`. |
 | scene-analysis limitations | `limitations`; fixed caveats that visual cues do not determine safety, image conditions can hide cues, and one image cannot verify structural integrity, earthquake resistance, ground conditions, falling-glass or electrical hazards, egress, accessibility, routes, unseen areas, or changing conditions. |
+
+## 8. Epic 6 landslide and InSAR
+
+| Term | Canonical field / meaning |
+| --- | --- |
+| InSAR | Interferometric synthetic aperture radar; compares radar phase observations from repeat acquisitions to estimate surface displacement after accounting for topography, orbit, atmosphere, and other phase contributions. |
+| line-of-sight displacement | Surface displacement component measured toward or away from the radar viewing direction; it is not a complete three-dimensional or slope-parallel motion vector. |
+| coherence | Similarity of radar phase between repeat acquisitions; low coherence or decorrelation can make an InSAR displacement estimate unavailable or unreliable. |
+| landslide susceptibility reference | A mapped, coarse indication of relative susceptibility; not measured ground motion, a site-specific assessment, forecast, or warning. |
+| research-grade ground-motion estimate | A sourced, date-bounded InSAR measurement with quality and maturity caveats; not an operational alert or safety determination. |
+
+
+## Recorded regional activity
+
+- Regional earthquake activity: raw counts of unique available earthquake
+  epicenters inside each pinned regional polygon, for the dashboard filters.
+  It is a descriptive catalog summary, not seismic risk, hazard probability,
+  a forecast, or an official warning.
+- Unassigned activity record: a valid earthquake outside the regional polygons,
+  including offshore locations; no nearest-region attribution is inferred.
+- No matching records: no valid matching epicenters for that region and filter;
+  it does not establish absence of earthquake hazard or complete source coverage.
+
+
+## Browser Scene Analysis
+
+- Device-only scene analysis: web camera inference in a local module worker using
+  quantized ONNX assets. Pictures are not uploaded and no inference-provider API
+  is called; model/runtime downloads are distinct from picture analysis.
+- Browser scene model version: immutable converted model revision plus q8,
+  bounded browser preprocessing and pinned COCO category mapping identifiers.
+  It does not imply equivalence to the separate Python model output.

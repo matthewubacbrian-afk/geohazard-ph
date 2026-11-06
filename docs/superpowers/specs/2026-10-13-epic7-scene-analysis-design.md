@@ -2,6 +2,12 @@
 
 **Date:** 2026-10-13
 
+**Superseded web inference path (2026-11-06):** This original design uses a shared
+Python endpoint. PR #89 moved the web default to [local browser inference](../../browser-scene-analysis.md);
+the mobile/server path remains separate and unprovisioned by default. The
+original alternatives and acceptance criteria below describe the October design,
+not a requirement to send current web photos to the API. See [current status](../../project-status.md).
+
 ## Problem
 
 GeoHazard PH has no camera-driven scene review feature. People indoors at home or in a mall and people outdoors need a quick way to inspect a captured earthquake-response scene for visible open floor or ground areas and nearby visual cues. The web and mobile clients should present the same evidence in a way that does not claim a photograph can establish a genuinely safe place.

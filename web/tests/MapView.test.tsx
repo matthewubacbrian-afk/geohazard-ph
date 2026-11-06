@@ -1,18 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
+import * as maplibregl from 'maplibre-gl';
 import MapView from '../src/components/map/MapView';
 import { BASEMAPS, BASEMAP_IDS } from '../src/components/map/basemaps';
 import type { StaticLayer } from '../src/types/staticLayer';
 import type { HazardEvent } from '../src/types/hazard';
 import type { RiskProfile } from '../src/types/hazard';
 
-const handlers = new Map<string, Set<() => void>>();
+const handlers = new Map<string, Set<(event?: unknown) => void>>();
 const layerHandlers = new Map<string, (event: { features?: Array<{ properties?: Record<string, unknown> }> }) => void>();
 const paintUpdates: Array<[string, string, unknown]> = [];
 let source: { setData: ReturnType<typeof vi.fn> } | undefined;
 const sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>();
 const layers = new Set<string>();
-function emit(name: string) { handlers.get(name)?.forEach((callback) => callback()); }
+function emit(name: string, event?: unknown) { handlers.get(name)?.forEach((callback) => callback(event)); }
 const mapInstance = {
   addControl: vi.fn(),
   addLayer: vi.fn((layer: { id: string; paint?: Record<string, unknown> }) => layers.add(layer.id)),
@@ -26,9 +27,9 @@ const mapInstance = {
   getCenter: vi.fn(() => ({ toArray: () => [121.774, 12.8797] })),
   getBearing: vi.fn(() => 0), getPitch: vi.fn(() => 0),
   flyTo: vi.fn(),
-  on: vi.fn((name: string, layerOrCallback: string | (() => void), maybeCallback?: (event: { features?: Array<{ properties?: Record<string, unknown> }> }) => void) => {
+  on: vi.fn((name: string, layerOrCallback: string | ((event?: unknown) => void), maybeCallback?: (event: { features?: Array<{ properties?: Record<string, unknown> }> }) => void) => {
     if (typeof layerOrCallback === 'string' && maybeCallback) { layerHandlers.set(layerOrCallback, maybeCallback); return; }
-    const callback = layerOrCallback as () => void;
+    const callback = layerOrCallback as (event?: unknown) => void;
     if (!handlers.has(name)) handlers.set(name, new Set());
     handlers.get(name)!.add(callback);
   }),
@@ -41,14 +42,25 @@ const mapInstance = {
   removeLayer: vi.fn((id: string) => layers.delete(id)),
   removeSource: vi.fn((id: string) => { sources.delete(id); if (id === 'events') source = undefined; }),
   setLayoutProperty: vi.fn(),
+  isSourceLoaded: vi.fn(() => true),
   setPaintProperty: vi.fn((layer: string, property: string, value: unknown) => paintUpdates.push([layer, property, value])),
   setStyle: vi.fn((_style: unknown, _options?: { diff?: boolean }) => {
     source = undefined; layers.clear(); sources.clear();
   }),
 };
-vi.mock('maplibre-gl', () => ({
-  default: { Map: vi.fn(() => mapInstance), NavigationControl: vi.fn() },
+const maplibreMock = vi.hoisted(() => ({
+  workerUrl: undefined as string | undefined,
 }));
+vi.mock('maplibre-gl', () => {
+  const Map = vi.fn(function Map() { return mapInstance; });
+  const NavigationControl = vi.fn();
+  return {
+    default: { Map, NavigationControl },
+    Map,
+    NavigationControl,
+    setWorkerUrl: vi.fn((url: string) => { maplibreMock.workerUrl = url; }),
+  };
+});
 const event: HazardEvent = {
   id: 'e1', hazard_type: 'earthquake', source: 'usgs', magnitude: 4.5,
   depth_km: 10, latitude: 14.6, longitude: 120.97, place_name: 'Luzon',
@@ -64,15 +76,68 @@ const riskProfile: RiskProfile = {
   generated_at: '2026-08-29T00:00:00Z',
   dataset_snapshot: 'fixture',
 };
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    getExtension: vi.fn(() => null),
+  } as unknown as WebGL2RenderingContext);
   handlers.clear(); layers.clear(); sources.clear(); source = undefined;
   layerHandlers.clear(); paintUpdates.length = 0;
   mapInstance.getZoom.mockReturnValue(5);
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
 });
 describe('MapView style lifecycle', () => {
+  it('configures the bundled map worker before constructing a map', () => {
+    expect(maplibreMock.workerUrl).toContain('maplibre-gl-worker');
+    render(<MapView events={[]} />);
+    expect(maplibregl.Map).toHaveBeenCalled();
+  });
+
+  it('explains missing WebGL2 without constructing a partial map', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    render(<MapView events={[]} />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/WebGL2/i);
+    expect(maplibregl.Map).not.toHaveBeenCalled();
+  });
+
+  it('adds the NASA raster only when the landslide susceptibility layer is enabled', async () => {
+    const { LANDSLIDE_LAYER_ID } = await import('../src/components/map/landslideOverlays');
+    const view = render(<MapView events={[]} />);
+    act(() => emit('style.load'));
+    expect(mapInstance.addSource).not.toHaveBeenCalledWith(LANDSLIDE_LAYER_ID, expect.anything());
+
+    view.rerender(<MapView events={[]} showLandslideSusceptibility onLandslideOverlayState={vi.fn()} />);
+    expect(mapInstance.addSource).toHaveBeenCalledWith(LANDSLIDE_LAYER_ID, expect.objectContaining({ type: 'raster' }));
+    view.rerender(<MapView events={[]} showLandslideSusceptibility={false} />);
+    expect(mapInstance.setLayoutProperty).toHaveBeenCalledWith(LANDSLIDE_LAYER_ID, 'visibility', 'none');
+  });
+
+  it('reports loading, error, and ready states only for the NASA raster source', async () => {
+    const { LANDSLIDE_LAYER_ID } = await import('../src/components/map/landslideOverlays');
+    const onLandslideOverlayState = vi.fn();
+    render(<MapView events={[]} showLandslideSusceptibility onLandslideOverlayState={onLandslideOverlayState} />);
+    act(() => emit('style.load'));
+    act(() => emit('sourcedataloading', { sourceId: LANDSLIDE_LAYER_ID }));
+    act(() => emit('idle'));
+    expect(onLandslideOverlayState).toHaveBeenLastCalledWith('ready');
+    act(() => emit('error', { sourceId: LANDSLIDE_LAYER_ID, error: new Error('unavailable') }));
+    expect(onLandslideOverlayState).toHaveBeenLastCalledWith('error');
+    act(() => emit('idle'));
+    expect(onLandslideOverlayState).not.toHaveBeenLastCalledWith('ready');
+  });
+
+  it('recreates the remote raster source when retry revision changes', async () => {
+    const { LANDSLIDE_LAYER_ID } = await import('../src/components/map/landslideOverlays');
+    const view = render(<MapView events={[]} showLandslideSusceptibility landslideOverlayRevision={0} />);
+    act(() => emit('style.load'));
+    const firstAddCount = mapInstance.addSource.mock.calls.filter(([id]) => id === LANDSLIDE_LAYER_ID).length;
+
+    view.rerender(<MapView events={[]} showLandslideSusceptibility landslideOverlayRevision={1} />);
+
+    expect(mapInstance.removeSource).toHaveBeenCalledWith(LANDSLIDE_LAYER_ID);
+    expect(mapInstance.addSource.mock.calls.filter(([id]) => id === LANDSLIDE_LAYER_ID)).toHaveLength(firstAddCount + 1);
+  });
   it('selects the event represented by a clicked map circle', () => {
     const onSelectEvent = vi.fn();
     render(<MapView events={[event]} onSelectEvent={onSelectEvent} />);
@@ -415,5 +480,25 @@ describe('map symbol palette', () => {
     expect(paint?.['circle-stroke-width']).toBe(2.5);
     expect(paint?.['circle-stroke-color']).toBe('#fffcf5');
     for (const name of Object.keys(tokens)) document.documentElement.style.removeProperty(name);
+  });
+});
+
+
+describe('recorded activity shading', () => {
+  it('paints event counts without reading risk labels and updates filtered data', () => {
+    const activity = { type: 'FeatureCollection' as const, features: [{
+      type: 'Feature' as const, properties: { region_name: 'Example', event_count: 12 },
+      geometry: { type: 'Polygon' as const, coordinates: [[[120, 14], [121, 14], [121, 15], [120, 14]]] },
+    }] };
+    const view = render(<MapView events={[]} activityRegions={activity} showRiskLayer />);
+    act(() => emit('style.load'));
+    const fill = mapInstance.addLayer.mock.calls.find(([layer]) => layer.id === 'risk-regions-fill');
+    expect(fill?.[0].paint?.['fill-color']).toEqual([
+      'step', ['get', 'event_count'], '#d9d9d9',
+      1, '#c6dbef', 10, '#6baed6', 50, '#2171b5', 100, '#08306b',
+    ]);
+    expect(sources.get('risk-regions')?.setData).toBeDefined();
+    view.rerender(<MapView events={[]} activityRegions={{ type: 'FeatureCollection', features: [] }} showRiskLayer />);
+    expect(sources.get('risk-regions')?.setData).toHaveBeenCalledWith({ type: 'FeatureCollection', features: [] });
   });
 });

@@ -146,7 +146,12 @@ describe('MapView', () => {
 ### Conventions
 
 - Offline-cache and mapping logic must be testable without a device: keep the behavior in pure functions that tests call directly.
-- Screens are thin; test the services and the mapping layer rather than rendering native components.
+- Screens are thin; prefer service and mapping-layer tests. For screen-interaction
+  regressions involving visible controls or state transitions, render the real
+  screen with `react-test-renderer` matching React's version, `React.createElement`,
+  and `act` in `mobile/tests/<screenName>.test.ts`. Mock camera/API services and
+  native rendering boundaries as needed; assert visible controls, messages, and
+  transitions rather than snapshots, source text, or extracted helpers alone.
 - API mapping tests assert field-by-field conversion from the snake_case wire contract to the UI-native type.
 - Test the failure path of each service, including "not configured" states.
 
@@ -155,6 +160,7 @@ describe('MapView', () => {
 - [ ] Happy path and failure/offline path covered.
 - [ ] Mapping functions unit tested against fixture payloads that mirror the backend schema.
 - [ ] `npm test` passes from `mobile/`.
+- [ ] `npx tsc --noEmit` passes from `mobile/`; `tsconfig.json` checks `App.tsx` and application source with strict typing.
 
 ## 6. Fixtures And Mocking Principles
 
@@ -174,10 +180,10 @@ describe('MapView', () => {
 
 | Package | Command (run inside package dir) |
 | --- | --- |
-| backend | `pytest -v` |
-| ml | `pytest -v` |
-| web | `npm test` |
-| mobile | `npm test` |
+| backend | `pytest -v`; `ruff check --config pyproject.toml .` |
+| ml | `pytest -v`; `ruff check --config pyproject.toml .` |
+| web | `npm test`; `npm run build` |
+| mobile | `npm test -- --runInBand`; `npx tsc --noEmit` |
 
 ## 8. Known Deviations
 

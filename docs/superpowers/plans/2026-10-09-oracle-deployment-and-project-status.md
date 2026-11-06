@@ -1,5 +1,11 @@
 # Oracle Always Free Deployment And Project Status Implementation Plan
 
+**Superseded deployment target (2026-11-06):** Oracle/colocated Compose remains an
+alternative runbook. Active staging uses Render, Supabase, Upstash and a bounded
+GitHub Actions worker. Follow [current operations](../../free-split-deployment.md)
+and [current acceptance](../../staging-acceptance-2026-11-06.md); the original plan
+below is historical and does not establish active host state.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Publish ARM-capable staging images, give the operator a complete Oracle Always Free deployment runbook, and reconcile project tracking against shipped work.

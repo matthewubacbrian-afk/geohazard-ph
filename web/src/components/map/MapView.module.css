@@ -1,5 +1,6 @@
 .canvas { position:absolute; inset:0; min-width:0; min-height:0; background:var(--surface-container); }
 .container { width:100%; height:100%; }
+.unavailable { position:absolute; inset:0; display:grid; place-content:center; margin:0; padding:24px; color:var(--text); text-align:center; line-height:1.5; }
 .empty { position:absolute; z-index:var(--z-map-overlay); top:16px; left:50%; max-width:calc(100% - 32px); padding:7px 12px; transform:translateX(-50%); border:1px solid var(--border); border-radius:var(--radius-control); background:var(--surface-overlay-solid); box-shadow:var(--shadow-card); color:var(--text); font-size:12px; text-align:center; pointer-events:none; }
 .canvas :global(.maplibregl-ctrl-group) { overflow:hidden; border:1px solid var(--border) !important; border-radius:var(--radius-square) !important; background:var(--surface-overlay-solid) !important; box-shadow:var(--shadow-control) !important; }
 .canvas :global(.maplibregl-ctrl-group button) { width:36px; height:36px; background-color:transparent; }

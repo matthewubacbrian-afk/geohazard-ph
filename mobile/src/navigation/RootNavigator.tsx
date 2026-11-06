@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, SafeAreaView, Text, View } from 'react-native';
 
 import AlertsScreen from '../screens/AlertsScreen';
 import NearbyHazardsScreen from '../screens/NearbyHazardsScreen';
 import SavedLocationsScreen from '../screens/SavedLocationsScreen';
 import SceneAnalysisScreen from '../screens/SceneAnalysisScreen';
 import { API_BASE_URL } from '../config';
-import { isHazardEvent, loadEventFeed } from '../services/eventFeed';
+import { loadCachedEventFeed } from '../services/eventFeed';
+import { createEventFeedRefreshController } from '../services/eventFeedRefresh';
 import { loadSavedLocations, saveSavedLocations } from '../services/savedLocations';
-import { loadApiBaseUrl, saveApiBaseUrl } from '../services/settings';
-import { readOfflineValue } from '../services/offlineCache';
+import {
+  loadApiBaseUrl, normalizeApiBaseUrl, saveApiBaseUrl, shouldClearEventFeedForApiUrl,
+} from '../services/settings';
 import { findNearbyHazards } from '../services/proximity';
 import { ApiError } from '../services/api';
 import { styles } from '../styles';
@@ -17,7 +19,6 @@ import type { HazardEvent, SavedLocation } from '../types/hazard';
 
 type AppTab = 'Nearby' | 'Saved locations' | 'Alerts' | 'Scene review';
 const TABS: AppTab[] = ['Nearby', 'Saved locations', 'Alerts', 'Scene review'];
-const LATEST_EVENTS_KEY = 'mobile.latestEvents';
 
 export default function RootNavigator() {
   const [selectedTab, setSelectedTab] = useState<AppTab>('Nearby');
@@ -29,6 +30,9 @@ export default function RootNavigator() {
   const [isOffline, setIsOffline] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [storageWarning, setStorageWarning] = useState<string | null>(null);
+  const [eventCacheWarning, setEventCacheWarning] = useState<string | null>(null);
+  const activeApiUrl = useRef(normalizeApiBaseUrl(API_BASE_URL));
+  const refreshController = useRef(createEventFeedRefreshController());
 
   useEffect(() => {
     let isActive = true;
@@ -37,22 +41,23 @@ export default function RootNavigator() {
       const results = await Promise.allSettled([
         loadApiBaseUrl(),
         loadSavedLocations(),
-        readOfflineValue<unknown>(LATEST_EVENTS_KEY),
       ]);
       if (!isActive) return;
 
-      const [apiUrlResult, locationsResult, eventsResult] = results;
+      const [apiUrlResult, locationsResult] = results;
       const restoredUrl = apiUrlResult.status === 'fulfilled' ? apiUrlResult.value : API_BASE_URL;
       const restoredLocations = locationsResult.status === 'fulfilled' ? locationsResult.value : [];
-      const restoredEvents = eventsResult.status === 'fulfilled' && Array.isArray(eventsResult.value)
-        ? eventsResult.value.filter(isHazardEvent)
-        : [];
+      const [eventsResult] = await Promise.allSettled([loadCachedEventFeed(restoredUrl)]);
+      if (!isActive) return;
+      const restoredEvents = eventsResult.status === 'fulfilled' ? eventsResult.value : [];
 
+      activeApiUrl.current = normalizeApiBaseUrl(restoredUrl);
       setApiBaseUrl(restoredUrl);
       setLocations(restoredLocations);
       setEvents(restoredEvents);
       setIsOffline(restoredEvents.length > 0);
-      if (results.some((result) => result.status === 'rejected')) {
+      if (results.some((result) => result.status === 'rejected')
+        || eventsResult.status === 'rejected') {
         setStorageWarning('Some saved mobile data could not be read from this device.');
       }
       setIsReady(true);
@@ -61,26 +66,36 @@ export default function RootNavigator() {
     void restoreSavedState();
     return () => {
       isActive = false;
+      refreshController.current.invalidate();
     };
   }, []);
 
   const refreshEvents = useCallback(async (url = apiBaseUrl) => {
-    if (!url.trim()) return;
-    setIsLoading(true);
-    setErrorMessage(null);
-
-    try {
-      const feed = await loadEventFeed(url);
-      setEvents(feed.events);
-      setIsOffline(feed.isOffline);
-    } catch (error) {
-      setIsOffline(true);
-      setErrorMessage(error instanceof ApiError
-        ? error.message
-        : 'Could not save recent hazard data on this device.');
-    } finally {
-      setIsLoading(false);
-    }
+    const requestedUrl = normalizeApiBaseUrl(url);
+    if (!requestedUrl) return;
+    await refreshController.current.refresh(requestedUrl, {
+      onStart: () => {
+        setIsLoading(true);
+        setErrorMessage(null);
+      },
+      onSuccess: (feed) => {
+        if (activeApiUrl.current !== requestedUrl) return;
+        setEvents(feed.events);
+        setIsOffline(feed.isOffline);
+        setEventCacheWarning(feed.cacheWriteFailed
+          ? 'Recent hazard data could not be saved for offline use. It may be unavailable after you close the app.'
+          : null);
+      },
+      onError: (error) => {
+        if (activeApiUrl.current !== requestedUrl) return;
+        setErrorMessage(error instanceof ApiError
+          ? error.message
+          : 'Could not load recent hazard data. Please try again.');
+      },
+      onFinish: () => {
+        if (activeApiUrl.current === requestedUrl) setIsLoading(false);
+      },
+    });
   }, [apiBaseUrl]);
 
   useEffect(() => {
@@ -119,7 +134,16 @@ export default function RootNavigator() {
   async function persistApiBaseUrl(value: string) {
     try {
       await saveApiBaseUrl(value);
-      const normalized = value.trim().replace(/\/+$/, '');
+      const normalized = normalizeApiBaseUrl(value);
+      if (shouldClearEventFeedForApiUrl(activeApiUrl.current, normalized)) {
+        refreshController.current.invalidate();
+        activeApiUrl.current = normalized;
+        setEvents([]);
+        setIsOffline(false);
+        setIsLoading(false);
+        setErrorMessage(null);
+        setEventCacheWarning(null);
+      }
       setApiBaseUrl(normalized);
       setStorageWarning(null);
     } catch {
@@ -140,8 +164,9 @@ export default function RootNavigator() {
   };
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root}>
       {storageWarning ? <Text accessibilityRole="alert" style={styles.error}>{storageWarning}</Text> : null}
+      {eventCacheWarning ? <Text accessibilityRole="alert" style={styles.error}>{eventCacheWarning}</Text> : null}
       {!isReady ? <Text style={styles.muted}>Loading saved mobile data…</Text> : null}
       {isReady && selectedTab === 'Nearby' ? <NearbyHazardsScreen {...screenProps} /> : null}
       {isReady && selectedTab === 'Saved locations' ? (
@@ -168,6 +193,6 @@ export default function RootNavigator() {
           </Pressable>
         ))}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

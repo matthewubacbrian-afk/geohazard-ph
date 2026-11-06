@@ -74,6 +74,9 @@ A skipped package test, a generated artifact, or a docs change without its commi
 
 ## 5. Naming Things
 
+Never include `codex` in a new branch or worktree name. Name the branch for its
+change type and topic, and name the worktree for the same topic.
+
 | Kind | Convention | Example |
 | --- | --- | --- |
 | Feature branch | `feat/<topic>` | `feat/risk-profile-api` |

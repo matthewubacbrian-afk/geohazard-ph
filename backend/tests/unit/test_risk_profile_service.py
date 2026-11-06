@@ -3,8 +3,12 @@ from pathlib import Path
 import pytest
 
 from app.schemas.risk_profile import RiskProfile
-from app.services.risk_profile import RiskProfileNotFound, get_profile, load_profiles, summarize_profiles
-
+from app.services.risk_profile import (
+    RiskProfileNotFound,
+    get_profile,
+    load_profiles,
+    summarize_profiles,
+)
 
 FIXTURE = Path("tests/fixtures/risk_profiles.json")
 
@@ -25,6 +29,10 @@ def test_load_profiles_reads_generated_artifact():
     assert [p.region_name for p in profiles[:2]] == ["ARMM", "Bicol Region"]
     assert profiles[1].label == "Moderate"
     assert profiles[1].feature_importances["event_count"] == 0.2957
+
+
+def test_load_profiles_returns_empty_list_for_held_export(tmp_path):
+    assert load_profiles(tmp_path / "held-export.json") == []
 
 
 def test_get_profile_is_case_insensitive():

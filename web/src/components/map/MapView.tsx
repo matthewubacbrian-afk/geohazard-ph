@@ -1,9 +1,18 @@
+import type { ActivityRegions } from "./regionalActivity";
 import type { StaticLayer } from "../../types/staticLayer";
-import { useEffect, useId, useRef } from "react";
-import maplibregl from "maplibre-gl";
+import { useEffect, useId, useRef, useState } from "react";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { HazardEvent } from "../../types/hazard";
 import type { RiskProfile } from "../../types/hazard";
+import {
+  isLandslideOverlay,
+  removeLandslideOverlay,
+  syncLandslideOverlay,
+  LANDSLIDE_LAYER_ID,
+  type LandslideOverlayState,
+} from "./landslideOverlays";
 import { BASEMAPS, type BasemapId } from "./basemaps";
 import styles from "./MapView.module.css";
 import { PHILIPPINE_REGIONS } from "../../data/philippine-regions";
@@ -24,15 +33,38 @@ type MapViewProps = {
   showVolcanoZones?: boolean;
   volcanoOverlayRevision?: number;
   onVolcanoOverlayState?: (state: VolcanoOverlayState) => void;
+  showLandslideSusceptibility?: boolean;
+  landslideOverlayRevision?: number;
+  onLandslideOverlayState?: (state: LandslideOverlayState) => void;
   basemap?: BasemapId;
   selectedEvent?: HazardEvent | null;
   onSelectEvent?: (event: HazardEvent) => void;
   showEvents?: boolean;
   riskProfiles?: RiskProfile[];
+  activityRegions?: ActivityRegions;
   showRiskLayer?: boolean;
 };
 
 const PH_CENTER: [number, number] = [121.774, 12.8797]; // Philippines
+
+maplibregl.setWorkerUrl(workerUrl);
+
+function hasWebGL2(): boolean {
+  const context = document.createElement("canvas").getContext("webgl2", {
+    alpha: true,
+    antialias: false,
+    depth: true,
+    stencil: true,
+    premultipliedAlpha: true,
+    preserveDrawingBuffer: false,
+    powerPreference: "high-performance",
+    failIfMajorPerformanceCaveat: false,
+    desynchronized: false,
+  });
+  if (!context) return false;
+  context.getExtension("WEBGL_lose_context")?.loseContext();
+  return true;
+}
 
 // Resolve a CSS custom property from :root (single source of truth for tokens).
 // MapLibre paints need literal values, so we read the token at runtime instead
@@ -73,14 +105,19 @@ export default function MapView({
   showVolcanoZones = false,
   volcanoOverlayRevision = 0,
   onVolcanoOverlayState,
+  showLandslideSusceptibility = false,
+  landslideOverlayRevision = 0,
+  onLandslideOverlayState,
   basemap = "streets",
   selectedEvent,
   onSelectEvent,
   showEvents = true,
   riskProfiles = [],
+  activityRegions,
   showRiskLayer = false,
 }: MapViewProps) {
   const eventSummaryId = useId();
+  const [mapUnavailable, setMapUnavailable] = useState(false);
   const referenceLayers = useRef({
     faults,
     volcanoZones,
@@ -89,6 +126,7 @@ export default function MapView({
     showEvents,
     riskProfiles,
     showRiskLayer,
+    showLandslideSusceptibility,
   });
   referenceLayers.current = {
     faults,
@@ -98,11 +136,16 @@ export default function MapView({
     showEvents,
     riskProfiles,
     showRiskLayer,
+    showLandslideSusceptibility,
   };
   const overlayCallback = useRef(onVolcanoOverlayState);
   overlayCallback.current = onVolcanoOverlayState;
   const overlayFailed = useRef(false);
   const appliedOverlayRevision = useRef(volcanoOverlayRevision);
+  const landslideCallback = useRef(onLandslideOverlayState);
+  landslideCallback.current = onLandslideOverlayState;
+  const landslideFailed = useRef(false);
+  const appliedLandslideRevision = useRef(landslideOverlayRevision);
   const remoteOverlaysEnabled = () =>
     referenceLayers.current.showVolcanoZones &&
     referenceLayers.current.volcanoZones.length === 0;
@@ -164,6 +207,7 @@ export default function MapView({
       map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
     }
     syncVolcanoOverlays(map, remoteOverlaysEnabled());
+    syncLandslideOverlay(map, current.showLandslideSusceptibility);
   }
 
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -227,6 +271,8 @@ export default function MapView({
         ]
       : [],
   });
+  const activityRegionsRef = useRef(activityRegions);
+  activityRegionsRef.current = activityRegions;
   const riskProfilesRef = useRef(riskProfiles);
   riskProfilesRef.current = riskProfiles;
 
@@ -345,7 +391,7 @@ export default function MapView({
   };
 
   const syncRiskLayer = (map: maplibregl.Map) => {
-    const data = riskProfilesToFeatureCollection(
+    const data = activityRegionsRef.current ?? riskProfilesToFeatureCollection(
       riskProfilesRef.current,
       PHILIPPINE_REGIONS,
     );
@@ -362,7 +408,10 @@ export default function MapView({
           type: "fill",
           source: "risk-regions",
           paint: {
-            "fill-color": [
+            "fill-color": activityRegionsRef.current ? [
+              "step", ["get", "event_count"], "#d9d9d9",
+              1, "#c6dbef", 10, "#6baed6", 50, "#2171b5", 100, "#08306b",
+            ] : [
               "match",
               ["get", "label"],
               "Very High",
@@ -375,7 +424,7 @@ export default function MapView({
               cssVar("--risk-low"),
               cssVar("--text-faint"),
             ],
-            "fill-opacity": [
+            "fill-opacity": activityRegionsRef.current ? 0.55 : [
               "match",
               ["get", "label"],
               "Very High",
@@ -433,6 +482,11 @@ export default function MapView({
   // Keep the map and camera while replacing only its style.
   useEffect(() => {
     if (!mapContainer.current) return;
+    // MapLibre 6.4.1 returns a partial map when WebGL2 creation fails.
+    if (!hasWebGL2()) {
+      setMapUnavailable(true);
+      return;
+    }
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
@@ -447,6 +501,9 @@ export default function MapView({
     const restoreEvents = () => {
       overlayFailed.current = false;
       if (remoteOverlaysEnabled()) overlayCallback.current?.("loading");
+      landslideFailed.current = false;
+      if (referenceLayers.current.showLandslideSusceptibility)
+        landslideCallback.current?.("loading");
       syncReferenceLayers(map);
       syncRiskLayer(map);
       setupEventLayers(map);
@@ -455,6 +512,13 @@ export default function MapView({
       if (remoteOverlaysEnabled() && isVolcanoOverlay(event.sourceId)) {
         overlayFailed.current = true;
         overlayCallback.current?.("error");
+      }
+      if (
+        referenceLayers.current.showLandslideSusceptibility &&
+        isLandslideOverlay(event.sourceId)
+      ) {
+        landslideFailed.current = true;
+        landslideCallback.current?.("error");
       }
     };
     const overlayIdle = () => {
@@ -466,6 +530,14 @@ export default function MapView({
         )
       )
         overlayCallback.current?.("ready");
+      if (
+        referenceLayers.current.showLandslideSusceptibility &&
+        !landslideFailed.current &&
+        map.getSource(LANDSLIDE_LAYER_ID) &&
+        map.isSourceLoaded(LANDSLIDE_LAYER_ID)
+      ) {
+        landslideCallback.current?.("ready");
+      }
     };
     const overlayLoading = (event: maplibregl.MapSourceDataEvent) => {
       if (
@@ -474,6 +546,13 @@ export default function MapView({
         isVolcanoOverlay(event.sourceId)
       ) {
         overlayCallback.current?.("loading");
+      }
+      if (
+        referenceLayers.current.showLandslideSusceptibility &&
+        !landslideFailed.current &&
+        isLandslideOverlay(event.sourceId)
+      ) {
+        landslideCallback.current?.("loading");
       }
     };
     map.on("style.load", restoreEvents);
@@ -502,13 +581,23 @@ export default function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (map?.getLayer("event-circles")) syncReferenceLayers(map);
-  }, [faults, volcanoZones, showFaults, showVolcanoZones, riskProfiles, showRiskLayer]);
+  }, [faults, volcanoZones, showFaults, showVolcanoZones, riskProfiles, activityRegions, showRiskLayer]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.getLayer("event-circles")) return;
+    if (showLandslideSusceptibility) {
+      landslideFailed.current = false;
+      landslideCallback.current?.("loading");
+    }
+    syncLandslideOverlay(map, showLandslideSusceptibility);
+  }, [showLandslideSusceptibility]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.getLayer("event-circles")) return;
     syncRiskLayer(map);
-  }, [riskProfiles, showRiskLayer]);
+  }, [riskProfiles, activityRegions, showRiskLayer]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -521,6 +610,18 @@ export default function MapView({
     if (map.getLayer("event-circles"))
       syncVolcanoOverlays(map, remoteOverlaysEnabled());
   }, [volcanoOverlayRevision]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || appliedLandslideRevision.current === landslideOverlayRevision) return;
+    appliedLandslideRevision.current = landslideOverlayRevision;
+    landslideFailed.current = false;
+    removeLandslideOverlay(map);
+    if (showLandslideSusceptibility) {
+      landslideCallback.current?.("loading");
+      syncLandslideOverlay(map, true);
+    }
+  }, [landslideOverlayRevision, showLandslideSusceptibility]);
 
   // Sync updated event data into the already-existing source. This runs on
   // every `events` change WITHOUT touching the map instance or camera.
@@ -583,6 +684,17 @@ export default function MapView({
       behavior: reducedMotion ? "auto" : "smooth",
     });
   }, [selectedEvent]);
+
+  if (mapUnavailable) {
+    return (
+      <div className={styles.canvas} role="region" aria-label="Hazard event map">
+        <p className={styles.unavailable} role="alert">
+          The interactive map needs a browser and device with WebGL2 support.
+          Event details remain available in the list.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div

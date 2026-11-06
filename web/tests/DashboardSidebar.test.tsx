@@ -55,6 +55,15 @@ describe('DashboardSidebar map layers', () => {
     expect(screen.getByRole('button', { name: 'Satellite' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('offers an independent landslide susceptibility toggle', () => {
+    const onToggleLayer = vi.fn();
+    renderSidebar({ onToggleLayer });
+
+    fireEvent.click(screen.getByLabelText('Landslide susceptibility'));
+
+    expect(onToggleLayer).toHaveBeenCalledWith('landslideSusceptibility');
+  });
+
   it('shows all four existing basemap options as connected controls', () => {
     renderSidebar();
 
@@ -79,7 +88,7 @@ describe('DashboardSidebar layers', () => {
     const onToggleCollapsed = vi.fn();
     renderSidebar({ collapsed: true, onViewChange, onToggleCollapsed });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Open Risk reports' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Regional activity' }));
 
     expect(onViewChange).toHaveBeenCalledWith('risk');
     expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
@@ -88,10 +97,10 @@ describe('DashboardSidebar layers', () => {
   it('keeps accessible names for every view, toggle, date, basemap, and magnitude control', () => {
     renderSidebar();
 
-    for (const label of ['Map', 'Seismic filters', 'Historical data', 'Volcano bulletins', 'Risk reports']) {
+    for (const label of ['Map', 'Seismic filters', 'Historical data', 'Volcano bulletins', 'Regional activity']) {
       expect(screen.getByRole('button', { name: new RegExp(`^${label}$`) })).toBeInTheDocument();
     }
-    for (const label of ['Live events', 'Risk overlay', 'Fault lines', 'Volcano zones']) {
+    for (const label of ['Live events', 'Activity shading', 'Fault lines', 'Volcano zones', 'Landslide susceptibility']) {
       expect(screen.getByLabelText(label)).toBeInTheDocument();
     }
     for (const label of ['Critical events', 'Elevated events', 'Baseline events']) {

@@ -2,7 +2,9 @@ import { useStaticLayers } from '../hooks/useStaticLayers';
 import StaticLayerStatus from '../components/map/StaticLayerStatus';
 import VolcanoOverlayStatus from '../components/map/VolcanoOverlayStatus';
 import type { VolcanoOverlayState } from '../components/map/volcanoOverlays';
-import { useEffect, useState } from 'react';
+import LandslideOverlayStatus from '../components/map/LandslideOverlayStatus';
+import type { LandslideOverlayState } from '../components/map/landslideOverlays';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 import DashboardMapArea from '../components/dashboard/DashboardMapArea';
@@ -11,7 +13,7 @@ import DashboardSidebar, {
 } from '../components/dashboard/DashboardSidebar';
 import TopNav from '../components/layout/TopNav';
 import EventFeed from '../components/events/EventFeed';
-import RiskProfilesPanel from '../components/risk/RiskProfilesPanel';
+import RegionalActivityPanel from '../components/activity/RegionalActivityPanel';
 import type { View } from '../types/views';
 import type { BasemapId } from '../components/map/basemaps';
 import VolcanoPanel from '../components/volcanoes/VolcanoPanel';
@@ -51,6 +53,8 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
   const [source, setSource] = useState(initialQuery.source);
   const [volcanoOverlayState, setVolcanoOverlayState] = useState<VolcanoOverlayState>('loading');
   const [volcanoOverlayRevision, setVolcanoOverlayRevision] = useState(0);
+  const [landslideOverlayState, setLandslideOverlayState] = useState<LandslideOverlayState>('loading');
+  const [landslideOverlayRevision, setLandslideOverlayRevision] = useState(0);
   const [startDate, setStartDate] = useState(initialQuery.startDate);
   const [endDate, setEndDate] = useState(initialQuery.endDate);
   const [minMagnitude, setMinMagnitude] = useState(initialQuery.minMagnitude);
@@ -86,9 +90,10 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
   const [activeView, setActiveView] = useState<DashboardView>(initialQuery.view);
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
     events: true,
-    risk: false,
+    risk: initialQuery.view === 'risk',
     faults: false,
     volcanoes: false,
+    landslideSusceptibility: false,
   });
   const [activeEventCategories, setActiveEventCategories] = useState<RiskBucket[]>([
     'critical',
@@ -126,11 +131,10 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
   }
 
   const showRisk = activeView === 'risk';
-  const visibleEvents = events.filter((event) => {
-    if (!activeLayers.events) return false;
+  const visibleEvents = useMemo(() => events.filter((event) => {
     return activeEventCategories.includes(eventRiskBucket(event.alert_level)) &&
       activeHazardTypes.includes(event.hazard_type);
-  });
+  }), [events, activeEventCategories, activeHazardTypes]);
   const selectedEvent = visibleEvents.find((event) => event.id === selectedEventId) ?? null;
 
   useEffect(() => {
@@ -153,6 +157,7 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
 
   function changeView(view: DashboardView) {
     setActiveView(view);
+    if (view === 'risk') setActiveLayers((previous) => ({ ...previous, risk: true }));
     updateQuery({ view });
   }
 
@@ -240,6 +245,9 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
           showVolcanoZones={activeLayers.volcanoes}
           volcanoOverlayRevision={volcanoOverlayRevision}
           onVolcanoOverlayState={setVolcanoOverlayState}
+          showLandslideSusceptibility={activeLayers.landslideSusceptibility}
+          landslideOverlayRevision={landslideOverlayRevision}
+          onLandslideOverlayState={setLandslideOverlayState}
         />
 
         <DashboardActivityPanel collapsed={activityCollapsed} unreadCount={notificationState.unreadCount}
@@ -259,8 +267,11 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
               loading={volcanoZones.isLoading} error={volcanoZones.error} onRetry={() => { void volcanoZones.refetch(); }} /> :
             <VolcanoOverlayStatus state={volcanoOverlayState}
               onRetry={() => setVolcanoOverlayRevision(value => value + 1)} />)}
+          {activeLayers.landslideSusceptibility && <LandslideOverlayStatus
+            state={landslideOverlayState}
+            onRetry={() => setLandslideOverlayRevision(value => value + 1)} />}
           {activityTab === 'notifications' ? <NotificationCenter notifications={notificationState.notifications}
-            onMarkRead={notificationState.markRead} onMarkAllRead={notificationState.markAllRead} /> : activeView === 'volcanoes' ? <VolcanoPanel /> : showRisk ? <RiskProfilesPanel /> : (
+            onMarkRead={notificationState.markRead} onMarkAllRead={notificationState.markAllRead} /> : activeView === 'volcanoes' ? <VolcanoPanel /> : showRisk ? <RegionalActivityPanel events={visibleEvents} isLoading={isLoading} error={error} /> : (
             <EventFeed
               events={visibleEvents}
               isLoading={isLoading}

@@ -1,0 +1,55 @@
+name: Ingest Staging Events
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: staging-ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    if: github.event_name == 'workflow_dispatch' || vars.STAGING_INGEST_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    environment: staging
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+      REDIS_URL: ${{ secrets.STAGING_REDIS_URL }}
+      STAGING_RELEASE_SHA: ${{ vars.STAGING_RELEASE_SHA }}
+      INGEST_MAX_CYCLES: '1'
+      INGEST_FAIL_ON_SOURCE_ERROR: 'true'
+    steps:
+      - name: Check staging configuration
+        shell: bash
+        run: |
+          if [[ -z "$DATABASE_URL" || -z "$REDIS_URL" ]]; then
+            echo 'Staging database or Redis secret is missing.' >&2
+            exit 1
+          fi
+          if [[ ! "$STAGING_RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'STAGING_RELEASE_SHA must be a published 40-character commit SHA.' >&2
+            exit 1
+          fi
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Ingest USGS and PHIVOLCS once
+        shell: bash
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}-api:$STAGING_RELEASE_SHA"
+          docker run --pull always --rm \
+            -e DATABASE_URL \
+            -e REDIS_URL \
+            -e INGEST_MAX_CYCLES \
+            -e INGEST_FAIL_ON_SOURCE_ERROR \
+            "$image" python -m ingestion.scheduler

@@ -7,23 +7,29 @@ on:
 
 jobs:
   mobile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: mobile/package-lock.json
       - run: npm ci
         working-directory: mobile
+      - name: Test image-input observer
+        run: node --test ../scripts/tests/test_mobile_image_input_observer.cjs
+        working-directory: mobile
       - run: npm test -- --runInBand
         working-directory: mobile
-      - uses: actions/setup-java@v4
+      - name: Check TypeScript
+        run: npx tsc --noEmit
+        working-directory: mobile
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
         with:
           packages: ""
       - name: Install Android SDK packages
@@ -31,12 +37,98 @@ jobs:
       - name: Build Android debug app
         run: ./gradlew assembleDebug
         working-directory: mobile/android
+      - name: Build non-published Android release app
+        run: |
+          mkdir -p "$RUNNER_TEMP/mobile-node-coverage-android" "$RUNNER_TEMP/mobile-image-input-android"
+          NODE_V8_COVERAGE="$RUNNER_TEMP/mobile-node-coverage-android" \
+          GEOHAZARD_IMAGE_INPUT_TRACE_DIR="$RUNNER_TEMP/mobile-image-input-android" \
+          NODE_OPTIONS="--require=$GITHUB_WORKSPACE/scripts/mobile_image_input_observer.cjs" \
+          ./gradlew assembleRelease
+        working-directory: mobile/android
+      - name: Record Android build-process coverage
+        working-directory: mobile
+        run: |
+          python3 ../scripts/mobile_process_coverage.py \
+            --platform android \
+            --coverage-dir "$RUNNER_TEMP/mobile-node-coverage-android" \
+            --node-modules-root node_modules \
+            --output "$RUNNER_TEMP/mobile-process-trace-android.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mobile-process-trace-android
+          path: ${{ runner.temp }}/mobile-process-trace-android.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Record Android image input trace
+        working-directory: mobile
+        run: |
+          python3 ../scripts/mobile_image_input_summary.py \
+            --platform android \
+            --coverage-dir "$RUNNER_TEMP/mobile-node-coverage-android" \
+            --trace-dir "$RUNNER_TEMP/mobile-image-input-android" \
+            --node-modules-root node_modules \
+            --output "$RUNNER_TEMP/mobile-image-input-trace-android.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mobile-image-input-trace-android
+          path: ${{ runner.temp }}/mobile-image-input-trace-android.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Record Android release contents
+        working-directory: mobile
+        run: |
+          npm audit --omit=dev --package-lock-only --json > "$RUNNER_TEMP/mobile-audit.json" || test "$?" -eq 1
+          python3 ../scripts/mobile_artifact_inventory.py \
+            --platform android \
+            --source-map android/app/build/generated/sourcemaps/react/release/index.android.bundle.map \
+            --artifact android/app/build/outputs/apk/release/app-release.apk \
+            --audit-json "$RUNNER_TEMP/mobile-audit.json" \
+            --lockfile package-lock.json \
+            --output "$RUNNER_TEMP/mobile-artifact-report-android.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mobile-artifact-report-android
+          path: ${{ runner.temp }}/mobile-artifact-report-android.json
+          if-no-files-found: error
+          retention-days: 7
 
+      - name: Install Android emulator image
+        run: sdkmanager "emulator" "system-images;android-34;google_apis;x86_64"
+      - name: Smoke test Android Release startup
+        timeout-minutes: 12
+        working-directory: mobile
+        run: |
+          mkdir -p "$RUNNER_TEMP/mobile-startup-android"
+          if [ ! -e /dev/kvm ]; then echo "Android KVM unavailable" >&2; exit 1; fi
+          sudo chmod 666 /dev/kvm
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/android-avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | avdmanager create avd -n geohazard_ci -k "system-images;android-34;google_apis;x86_64" --path "$ANDROID_AVD_HOME/geohazard_ci.avd" --force
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -Fx geohazard_ci
+          "$ANDROID_HOME/emulator/emulator" -avd geohazard_ci -no-window -no-audio -no-boot-anim -gpu software -accel on > "$RUNNER_TEMP/mobile-startup-android/android-emulator.log" 2>&1 &
+          timeout 240s adb wait-for-device
+          booted=0
+          for attempt in $(seq 1 60); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; then booted=1; break; fi
+            sleep 3
+          done
+          if [ "$booted" != "1" ]; then echo "Android emulator did not boot" >&2; exit 1; fi
+          python3 ../scripts/mobile_runtime_smoke.py \
+            --platform android \
+            --artifact android/app/build/outputs/apk/release/app-release.apk \
+            --diagnostics "$RUNNER_TEMP/mobile-startup-android"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mobile-startup-android
+          path: ${{ runner.temp }}/mobile-startup-android/
+          if-no-files-found: warn
+          retention-days: 7
   ios-simulator:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -57,3 +149,81 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
             build
+      - name: Build non-published iOS Release simulator app
+        working-directory: mobile
+        run: |
+          mkdir -p "$RUNNER_TEMP/mobile-node-coverage-ios" "$RUNNER_TEMP/mobile-image-input-ios"
+          NODE_V8_COVERAGE="$RUNNER_TEMP/mobile-node-coverage-ios" \
+          GEOHAZARD_IMAGE_INPUT_TRACE_DIR="$RUNNER_TEMP/mobile-image-input-ios" \
+          NODE_OPTIONS="--require=$GITHUB_WORKSPACE/scripts/mobile_image_input_observer.cjs" \
+          xcodebuild \
+            -workspace ios/GeoHazardPH.xcworkspace \
+            -scheme GeoHazardPH \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/mobile-ios-derived" \
+            SOURCEMAP_FILE="$RUNNER_TEMP/ios-release.map" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Record iOS build-process coverage
+        working-directory: mobile
+        run: |
+          python3 ../scripts/mobile_process_coverage.py \
+            --platform ios \
+            --coverage-dir "$RUNNER_TEMP/mobile-node-coverage-ios" \
+            --node-modules-root node_modules \
+            --output "$RUNNER_TEMP/mobile-process-trace-ios.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mobile-process-trace-ios
+          path: ${{ runner.temp }}/mobile-process-trace-ios.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Record iOS image input trace
+        working-directory: mobile
+        run: |
+          python3 ../scripts/mobile_image_input_summary.py \
+            --platform ios \
+            --coverage-dir "$RUNNER_TEMP/mobile-node-coverage-ios" \
+            --trace-dir "$RUNNER_TEMP/mobile-image-input-ios" \
+            --node-modules-root node_modules \
+            --output "$RUNNER_TEMP/mobile-image-input-trace-ios.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mobile-image-input-trace-ios
+          path: ${{ runner.temp }}/mobile-image-input-trace-ios.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Record iOS release contents
+        working-directory: mobile
+        run: |
+          npm audit --omit=dev --package-lock-only --json > "$RUNNER_TEMP/mobile-audit.json" || test "$?" -eq 1
+          python3 ../scripts/mobile_artifact_inventory.py \
+            --platform ios \
+            --source-map "$RUNNER_TEMP/ios-release.map" \
+            --artifact "$RUNNER_TEMP/mobile-ios-derived/Build/Products/Release-iphonesimulator/GeoHazardPH.app" \
+            --audit-json "$RUNNER_TEMP/mobile-audit.json" \
+            --lockfile package-lock.json \
+            --output "$RUNNER_TEMP/mobile-artifact-report-ios.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mobile-artifact-report-ios
+          path: ${{ runner.temp }}/mobile-artifact-report-ios.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Smoke test iOS Release startup
+        timeout-minutes: 10
+        working-directory: mobile
+        run: |
+          python3 ../scripts/mobile_runtime_smoke.py \
+            --platform ios \
+            --artifact "$RUNNER_TEMP/mobile-ios-derived/Build/Products/Release-iphonesimulator/GeoHazardPH.app" \
+            --diagnostics "$RUNNER_TEMP/mobile-startup-ios"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mobile-startup-ios
+          path: ${{ runner.temp }}/mobile-startup-ios/
+          if-no-files-found: warn
+          retention-days: 7

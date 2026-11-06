@@ -1,6 +1,5 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import HazardEvent as HazardEventORM

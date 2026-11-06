@@ -8,6 +8,12 @@
   - Poll cadence stays at or above one minute to respect USGS feed caching.
   - Attribution: USGS data requires attribution to the "USGS Earthquake Hazards Program". Display the source and last-updated time alongside any USGS-derived view.
 - PHIVOLCS earthquake bulletins: scraped source, no official public API assumed.
+  - On 2026-10-28, the inspected listing sent UTF-8 degree-symbol bytes under
+    `Content-Type: text/html` without a charset. Requests interpreted its text
+    as ISO-8859-1, producing `Â°` in event place names. The earthquake feed
+    adapter now decodes raw response bytes as strict UTF-8 before HTML parsing
+    and raises a feed parsing error on invalid UTF-8. This is an observed
+    source-specific assumption, not a guarantee about future PHIVOLCS responses.
 
 Canonical matching retains source rows separately and groups only pairwise-compatible,
 cross-source reports. Corrections to a row with a stable `external_id` update that
@@ -22,7 +28,10 @@ The ML risk profiling pipeline uses two Kaggle datasets:
 - `bwandowando/philippine-earthquakes-from-phivolcs` — PHIVOLCS earthquake records, CC0: Public Domain
 - `bwandowando/philippine-earthquakes-1900-2025-from-usgs` — USGS earthquake records for the Philippines, Apache 2.0
 
-Access requires a Kaggle account and API key (`KAGGLE_USERNAME` and `KAGGLE_KEY` environment variables, or `~/.kaggle/kaggle.json`).
+Access requires a Kaggle account and API key. The ML downloader reads
+`KAGGLE_USERNAME` and `KAGGLE_KEY` from the repository-root `.env` when non-empty
+process environment values are not set; existing shell values take precedence.
+Kaggle's `~/.kaggle/kaggle.json` configuration file remains supported.
 
 By default, each training run uses `kagglehub.dataset_download` to resolve the latest
 version of each dataset with `force_download=True`. The download replaces the raw
@@ -132,7 +141,53 @@ manifest policy.
 
 - GEM Global Active Faults Database: fault-line reference data.
 - PHIVOLCS Active Fault Atlas: manual or semi-manual digitization source.
-- Landslide susceptibility and InSAR datasets: stretch work, validate licensing before use.
+- NASA Global Landslide Susceptibility Map: remote global raster reference, approximately
+  1 km pixel size, with service values from 0 to 5. Credit NASA and link the map/service
+  in the UI. Label it as a **coarse, informational susceptibility reference**; NASA
+  warns it may be research-grade and unsuitable for operational use. It is an
+  awareness aid, not an early-warning authority, live warning, event probability, or
+  site-level assessment. Do not interpret missing pixels as low susceptibility. The
+  dashboard requests imagery from the [NASA ImageServer](https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/Global_Landslide_Susceptibility/ImageServer)
+  at runtime; the raster is not copied into project storage.
+- MGB detailed rainfall-induced landslide susceptibility polygons may be considered as
+  a separate higher-resolution reference after reuse rights and geographic coverage
+  are confirmed. Public service access alone does not establish those terms; do not
+  copy or display the polygons until reviewed. A future MGB layer can complement the
+  NASA global reference.
+- InSAR deformation datasets: future feasibility work; validate source terms, coverage,
+  revisit cadence, processing requirements, and operational limits before use.
+- Epic 6 Part 2 InSAR desk review (2026-10-16): NISAR L-band is the recommended
+  longer-wavelength candidate for comparison in a bounded research pilot. A
+  University of the Philippines Diliman Philippine Engineering Journal article
+  reports a Sentinel-1 persistent-scatterer InSAR study in Antipolo, 184,253
+  persistent-scatterer points, and LOS displacement correlation of 0.83 against a
+  stationary GNSS receiver. Its acquisition details, footprint, and underlying GNSS
+  series must be reviewed before treating the paper as a reproducible validation
+  benchmark. NISAR launched after that study, so it cannot reproduce that historical
+  observation period; it requires a current independent ground reference for any
+  direct comparison.
+  ASF currently describes NISAR PROVISIONAL products as calibrated and partially
+  validated; each site's actual track/frame coverage, maturity, temporal sampling,
+  quality, latency, and product availability must be checked in the archive. The
+  recommendation is not evidence that any Philippine landslide site has usable
+  acquisitions or validated motion. Sentinel-1 on-demand InSAR is available through
+  ASF HyP3, subject to SLC-pair selection, Earthdata authentication, monthly Basic
+  credits/queue limits, and temporary product retention. InSAR can be affected by
+  decorrelation, atmosphere, DEM/orbit residuals, geometry, and unwrapping; do not
+  draw conclusions from one pair. Any later display must label LOS displacement as
+  research-grade and informational, show acquisition dates and quality gaps, and
+  must not present it as an early warning, forecast, or safety determination.
+  Credit NASA/ISRO and ASF for NISAR products, and ESA/Copernicus Sentinel-1 and ASF
+  for Sentinel-1 products according to the product citation and terms. See the
+  [Epic 6 InSAR feasibility spec](superpowers/specs/2026-10-16-epic6-insar-feasibility-design.md)
+  and its primary-source links before any pilot or product work. A read-only ASF
+  metadata query on 2026-10-16 found 34 descending Sentinel-1B IW SLC records
+  (relative orbit 61) and 26 PROVISIONAL NISAR GUNW records intersecting only the
+  published Naga landslide event-centroid point. This does not establish coverage
+  of the source scarp or usable pixel quality. No scenes were downloaded, no HyP3
+  jobs were submitted, and no displacement was measured. The screening details,
+  reproducible catalog links, and source-area/validation review are in the
+  [Epic 6 InSAR pilot report](epic6-insar-pilot-report.md).
 - Philippine administrative regions: the version-pinned geoBoundaries open ADM1
   derivative for the Philippines, sourced from NAMRIA, PSA, and OCHA Philippines.
   The web risk overlay uses the simplified WGS84 FeatureCollection from boundary
@@ -516,3 +571,36 @@ The clearance-first scope is tracked in the
 | Caraga | 5062 |
 
 <!-- REGION_BOUNDARY_PROVENANCE:END -->
+
+
+## Recorded regional earthquake activity (web)
+
+The dashboard's Regional activity view and Activity shading layer summarize the
+filtered earthquake records returned by the events API. They do not consume the
+held ML risk-profile export. The existing `view=risk` URL key is retained for
+bookmark compatibility; it opens the activity view.
+
+- Count unique earthquakes by canonical ID when present; otherwise use the source
+  and external/event ID. Prefer the primary catalog record when supplied.
+- Include only valid earthquake coordinates and timestamps. Count invalid records
+  separately. Source totals describe selected catalog records, not completeness.
+- Join epicenters inside the pinned 17-region web polygon snapshot. Exclude holes;
+  include outer edges. Shared-edge/overlap ties go to the first boundary in the
+  pinned file, so one earthquake is counted at most once.
+- Offshore/outside events remain unassigned. This differs deliberately from the
+  offline ML pipeline's nearest-region-within-100-km rule.
+- Show raw count bins: zero, 1-9, 10-49, 50-99, and 100+. These are display bins,
+  not scientifically validated activity classes or seismic-risk thresholds.
+- Display observed dates in UTC, region/source counts, and unassigned/invalid
+  totals. Observed dates are the extent of available matching records, not proof
+  of continuous observation. Zero matches mean insufficient matching data, never
+  low hazard. Small samples remain explicit counts without a risk/confidence label.
+- Apply source/date/magnitude/hazard filters to the same records as the map.
+  Hiding event markers does not clear activity counts. Entering the activity view
+  enables shading; the layer checkbox can then hide it.
+- Loading/failure states suppress the shading and counts. The implementation
+  adds browser computation without another source ingestion job or paid service.
+
+The boundary snapshot may differ from current administrative divisions. The
+existing boundary provenance in this document remains authoritative for the geometry.
+The ML risk export and its review hold remain separate and unchanged.

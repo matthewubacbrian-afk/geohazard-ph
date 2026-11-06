@@ -62,8 +62,10 @@ vi.mock('../src/hooks/useRealtimeAlerts', () => ({
 }));
 
 vi.mock('../src/components/dashboard/DashboardMapArea', () => ({
-  default: ({ events }: { events: unknown[] }) => (
-    <div aria-label="Hazard map"><span>{events.length} events in view</span></div>
+  default: ({ events, showLandslideSusceptibility }: { events: unknown[]; showLandslideSusceptibility?: boolean }) => (
+    <div aria-label="Hazard map" data-landslide-enabled={String(Boolean(showLandslideSusceptibility))}>
+      <span>{events.length} events in view</span>
+    </div>
   ),
 }));
 
@@ -108,6 +110,27 @@ function renderDashboard() {
 }
 
 describe('Dashboard activity layout', () => {
+  it('opens recorded regional activity and enables its shading independently of event markers', () => {
+    renderDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'Regional activity' }));
+    expect(screen.getByRole('heading', { name: 'Regional earthquake activity' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Activity shading')).toBeChecked();
+    expect(screen.getAllByText(/2026-10-14 to 2026-10-14/).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByLabelText('Live events'));
+    expect(screen.getByLabelText('Activity shading')).toBeChecked();
+    expect(screen.getAllByText(/2026-10-14 to 2026-10-14/).length).toBeGreaterThan(0);
+  });
+
+  it('keeps the NASA reference disabled by default and toggles it independently', () => {
+    renderDashboard();
+
+    expect(screen.getByLabelText('Landslide susceptibility')).not.toBeChecked();
+    expect(screen.getByLabelText('Hazard map')).toHaveAttribute('data-landslide-enabled', 'false');
+    fireEvent.click(screen.getByLabelText('Landslide susceptibility'));
+    expect(screen.getByLabelText('Hazard map')).toHaveAttribute('data-landslide-enabled', 'true');
+    expect(screen.getByRole('link', { name: 'Source: NASA Global Landslide Susceptibility Map' })).toBeInTheDocument();
+  });
+
   it('keeps the event count in view and source filter connected to current query data', () => {
     renderDashboard();
 

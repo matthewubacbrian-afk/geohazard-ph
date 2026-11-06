@@ -43,7 +43,9 @@ class FakeSegmenter:
 def client(monkeypatch):
     from app.api.v1 import scene_analyses
 
-    override = lambda: FakeSegmenter()
+    def override():
+        return FakeSegmenter()
+
     app = FastAPI()
     app.include_router(router, prefix="/api/v1")
     app.dependency_overrides[scene_analyses.get_segmenter] = override

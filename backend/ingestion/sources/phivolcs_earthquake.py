@@ -1,10 +1,12 @@
+import gzip
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
+from urllib.request import Request, urlopen
 
-import requests
 from bs4 import BeautifulSoup
 
 from app.config import Settings
+from app.core.phivolcs_tls import bulletin_ssl_context
 from app.schemas.hazard_event import HazardEvent
 
 PH_TZ = timezone(timedelta(hours=8))  # Philippine Standard Time, UTC+8
@@ -15,23 +17,21 @@ class PhivolcsFetchError(RuntimeError):
     """Raised when the PHIVOLCS feed cannot be fetched or parsed."""
 
 
-def fetch_recent_events(
-    settings: Settings, *, session: requests.Session | None = None
-) -> list[HazardEvent]:
-    http = session or requests
+def fetch_recent_events(settings: Settings) -> list[HazardEvent]:
     try:
-        response = http.get(
+        request = Request(
             settings.phivolcs_earthquake_feed_url,
             headers={"User-Agent": PHIVOLCS_USER_AGENT},
-            timeout=30,
-            verify=settings.phivolcs_ssl_verify,
         )
-        response.raise_for_status()
+        with urlopen(request, context=bulletin_ssl_context(), timeout=30) as response:
+            content = response.read()
+            if response.headers.get("Content-Encoding", "").lower() == "gzip":
+                content = gzip.decompress(content)
     except Exception as exc:
         raise PhivolcsFetchError(f"PHIVOLCS feed request failed: {exc}") from exc
 
     try:
-        return _parse_bulletin_table(response.text)
+        return _parse_bulletin_table(content.decode("utf-8"))
     except PhivolcsFetchError:
         raise
     except Exception as exc:
@@ -99,5 +99,5 @@ def _extract_bulletin_id(date_cell) -> str | None:
 
 def _parse_datetime(value: str) -> datetime:
     normalized = re.sub(r"\s+", " ", value.strip())
-    local_dt = datetime.strptime(normalized, "%d %B %Y - %I:%M %p")
-    return local_dt.replace(tzinfo=PH_TZ).astimezone(timezone.utc)
+    local_dt = datetime.strptime(normalized, "%d %B %Y - %I:%M %p").replace(tzinfo=PH_TZ)
+    return local_dt.astimezone(UTC)

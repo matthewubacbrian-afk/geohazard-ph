@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -41,7 +41,6 @@ def train_random_forest(
 
     predictions: dict[str, Prediction] = {}
     probas = clf.predict_proba(X)
-    classes = clf.classes_
 
     for i, name in enumerate(region_names):
         pred_label = clf.predict(X[i : i + 1])[0]

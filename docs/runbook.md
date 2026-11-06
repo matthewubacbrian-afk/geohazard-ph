@@ -1,5 +1,81 @@
 # Runbook
 
+## Free Split Staging Ingestion
+
+Start with the [current deployment record](free-split-deployment.md) for live
+service links, data flow, release ownership, cost controls, recovery, and open
+acceptance checks. The [rollout plan](superpowers/plans/2026-11-04-free-split-staging-deployment.md)
+preserves setup history. [November 6 acceptance](staging-acceptance-2026-11-06.md)
+records fresh API/CORS and ingestion-generated browser delivery. This section is
+the ingestion procedure; automatic scheduling and recovery need separate evidence.
+
+
+The active staging web site and API are hosted separately on Render. The API uses
+the Singapore Supabase PostGIS database and Upstash Redis provisioned for staging.
+The scheduled worker is `.github/workflows/ingest-staging.yml`; it runs one bounded
+USGS and PHIVOLCS cycle using the published backend image. A source failure makes
+the job fail after the other source has been attempted. The earthquake adapter
+uses the checked-in GlobalSign intermediate with the standard CA bundle, keeping
+TLS verification enabled for the PHIVOLCS host's incomplete certificate chain.
+
+Before enabling the six-hour schedule:
+
+1. Publish a backend image containing the current ingestion code through
+   **Prepare Staging Release** on `main`.
+2. In GitHub's `staging` environment, set `STAGING_DATABASE_URL` to the
+   SQLAlchemy `postgresql+psycopg` Supabase session-pooler URL and
+   `STAGING_REDIS_URL` to the Upstash TLS TCP URL. Set the environment variable
+   `STAGING_RELEASE_SHA` to the exact published 40-character commit SHA. Enter
+   secrets directly in GitHub; never paste them into a log or repository file.
+3. Run **Ingest Staging Events** manually once while the repository variable
+   `STAGING_INGEST_ENABLED` remains absent or `false`. Inspect the per-source
+   fetched and processed counts and confirm a successful job.
+4. Check `GET /api/v1/events?source=phivolcs` and
+   `GET /api/v1/events?source=usgs` on the staging API. Check a browser WebSocket
+   subscriber for an ingestion-generated event. Record the last event time,
+   source, release SHA, and job URL; a green job alone is insufficient.
+5. Review Supabase storage and Upstash command/bandwidth use after a representative
+   batch. Set `STAGING_INGEST_ENABLED=true` only after the free-tier budget is confirmed.
+
+The six-hour cron configures four scheduled opportunities per day (about 120 in a
+30-day month); GitHub can delay or skip triggers, and manual dispatch adds runs. Each cycle republishes the fetched events to Redis, so compare the
+per-cycle event count with the remaining Upstash command allowance before
+enabling it, and revisit that estimate if the source feed grows.
+
+Scheduled runs stay skipped while `STAGING_INGEST_ENABLED` is absent or not `true`.
+If either source fails, inspect the job's source-specific error and verify the
+source endpoint before changing parsing or TLS behavior. The regional risk-profile
+export remains a separate, review-gated release and is not loaded by ingestion.
+
+### Verify scheduling and freshness
+
+From an authenticated repository checkout, inspect metadata without secret values:
+
+```powershell
+gh run list --workflow ingest-staging.yml --limit 10 --json databaseId,event,status,conclusion,createdAt,url
+gh api repos/matthewubacbrian-afk/geohazard-ph/actions/workflows/ingest-staging.yml --jq '{state,path}'
+gh variable list
+gh variable list --env staging
+```
+
+Require at least one successful run whose event is `schedule`; manual runs only
+prove the dispatch path. If none appears, confirm the workflow exists on the
+default branch, is active, and `STAGING_INGEST_ENABLED` is exactly `true`. Inspect
+GitHub's run history and Actions/service status before changing the chosen cadence.
+An enabled workflow is not proof it ran; record missing-trigger evidence explicitly.
+
+For each accepted cycle, record the workflow URL, selected worker SHA, both source
+counts and source-specific API timestamps. `occurred_at` is event occurrence,
+not ingestion completion. Historical records can be republished unchanged; a new
+notification receive time does not mean a new earthquake occurred. Check browser
+notifications during the cycle and distinguish a connected LIVE badge from delivery.
+
+If health times out after inactivity, allow a bounded cold-start retry. Keep TLS
+verification on; local certificate-store failure and a sleeping service are separate
+from confirmed source or application failure. Do not generate continuous keep-alive
+traffic to evade free-plan sleep. Test sleep/restart reconnection separately from a
+normal connected-session delivery check.
+
 ## Epic 7 Model Packaging Preflight (2026-10-13)
 
 The pinned source `facebook/detr-resnet-50-panoptic@d53b52a799403a8867920f82c869e40732b47037`
@@ -16,22 +92,28 @@ secondary pretrained timm backbone initialization. The API adapter uses
 `local_files_only=True`, disables that secondary pretrained backbone, and returns a
 typed unavailable response when runtime/model files cannot load.
 
-Deployment packaging is still unverified: the local Docker CLI is installed, but
-Docker Desktop's Linux daemon was unavailable. The staging workflow builds one
+At this October preflight, the local Docker CLI was installed but Docker Desktop's
+Linux daemon was unavailable. For the alternative colocated deployment, the release workflow builds one
 backend image for `linux/amd64` and `linux/arm64`, and the API and ingestion worker use
 that same image. `compose.staging.yml` defines no per-service CPU or memory limits;
 the OCI target allows 2 OCPUs and 12 GB total across all services. The PyTorch CPU
 index lists the chosen CPython 3.12 Torch and torchvision wheels for both Linux
 architectures, but actual Linux package resolution/install, Docker image delta,
 production cold load/inference, and available staging resource headroom remain
-unmeasured. Do not enable model provisioning in the shared image until the deployment
-targets are measured and reviewed. Keep model initialization lazy so the ingestion
-worker does not initialize it.
+unmeasured in that preflight. Before provisioning the server model, measure cold
+load, inference and resource fit for the actual target: the active Render API or
+the alternative Compose host. The OCI budget above does not apply to Render.
+Keep model initialization lazy and model provisioning separate from ingestion.
 
 ## Epic 7 Scene Review
 
-Web and mobile clients capture a still JPEG only after the user taps **Open camera**.
-The client resizes the capture before sending it to `POST /api/v1/scene-analyses`; the
+The web page now defaults to [device-only browser analysis](browser-scene-analysis.md).
+The server setup below applies to the separate API/mobile path and is not needed
+for web analysis. Keep the distinction when checking the staging endpoint.
+
+Both clients capture a still JPEG only after the user taps **Open camera**.
+The web worker analyzes it locally and uploads no photo. The mobile/API path
+resizes the capture before sending it to `POST /api/v1/scene-analyses`; the
 backend enforces a 5,593,000-byte streamed request cap, 4 MiB decoded image cap, 4096
 pixel edge cap, and 12,000,000-pixel cap. The endpoint returns normalized image polygons,
 recognized visual cues, and fixed limitations. It does not store images or analysis
@@ -39,8 +121,9 @@ history. Do not enable body logging, image thumbnails, request-body traces, or f
 payload dumps on this route.
 
 Before segmentation, the API checks a provisional variance-of-Laplacian sharpness
-score. A low score returns `422 scene_image_quality_warning`; web and mobile let the
-user retake the image or explicitly continue. The score can flag some blur, but can
+score. A low score returns `422 scene_image_quality_warning` on the API path;
+the browser worker provides its own local warning. Both clients let the user
+retake the image or explicitly continue. The score can flag some blur, but can
 also warn on smooth, dark, or low-texture scenes. The current threshold (`400.0`) is
 not calibrated on a real-image benchmark. See [dataset and calibration notes](data-sources.md#scene-analysis-model-preflight).
 
@@ -156,7 +239,8 @@ command does not publish WebSocket messages. Rows without a stable source
 The manual **Prepare Staging Release** workflow runs backend and web checks,
 publishes API and web images to GHCR under the commit SHA, and uploads a deployment
 bundle. It does not connect to a host. The bundle contains `compose.staging.yml`,
-the Caddyfile, the deploy script, and `.env.staging.example`.
+the optional `compose.staging.profile.yml`, the Caddyfile, the deploy script, and
+`.env.staging.example`.
 
 The 2026-10-14 release for commit `5ada21049808c51f080da1e0080d3ee7577ec32b`
 is available from [its successful workflow run](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/38516440460).
@@ -246,8 +330,8 @@ and the event sources.
 1. On the repository's `main` branch, run the manual **Prepare Staging Release**
    workflow. Record the 40-character commit SHA and download the artifact named
    `staging-release-<sha>` from that same workflow run. The artifact contains
-   `compose.staging.yml`, `infra/caddy/Caddyfile`, `scripts/deploy_staging.sh`,
-   and `.env.staging.example`; extract all files together into one directory on
+   `compose.staging.yml`, `compose.staging.profile.yml`, `infra/caddy/Caddyfile`,
+   `scripts/deploy_staging.sh`, and `.env.staging.example`; extract all files together into one directory on
    the VM, preserving the `infra/caddy` and `scripts` paths.
 2. If the GHCR packages are private, authenticate with a GitHub token that has only
    `read:packages` access. Do not put the token in a command argument, shell
@@ -279,12 +363,21 @@ and the event sources.
    ```
 
    Replace `owner` and `<sha>` with the workflow's image prefix and release SHA;
-   each manifest must list `linux/arm64` and `linux/amd64`.
-4. Generate the ML export from the repository root on your Windows
-   development machine. Normal training requires `KAGGLE_USERNAME` and
-   `KAGGLE_KEY` environment variables or credentials in
-   `%USERPROFILE%\.kaggle\kaggle.json`. The trainer does not load credentials from
-   the repository `.env`; do not rely on that file for Kaggle authentication.
+   each manifest must list `linux/arm64` and `linux/amd64`. Change into the
+   extracted bundle directory before creating `.env.staging` or deploying:
+
+   ```bash
+   cd /home/ubuntu/geohazard-release
+   ```
+4. **Skip this step while the current export is on hold.** Deploy the base stack
+   without any risk-profile file; the API's profile list must return `[]`.
+   Only after the Epic 5 domain review records an approved sparse-region policy,
+   a replacement export passes validation, and the release is authorized, generate
+   that export from the repository root on your Windows development machine.
+   Normal training reads `KAGGLE_USERNAME` and
+   `KAGGLE_KEY` from non-empty shell variables first, then fills missing values
+   from the repository-root `.env`. Kaggle's
+   `%USERPROFILE%\.kaggle\kaggle.json` configuration is also supported.
    The `-Offline` option skips Kaggle downloads and requires explicit paths
    for both saved source snapshots. Replace the example paths with your files:
 
@@ -298,7 +391,9 @@ and the event sources.
 
    The output is `ml/model_artifacts/v1/risk_profiles.json`. Offline metadata
    has unknown Kaggle versions but records input-file hashes and the pinned
-   region-boundary hash. Check both source-assignment counts before transfer.
+   region-boundary hash. Check both source-assignment counts before transfer, and
+   follow the [quality review](risk-profile-quality-review-2026-10-14.md) for the
+   additional release gates. A schema check alone is not approval.
    Keep each trained export immutable and versioned with its release SHA on the
    VM. Transfer it from PowerShell to a release-specific filename; replace `RELEASESHA` below with the
    same 40-character SHA used for the images:
@@ -306,14 +401,6 @@ and the event sources.
    ```powershell
    ssh -i "$env:USERPROFILE\.ssh\oci_geohazard" ubuntu@<public-ip> "mkdir -p -m 700 /home/ubuntu/geohazard-release/deploy-data"
    scp -i "$env:USERPROFILE\.ssh\oci_geohazard" .\ml\model_artifacts\v1\risk_profiles.json "ubuntu@<public-ip>:/home/ubuntu/geohazard-release/deploy-data/risk_profiles_RELEASESHA.json"
-   ```
-
-   The extracted bundle directory must be `/home/ubuntu/geohazard-release` in
-   this example. Connect to the VM and, in its terminal, change into that directory
-   before validating the export:
-
-   ```bash
-   cd /home/ubuntu/geohazard-release
    ```
 
    Keep this directory as the working directory for the remaining `.env.staging`,
@@ -371,26 +458,32 @@ and the event sources.
    all placeholders: set `IMAGE_PREFIX` to the workflow's GHCR prefix, `IMAGE_TAG`
    to the exact commit SHA, `SITE_DOMAIN` to the DNS hostname, a strong
    `POSTGRES_PASSWORD`, a matching URL-encoded password in `DATABASE_URL`, and
-   `CORS_ORIGINS` to a JSON array containing `https://<site-domain>`. Set
-   `RISK_PROFILE_EXPORT_FILE` to the host export path (for example
-   `./deploy-data/risk_profiles_RELEASESHA.json`) and set
-   `INGEST_POLL_INTERVAL_SECONDS` as desired. Compose resolves a relative host
-   path from the directory containing `compose.staging.yml`. Restrict permissions
-   on deployment secrets and exports:
+   `CORS_ORIGINS` to a JSON array containing `https://<site-domain>`, and set
+   `INGEST_POLL_INTERVAL_SECONDS` as desired. Leave `RISK_PROFILE_EXPORT_FILE`
+   unset while the export is held. After approval and step 4's validation, set it
+   to the host export path (for example
+   `./deploy-data/risk_profiles_RELEASESHA.json`). Compose resolves a relative
+   host path from the directory containing `compose.staging.yml`. Restrict
+   permissions on deployment secrets:
 
    ```bash
    chmod 600 .env.staging
+   ```
+
+   Only when using a reviewed export, also restrict its directory and file:
+
+   ```bash
    chmod 700 ./deploy-data
    chmod 600 ./deploy-data/risk_profiles_RELEASESHA.json
    ```
 
    Keep `.env.staging`, database backups, and model exports private and out of
    version control. The web bundle uses same-origin `/api/v1` and derives `wss://`
-   from its public HTTPS origin. For rollback, update `.env.staging` so
-   `IMAGE_TAG` and `RISK_PROFILE_EXPORT_FILE` point to the matching prior release
-   SHA together, and pass that same SHA to the deploy script. The script argument
-   sets the effective `IMAGE_TAG`. Keep each versioned export until no release or
-   rollback needs it.
+   from its public HTTPS origin. For rollback, pass the prior release SHA to the
+   deploy script; its argument sets the effective `IMAGE_TAG`. If that prior
+   release had an approved export, also set `RISK_PROFILE_EXPORT_FILE` to its
+   matching versioned file and use `--with-profile`. Keep each reviewed export
+   until no release or rollback needs it.
 6. Ensure the deployment URL, `SITE_DOMAIN`, Caddy's site hostname, and DNS name
    all match. From the extracted bundle directory, deploy with the exact interface:
 
@@ -398,14 +491,25 @@ and the event sources.
    bash scripts/deploy_staging.sh <40-character-release-sha> https://<site-domain>
    ```
 
-   The script validates Compose, pulls immutable images, starts services, waits
-   for health, and checks the health, events, and risk-profile endpoints. Confirm
-   the release afterward:
+   This default mode never mounts a profile file and verifies that
+   `/api/v1/risk-profile/clusters` returns `[]`. Only after the domain review and
+   replacement export approval, set `RISK_PROFILE_EXPORT_FILE` and explicitly
+   choose the reviewed mode:
+
+   ```bash
+   bash scripts/deploy_staging.sh <40-character-release-sha> https://<site-domain> --with-profile
+   ```
+
+   The reviewed mode adds `compose.staging.profile.yml`, checks that the resolved
+   host export is a readable, non-empty JSON list before pulling images, and
+   verifies a non-empty profile list from the API. Both modes validate Compose, pull
+   immutable images, start services, wait for health, and check the health and
+   events endpoints. Confirm the selected release afterward:
 
    ```bash
    curl --fail https://SITE_DOMAIN/health
    curl --fail https://SITE_DOMAIN/api/v1/events
-   curl --fail https://SITE_DOMAIN/api/v1/risk-profile/clusters
+   curl --fail https://SITE_DOMAIN/api/v1/risk-profile/clusters # [] while held
    docker compose --env-file .env.staging -f compose.staging.yml ps
    docker compose --env-file .env.staging -f compose.staging.yml logs --tail=100 api worker web proxy postgres redis migrate
    ```
@@ -414,10 +518,10 @@ and the event sources.
    authentication errors, log in as above and retry
    `docker compose --env-file .env.staging -f compose.staging.yml pull`. For DNS,
    TLS, or connection failures, confirm the A record, public IP, OCI ingress rules,
-   and host firewall allow ports 80/443. For a missing model export, inspect
-   `docker compose --env-file .env.staging -f compose.staging.yml config` and run
+   and host firewall allow ports 80/443. In reviewed mode, append
+   `-f compose.staging.profile.yml` to inspection commands and run
    `test -s ./deploy-data/risk_profiles_RELEASESHA.json` after replacing
-   `RELEASESHA` with the active release SHA. For disk pressure, inspect `df -h`
+   `RELEASESHA` with the approved release SHA. For disk pressure, inspect `df -h`
    and `docker system df`. For unhealthy services, use the `ps` and `logs`
    commands above and resolve the first failing dependency before retrying.
 
@@ -466,19 +570,27 @@ covered by Oracle Always Free allowances.
 Restore a database dump only when intentionally replacing the current database.
 This overwrites current database contents. First capture a fresh backup using the
 commands above, stop API and worker services, then drop and recreate the database
-and restore the chosen custom-format dump:
+and restore the chosen custom-format dump. Preserve the mode already serving this
+release: use the base Compose file while the export is held, or add the override
+only for a release with an approved export and a matching
+`RISK_PROFILE_EXPORT_FILE` in `.env.staging`:
 
 ```bash
-docker compose --env-file .env.staging -f compose.staging.yml stop api worker
-docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres dropdb -U geohazard --if-exists geohazard
-docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres createdb -U geohazard -O geohazard geohazard
-docker compose --env-file .env.staging -f compose.staging.yml exec -T postgres pg_restore --no-owner -U geohazard -d geohazard < backups/geohazard-YYYYMMDDTHHMMSSZ.dump
-docker compose --env-file .env.staging -f compose.staging.yml up -d --wait
+compose=(docker compose --env-file .env.staging -f compose.staging.yml)
+# For an approved profile release, uncomment the next line:
+# compose+=(-f compose.staging.profile.yml)
+"${compose[@]}" stop api worker
+"${compose[@]}" exec -T postgres dropdb -U geohazard --if-exists geohazard
+"${compose[@]}" exec -T postgres createdb -U geohazard -O geohazard geohazard
+"${compose[@]}" exec -T postgres pg_restore --no-owner -U geohazard -d geohazard < backups/geohazard-YYYYMMDDTHHMMSSZ.dump
+"${compose[@]}" up -d --wait
 curl --fail https://SITE_DOMAIN/health
+curl --fail https://SITE_DOMAIN/api/v1/risk-profile/clusters
 ```
 
 Replace the dump placeholder with the chosen backup filename and `SITE_DOMAIN`
-with the actual hostname. Restore Caddy's saved state, if needed, using a temporary
+with the actual hostname. The profile response must be `[]` in held mode and a
+non-empty list for an approved profile release. Restore Caddy's saved state, if needed, using a temporary
 Compose container attached to the same named volumes:
 
 ```bash
@@ -491,6 +603,8 @@ Never run `down -v` during routine updates or recovery; it deletes named volumes
 
 To roll back application images, verify database migration compatibility and
 rerun `bash scripts/deploy_staging.sh <prior-40-character-release-sha> https://<site-domain>`.
+Append `--with-profile` and point `RISK_PROFILE_EXPORT_FILE` to the matching
+approved export only if that prior release included it.
 Image rollback alone does not reverse database migrations. Restore the database
 only using the explicit procedure above if schema or data changes must also be
 reverted.
@@ -530,7 +644,8 @@ bash scripts/deploy_staging.sh <release-commit-sha> https://staging.example.com
 
 The script validates Compose, pulls the immutable images, starts the stack,
 waits for health, and checks `/health`, `/api/v1/events`, and
-`/api/v1/risk-profile/clusters`. Caddy obtains and
+`/api/v1/risk-profile/clusters` (which must return `[]` while the export is held).
+Caddy obtains and
 renews TLS certificates for `SITE_DOMAIN` and forwards `/api/` and `/ws/` to
 the API. Its certificate state and Postgres data use persistent Docker volumes.
 The old release SHA is the rollback target: rerun the script with that SHA after

@@ -61,6 +61,21 @@ def test_main_offline_without_source_paths_fails(capsys, tmp_path):
     assert "PHIVOLCS and USGS" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("failure", [ValueError("missing source"), TypeError("unexpected failure")])
+def test_main_reports_training_failure_and_returns_nonzero(monkeypatch, capsys, failure):
+    from ml import train as train_module
+
+    def fail_training(**kwargs):
+        raise failure
+
+    monkeypatch.setattr(train_module, "run_training", fail_training)
+
+    assert train_module.main(["--offline"]) == 1
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert output.err == f"Training failed: {failure}\n"
+
+
 def test_main_defaults_to_download(monkeypatch, tmp_path):
     from ml import train as train_module
 
@@ -243,7 +258,7 @@ def test_offline_training_rejects_duplicate_source_assignment(tmp_path):
 
 def test_offline_training_rejects_missing_csv(tmp_path):
     missing = tmp_path / "missing.csv"
-    with pytest.raises(ValueError, match="missing.csv"):
+    with pytest.raises(ValueError, match=r"missing\.csv"):
         run_training(
             phivolcs_paths=[missing],
             usgs_paths=[FIXTURES / "usgs_sample.csv"],

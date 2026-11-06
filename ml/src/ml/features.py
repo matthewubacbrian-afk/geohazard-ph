@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Mapping
 
 import pandas as pd
 
@@ -41,7 +41,7 @@ def build_region_features(events: Iterable[Mapping[str, object]]) -> dict[str, R
         source_counts = group.get("source", pd.Series([], dtype=str)).value_counts()
         features[str(region_name)] = RegionFeatures(
             region_name=str(region_name),
-            event_count=int(len(group)),
+            event_count=len(group),
             mean_magnitude=round(float(group["magnitude"].mean()), 2),
             max_magnitude=round(float(group["magnitude"].max()), 2),
             mean_depth_km=round(float(group["depth_km"].mean()), 2),

@@ -6,12 +6,12 @@ import DataSources from '../src/pages/DataSources';
 import HistoricalBrowser from '../src/pages/HistoricalBrowser';
 
 describe('informational pages', () => {
-  it('explains the project and the limits of risk profiles', () => {
+  it('explains the project purpose and the limits of informational guidance', () => {
     render(<About />);
 
     expect(screen.getByRole('navigation', { name: 'Main navigation' })).toHaveAttribute('data-theme', 'dashboard');
-    expect(screen.getByRole('heading', { name: 'About GeoHazard' })).toBeTruthy();
-    expect(screen.getByText(/Risk profiles are descriptive statistics, not earthquake predictions\./)).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'About GeoHazard PH' })).toBeTruthy();
+    expect(screen.getByText(/do not establish that an area is safe or predict future earthquakes/)).toBeTruthy();
     expect(screen.getByText('GeoHazard PH is not an official PHIVOLCS/NDRRMC advisory.')).toBeTruthy();
   });
 
