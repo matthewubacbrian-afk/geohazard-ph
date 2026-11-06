@@ -142,8 +142,8 @@ export default function DashboardSidebar({
                 <span>{view.label}</span>
               </button>
             ))}
+            {locationControls}
           </div>
-          {locationControls}
         </div>
 
         <div className={styles.section}>

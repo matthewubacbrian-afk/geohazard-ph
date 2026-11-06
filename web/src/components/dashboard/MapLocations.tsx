@@ -4,6 +4,7 @@ import type { FormEvent, Ref } from 'react';
 import type { useMapLocations } from '../../hooks/useMapLocations';
 import { findNearbyEarthquakes, LOCATION_RADII_KM } from '../../lib/savedLocations';
 import type { HazardEvent } from '../../types/hazard';
+import sidebarStyles from './DashboardSidebar.module.css';
 import styles from './MapLocations.module.css';
 
 type MapLocationsProps = {
@@ -36,11 +37,11 @@ export default function MapLocations({
 
   return (
     <>
-      <button ref={triggerRef} type="button" className={styles.trigger} aria-expanded={expanded}
+      <button ref={triggerRef} type="button" className={`${sidebarStyles.tab} ${styles.trigger}`} aria-expanded={expanded}
         aria-controls={panelId} onClick={onToggle}>
         My locations
       </button>
-      <section id={panelId} aria-label="My locations" hidden={!expanded}>
+      <section id={panelId} className={styles.disclosure} aria-label="My locations" hidden={!expanded}>
         {expanded && <div className={styles.panel}>
           <div className={styles.actions}>
             <button type="button" disabled={mode === 'locating'} onClick={locations.useCurrentLocation}>

@@ -57,6 +57,17 @@ afterEach(() => {
 });
 
 describe('dashboard saved locations', () => {
+  it('places the My locations button after Regional activity and expands its panel below the controls', () => {
+    renderDashboard();
+    const regionalActivity = screen.getByRole('button', { name: 'Regional activity' });
+    const trigger = screen.getByRole('button', { name: 'My locations' });
+
+    expect(regionalActivity.nextElementSibling).toBe(trigger);
+    expect(screen.queryByRole('region', { name: 'My locations' })).not.toBeInTheDocument();
+    fireEvent.click(trigger);
+    expect(trigger.nextElementSibling).toBe(screen.getByRole('region', { name: 'My locations' }));
+  });
+
   it('finds earthquakes within the chosen radius of a pin and saves it across visits', () => {
     state.events = [
       event,
