@@ -1,8 +1,29 @@
 # Free Split Staging Deployment
 
-Last verified checkpoint: 2026-11-05 (Asia/Manila). This is the current operations
+Last verified checkpoint: 2026-11-06 (Asia/Manila). This is the current operations
 record. The [rollout plan](superpowers/plans/2026-11-04-free-split-staging-deployment.md)
 retains historical setup checks. Oracle is not the active deployment path.
+
+## Current Acceptance Checkpoint (2026-11-06)
+
+The [fresh acceptance record](staging-acceptance-2026-11-06.md) verifies public
+API health/reads, exact allowed-origin CORS, rendered dashboard markers/activity
+controls and a real ingestion-generated USGS/PHIVOLCS notification flow in the
+browser. [Manual run 42095142633](https://github.com/matthewubacbrian-afk/geohazard-ph/actions/runs/42095142633)
+succeeded with 41 USGS and 336 PHIVOLCS fetched/processed using the same selected
+published worker SHA below. Post-run API totals were 404 retained events
+(362 PHIVOLCS, 42 USGS), latest PHIVOLCS occurrence November 6 at 03:24 Manila.
+The bounding-box summary returned 399; its scope differs from the full list.
+
+The six-hour workflow is active and enabled, but GitHub returned manual runs only;
+automatic triggering is not yet accepted. Sleep/restart reconnection, mobile staging,
+managed backup/restore, migration repeatability and fresh provider usage remain open.
+The server scene endpoint returned its expected typed 503 for a synthetic JPEG;
+that does not affect the web page's separate local inference path. The risk-profile
+list remains empty. Render deployment SHAs/settings were not re-inspected in
+authenticated dashboards; successful public checks do not prove every service is
+on latest `main`. The November 5 usage and feature-deployment records below remain
+dated evidence rather than current account or all-device guarantees.
 
 ## Service Links
 
@@ -55,9 +76,10 @@ reviewed offline export; source ingestion does not train or publish those labels
 | GitHub repository variable | `STAGING_INGEST_ENABLED` | `true` enables scheduled ingestion; `false` skips scheduled jobs |
 
 Current worker SHA: `5c33057841dd9ae1a2df91926b626b94a78bed0a`.
-Current enable variable: `true`, verified through GitHub on 2026-11-05.
-Web build settings above describe the required contract; live environment values
-and browser CORS/WSS acceptance still need a recorded end-to-end check.
+Current enable variable: `true`, reverified through GitHub on 2026-11-06.
+Web build settings above describe the required contract; exact live values still
+need authenticated dashboard inspection. The November 6 allowed-origin CORS and
+browser WSS delivery checks passed; sleep/restart recovery and mobile staging remain open.
 
 ## Release And Ingestion Procedure
 
@@ -152,14 +174,14 @@ Official references, reviewed 2026-11-05:
   and paid monitoring are not required by this deployment.
 
 Still open: measured post-ingestion Redis usage and Supabase size/egress;
-first scheduled-trigger evidence; browser CORS, ingestion-generated WSS delivery
-and reconnect after API sleep; physical/emulated mobile staging checks;
+first scheduled-trigger evidence; reconnect after API sleep;
+physical/emulated mobile staging checks;
 repeatable split-deployment migrations; a securely stored database backup and
 tested restore procedure; deployed scene-analysis availability/resource checks.
 The colocated Compose backup procedure in the runbook is not a tested Supabase
 backup procedure.
 
-Regional shading remains blocked by the [profile quality hold](risk-profile-quality-review-2026-10-14.md)
+Regional risk-profile shading remains blocked by the [profile quality hold](risk-profile-quality-review-2026-10-14.md)
 and [domain review record](epic5-domain-review-decision-record.md). A later approval
 record identifying the exact reviewed export version/hash has not been supplied.
 Do not load the held export just to make the map shaded.
@@ -185,9 +207,11 @@ passed all 182 tests and the production build. Render served
 `/assets/index-C8Ayn264.js` containing the new activity panel and toggle.
 A live-data check of the same aggregation helper counted 339 events: 82 inside
 regional polygons across 14 regions, 257 offshore/outside, and zero invalid.
-These are dated counts, not completeness claims. Browser visual verification
-was unavailable because the browser automation runtime failed to initialize;
-deployed bundle verification does not prove GPU rendering on every device.
+These are dated counts, not completeness claims. Browser visual verification was
+unavailable at that checkpoint because the browser automation runtime failed to
+initialize. The November 6 check subsequently rendered basemap/markers and the
+activity controls/legend in one browser; full polygon/color correctness and
+all-device GPU rendering remain unassessed.
 
 
 ## Web Scene Review On Device

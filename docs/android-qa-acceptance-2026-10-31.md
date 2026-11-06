@@ -42,12 +42,16 @@ The original debug app and its stored data were not replaced.
 The captured preview had no direct Retake action before analysis. Source inspection
 confirmed Retake existed only after a result or quality warning. This prevented
 the planned initial-preview retake check. The separate `fix/mobile-scene-retake`
-branch supplies a shared Retake control with rendered state-transition tests;
-its own CI and physical acceptance must be recorded separately.
+repair merged in [PR #82](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/82)
+with rendered state-transition tests. This older APK does not contain that repair;
+physical acceptance of a fresh binary remains separate and unrecorded here.
+The [November 6 QA handoff](staging-acceptance-2026-11-06.md#android-qa-handoff)
+identifies a later verified APK with the repair for the next device check.
 
 This record establishes foreground and basic capture behavior for this exact
 downloaded binary. It does not establish model accuracy, candidate overlays,
 outdoor-scene performance, physical iOS behavior, background push, store signing,
-or production readiness. Oracle staging and the regional profile quality hold
-remain unchanged. Both temporary locations were removed; the local API and QA
-installation were left available for development.
+or production readiness. The regional profile quality hold remains. This dated
+local acceptance predates the [active split staging deployment](free-split-deployment.md)
+and does not establish acceptance against the hosted API. Both temporary locations
+were removed; the local API and QA installation were left available for development.

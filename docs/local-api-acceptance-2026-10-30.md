@@ -34,7 +34,10 @@ replacement, or profile release was performed.
   capture/retake cases; record native and JavaScript source versions.
 - Complete camera and model checks separately; default model unavailability
   does not establish successful scene analysis.
-- Keep Oracle staging deferred and the regional profile quality hold in force.
+- At this October 30 checkpoint Oracle staging was deferred. The later
+  [split deployment](free-split-deployment.md) supersedes that hosting decision;
+  see [November 6 acceptance](staging-acceptance-2026-11-06.md). The regional
+  profile quality hold remains in force. These local results are not hosted acceptance.
 
 ## Mobile preparation evidence
 

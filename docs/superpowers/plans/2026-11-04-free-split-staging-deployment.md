@@ -1,5 +1,14 @@
 # Free Split Staging Deployment — Implementation Plan
 
+**Reconciliation checkpoint (2026-11-06):** The original setup tasks below are
+preserved as rollout history. [Fresh acceptance](../../staging-acceptance-2026-11-06.md)
+verifies API reads, allowed-origin CORS and ingestion-generated browser notifications.
+The worker release and manual runs are live. First automatic-trigger evidence,
+sleep/restart recovery, mobile staging, managed backup/restore, migration
+repeatability and current provider usage remain open. Use [current operations](../../free-split-deployment.md)
+and [the completion queue](../../../PLAN.md#current-delivery-queue-2026-11-06).
+Unchecked original provisioning tasks do not mean deployed services are absent.
+
 > **For agentic workers:** Use `docs/superpowers/templates/plan-template.md` when executing this plan. This plan preserves the original rollout checklist. The 2026-11-05 checkpoint below and docs/free-split-deployment.md supersede earlier provisioning assumptions; unchecked acceptance checks remain open.
 
 **Goal:** Stage the current GeoHazard PH web and API using the lowest-cost practical split-provider architecture, with a verified PostGIS database, working Redis-backed realtime updates, scheduled ingestion, and an explicit free-tier operating envelope.

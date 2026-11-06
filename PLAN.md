@@ -1,69 +1,80 @@
 # Project completion plan
 
-Reviewed: 2026-10-30 (Asia/Manila). Initial audit baseline: origin/main `173f21be`.
+Reviewed: **2026-11-06 (Asia/Manila)**. Current audit baseline: `origin/main`
+`392a936f` (PR #92). Earlier audit started at `173f21be`; its dated evidence is
+retained below and does not override this current queue.
 
 ## Goal and completion rule
 
-Deliver the existing public-awareness monitoring scope with verified code, accurate
-operational documentation, and explicit release evidence. Each feature uses an
-isolated branch/worktree, regression tests, all package suites, configured lint and
-build checks, Conventional Commits, a pushed PR, and passing CI before merge.
-Update this plan and the status register with every delivery. Preserve existing
-quality holds and deferred scope; passing code checks cannot replace permission,
-scientific validation, device evidence, or deployed-state verification.
+Deliver the existing public-awareness monitoring scope with verified code,
+consistent operational documentation and explicit acceptance evidence. Keep
+implementation, deployment, data permission, scientific validation and physical
+device acceptance separate. Passing CI does not lift quality holds or clear
+external gates. Follow `AGENTS.md` and package verification requirements for
+future code changes; use an isolated feature branch and Conventional Commits.
 
 ## Epic checklist and distance to completion
 
-| Epic | Implemented evidence | Remaining acceptance gates |
+| Epic | Implemented or accepted evidence | Remaining acceptance gates |
 | --- | --- | --- |
-| 1: feed/API/map | USGS ingestion, persisted events, interactive dashboard | Reverify suites and deployed feed/health; staging host absent in recorded evidence |
-| 2: PHIVOLCS/realtime | Canonical deduplication, committed-event publishing, volcano feed | Operational source/TLS and realtime smoke checks on deployment |
-| 3: reference layers | Importer/API/toggles; recorded 155-feature GEM import | PHIVOLCS reuse permission, reviewed vectors, national coverage evidence |
-| 4: mobile | Saved locations, foreground nearby alerts, URL-scoped and ordered offline cache, native CI, Release-artifact and advisory-identity evidence, New Architecture build readiness and configured Release startup CI checks on React Native 0.75.5; critical advisory patched and unused navigation removed | Per-advisory API/attack-path review, New Architecture device flows, supported framework migration, and post-migration device evidence; background push and store release remain deferred |
-| 5: regional profiles | Historical pipeline, validation/sensitivity reports, API/UI; Kaggle `.env` credential loader merged | Domain-approved sparse-region policy and new validated artifact; current export remains held |
-| 6: stretch | NASA reference overlay merged; InSAR metadata research recorded | InSAR footprint/reuse and independent reference gates; no production deformation claim |
-| 7: scene review | Transient API, camera clients, warnings and provisional blur handling merged | Integrate training PR; same-sample baseline evaluation CLI; approved image data, thresholds, real-scene and device/resource validation |
-| Staging | Multi-architecture release workflow; held-export default and reviewed-export override implemented; branch verification confirmed under updated actions | Prepare a new bundle, then host/DNS/configuration and live verification; publication on main remains untested under the updated actions, and profile publication still needs Epic 5 approval |
+| 1: feed/API/map | Hosted feed, API and rendered web map | Sustained freshness, automatic ingestion and recovery |
+| 2: PHIVOLCS/realtime | Verified TLS fix, canonical ingestion, hosted WSS and browser notifications | First automatic run, reconnect after sleep/restart and failure acceptance |
+| 3: reference layers | Importer/API/toggles; 155 GEM faults on staging | PHIVOLCS vector reuse permission, reviewed imports and coverage evidence |
+| 4: mobile | Foreground Android QA/local API acceptance; native CI; Retake repair merged | Current-build staging and physical Retake/camera checks; physical iOS; unresolved advisory/framework decisions; background push/store release deferred |
+| 5: regional profiles | Historical training, validation/sensitivity reports and serving contracts | Domain-reviewed policy, reproducible versioned inputs and a newly validated/approved export; current artifact held |
+| 6: stretch | NASA susceptibility reference; InSAR metadata screening | InSAR footprint/reuse, processing and independent validation; outside core acceptance milestone |
+| 7: scene review | Local browser inference deployed and exercised on a fixture | Representative real-scene evaluation, blur calibration and phone performance; mobile/server inference remains unprovisioned; PR #36 conflicts |
+| Staging | Render web/API + Supabase PostGIS + Upstash; published worker and manual ingestion | Automatic-trigger evidence, recovery, mobile staging, managed backup/restore, migration repeatability and current usage |
 
-A single percentage would obscure these independent gates. The monitoring code is
-substantially implemented; the complete operational product is not yet evidenced.
-Historical plans are context, not proof that every unchecked historical item is
-current scope. No open GitHub issues were returned during the initial audit.
-PR #32 was incorporated through PR #43; PR #36 remains in the integration queue.
-PR #36 is currently open with conflicts against `main`; it is not approved for merge.
-The 34-row mobile audit in PR #65 is a dated baseline. After GitHub withdrew
-the `braces` and `sprintf-js` advisories, PR #66's live Android/iOS reports each
-returned 12 undetermined rows without a lockfile change. This is an audit-feed
-change, not evidence that the app or installed packages are safe.
-PR #71's dated reports have nine undetermined rows after three inherited chain
-rows disappeared from the audit feed. The direct `node-forge` row remains high
-and undetermined. No lockfile, source-map, native-inventory, or compact-trace
-change explains the row drop; it is not safety or device evidence.
+See [project status](docs/project-status.md), [deployment operations](docs/free-split-deployment.md)
+and [November 6 acceptance](docs/staging-acceptance-2026-11-06.md) for dated evidence.
+Regional activity shading is recorded event counts, not released ML risk labels.
+The browser scene worker does not provision the separate mobile Python model.
 
-## Current local readiness checkpoint (2026-10-30)
+## Current delivery queue (2026-11-06)
 
-Main `18b9a0ac` passed Backend, Web, ML, and Mobile CI. PR #77 merged the
-PHIVOLCS UTF-8 fix with five passing checks. PR #78 merged the iOS root safe-area
-fix; simulator startup screenshots verified the iPhone heading and tab layout
-and unchanged Android layout. These are recorded CI and simulator observations,
-not a fresh physical-device acceptance run.
+1. **P0: Close staging operations acceptance.** Verify the enabled six-hour cron
+   actually produces a successful `schedule` run; preserve its run ID, image SHA,
+   per-source counts and API freshness. Manual dispatch cannot close that gate.
+   Retain the verified CORS and ingestion-generated browser delivery evidence;
+   test sleep/restart reconnection separately. Record post-run usage and a managed-database
+   backup/restore using an isolated restore target before claiming recoverability.
+   Keep release migrations separate from recurring ingestion.
+2. **P1: Accept a current mobile build against staging.** Start from the
+   [checksum-verified QA handoff](docs/staging-acceptance-2026-11-06.md#android-qa-handoff)
+   or record a fresh APK checksum/source commit. Configure the public `/api/v1` base,
+   and repeat nearby matching, offline
+   cache, restart, recovery, permission and Retake checks. Repeat on physical iOS
+   when available. Keep existing dependency dispositions explicit; no raw audit
+   count or startup screenshot substitutes for device/security acceptance.
+3. **P1: Resolve Epic 5 review decisions.** Use the existing domain-review worksheet
+   and quantitative quality review to decide sparse-region treatment, offshore
+   assignment, source comparability, feature/category meaning and validation design.
+   Do not select a cutoff or publish an artifact without recorded domain authority
+   and exact version/hash approval. Refresh sources reproducibly after the policy
+   is agreed; current count shading remains independent.
+4. **P2: Resolve Epic 3 permission and coverage.** Obtain documented reuse clearance
+   before PHIVOLCS vector storage/display/redistribution, then review provenance,
+   geometry and coverage. Alternatively record an explicit reduced-scope decision;
+   do not silently mark GEM/raster coverage nationally complete.
+5. **P2: Evaluate Epic 7.** Establish same-sample baseline comparison, lawful and
+   representative evaluation images, blur/candidate metrics and physical phone
+   performance. Review/reconcile PR #36 before integration; do not merge conflicts
+   mechanically or treat the demonstrator's rankings as safety probabilities.
+6. **Deferred: InSAR research.** Resume only after reusable footprint, reproducible
+   source inputs and a time-aligned independent reference exist. No download or
+   processing is required to finish the core monitoring pilot.
 
-Oracle staging is deferred at the user's request because account creation is
-currently unavailable. Resume local acceptance in this order:
+## Historical local readiness checkpoint (2026-10-30)
 
-1. Restore a working Docker daemon and verify the local API, event feed, and
-   ingestion using the README and runbook; keep app data separate from test data.
-2. Connect an Android device and repeat the runtime checklist on the current app
-   commit, including remaining camera permission, retake, and cleanup flows.
-3. Complete iOS physical-device flows when a camera-capable device is available.
-   Model overlays still require a provisioned and evaluated scene model.
+The former local-only/Oracle-deferred milestone is superseded by the November
+split deployment. Its local API/device observations remain in
+[the October 30 record](docs/local-api-acceptance-2026-10-30.md) and
+[October 31 standalone QA acceptance](docs/android-qa-acceptance-2026-10-31.md).
+A fresh staging/device pass must identify the binary and API used; earlier local
+acceptance is not acceptance of the current hosted app.
 
-At the local readiness inspection, Android SDK tooling was installed but no
-Android device was connected, and Docker Desktop was unavailable. No new device
-or API flow pass was recorded. The Windows README paths now match the documented
-`backend/.venv` setup; the full startup sequence remains unverified here.
-
-## Prioritized delivery queue
+## Historical delivery queue and execution evidence
 
 - [x] P0 tracking: published this assessment and corrected stale Epic 7/current-process claims in `docs/project-status.md`; PR #39 merged after all five CI checks passed (remote main `f53117e2`).
 - [x] P1 verification debt: PR #40 merged at `4004ad3f` after independent review and all five CI checks passed. Backend 148 tests, ML 65 tests, portable Ruff, web build/tests, mobile Jest/TypeScript/Android, and iOS simulator build are required in CI.
@@ -133,7 +144,7 @@ and Redis instance; do not run destructive integration fixtures against app data
 Inspect existing PRs in isolated checkouts; leave worktrees owned by other chats
 untouched. New worktrees created by this session are archived only after verifying the PR is merged and its merge commit is contained in remote main.
 
-## Known gaps and constraints
+## Historical gaps and constraints (October audit)
 
 - Documentation: some historical Epic 7 and runtime descriptions still need
   reconciliation. The Windows quick-start paths now match `backend/.venv`;
@@ -144,8 +155,9 @@ untouched. New worktrees created by this session are archived only after verifyi
 - Weak tests: no physical
   camera coverage; synthetic scene tests do not establish recognition quality.
 - Technical debt: PR #40 resolves the original 18 backend and 11 ML lint findings under explicit package rules. Two applied migrations retain narrowly scoped style exceptions. The baseline web audit reported nine findings; PR #41 removed the production finding and PR #42 removed the remaining eight development-tool findings in their respective audited lockfiles.
-- External gates: OCI/DNS, source-owner permission, domain review, image reuse and
-  real evaluation data, physical devices and platform-specific runtime evidence.
+- External gates at that checkpoint: OCI/DNS for the alternative colocated
+  topology, source-owner permission, domain review, image reuse and real
+  evaluation data, physical devices and platform-specific runtime evidence.
 - No paid infrastructure provisioning, contact with third parties, fabricated
   signoff, or relaxation of scientific/data-quality gates is implied by this plan.
 

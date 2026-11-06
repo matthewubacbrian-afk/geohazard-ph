@@ -1,36 +1,54 @@
 # GeoHazard PH Project Status
 
-This is the authoritative current status register. It separates implemented code
-from data preparation, live deployment verification, and deferred product work.
-Status is based on the repository and its recorded history, updated through
-2026-11-05. Counts attached to earlier PRs are dated observations, not a
-promise that a live advisory feed will return the same rows today.
+This is the authoritative current status register. It separates implemented code,
+deployed acceptance, data permission, scientific validation and deferred scope.
+Reviewed through **2026-11-06 (Asia/Manila)** against `main` at `392a936f`
+(PR #92). Counts and test totals below are dated observations, not live guarantees.
 
-## Free Split Deployment Checkpoint (2026-11-05)
+## Current assessment
 
-The [deployment operations record](free-split-deployment.md) contains the public
-links, service/data flow, settings, release and ingestion process, dated account
-cost observations, recovery steps, and remaining acceptance checks. The
-[free split rollout plan](superpowers/plans/2026-11-04-free-split-staging-deployment.md)
-is now versioned alongside this register. Oracle is not the active path.
+The project is a deployed public-awareness monitoring demonstrator. The core web
+feed/map and foreground mobile code are substantially implemented; full operational,
+scientific and device acceptance is incomplete. There is no evidence-based single
+completion percentage across these independent gates.
 
-The published worker image and manual ingestion succeeded: the live API returned
-299 PHIVOLCS and 40 USGS events. The six-hour workflow schedule is configured and
-`STAGING_INGEST_ENABLED=true` was verified. The first automatic trigger and
-browser realtime acceptance remain unrecorded. Risk clusters remain empty under
-the existing quality hold; no later approval record was supplied. Provider
-billing figures are dated observations, not a permanent zero-cost guarantee.
+Use [the active deployment record](free-split-deployment.md) for Render + Supabase +
+Upstash + GitHub Actions operations, [the fresh acceptance record](staging-acceptance-2026-11-06.md)
+for bounded live results, and [the completion plan](../PLAN.md) for the ordered queue.
+Oracle/colocated Compose is an alternative, not the active staging topology.
+
+## Epic completion and remaining gates
 
 | Epic or workstream | Current status | Evidence and remaining work |
 | --- | --- | --- |
-| Epic 1: Earthquake feed, API, and web map | Implemented | USGS ingestion and event API are in [backend ingestion](../backend/ingestion/sources/usgs.py), [event routes](../backend/app/api/v1/events.py), and the [web app](../web/src). The dashboard [interface refresh](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/22) and [map/feed event selection with a selected-event pulse](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/23) merged on 2026-10-10. Live operation still depends on reachable sources and a configured database. |
-| Epic 2: PHIVOLCS, realtime, and deduplication | Implemented and merged | PHIVOLCS adapters, canonical event handling, and realtime publishing are present in [ingestion](../backend/app/services/ingest.py), [deduplication](../backend/app/services/dedup.py), and [realtime services](../backend/app/services/events_publisher.py). PHIVOLCS live fetch has a trusted-TLS/source availability caveat; see [runbook ingestion guidance](runbook.md#ingestion-failure), [PHIVOLCS bulletin notes](runbook.md#phivolcs-volcano-bulletins), and [data-source notes](data-sources.md). |
-| Epic 3: Static hazard layers | GEM fault snapshot verified locally; coverage remains partial | The pinned GEM snapshot at `56816508ad92fd6846dad1163b1c8c01376a2cd1` was imported and verified through the faults API with 155 intersecting features. Dry runs now report source, accepted, excluded-out-of-bounds, and un-clipped accepted-bounds metrics. The raw source is not bundled. PHIVOLCS fault and volcano-zone service candidates are documented, but reuse clearance remains pending: attribution is required, permission for storage/display/redistribution is not established, and no PHIVOLCS vector geometry was imported. The documented PHIVOLCS Geomatics request/DUA-or-MOU path is an application process, not a reuse grant; no request has been submitted. Existing PHIVOLCS raster reference overlays are not local vector coverage. National completeness remains unresolved. See the [Epic 3 import runbook](runbook.md#import-static-layers-epic-3), [verified GEM source](data-sources.md#verified-gem-fault-snapshot), [fault source and clearance record](data-sources.md#phivolcs-active-fault-candidate-reuse-clearance-pending), [volcano-zone source and clearance record](data-sources.md#phivolcs-volcano-zone-candidate-services-reuse-clearance-pending), [fault clearance spec](superpowers/specs/2026-10-09-epic3-phivolcs-fault-geometry-design.md), and [volcano-zone coverage spec](superpowers/specs/2026-10-09-epic3-phivolcs-volcano-zone-coverage-design.md). |
-| Epic 4: Mobile nearby alerts and offline cache | Foreground app and native CI builds implemented; physical Android foreground flow verified, with remaining device checks open | Saved locations, proximity matching, foreground alert list, and cached events are implemented in [mobile](../mobile/src). [PRs #46–49](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/49) fixed URL-scoped cache isolation, refresh ordering, cache-write ordering, and persistence warnings after five CI checks each. [PR #50](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/50) patched the critical transitive `shell-quote` finding; [PR #51](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/51) refreshed compatible lockfile entries; [PR #52](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/52) removed unused React Navigation, leaving 34 production-graph findings (six moderate, 28 high, zero critical). [PR #53](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/53) merged the reviewed migration assessment. [PR #54](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/54) merged after all five exact-head CI checks passed and generated non-published Android/iOS Release reports. The final reports list 25 source-map packages and 34 audit-chain findings on each platform; only `react-native` is listed among those findings, and every disposition remains undetermined. The iOS native list contains only the app and Hermes executables. [PR #55](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/55) merged after five exact-head CI checks and added installed versions, six direct advisory references across five packages, and inherited links to both reports; all 34 findings remain undetermined. [PR #56](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/56) merged after independent review and five exact-head checks; its dated path and precondition record leaves all 34 findings undetermined. [PR #57](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/57) merged after five exact-head checks; the pinned CLI consumers use XML parsing/validation rather than a direct XMLBuilder call, with other paths and input control unresolved. [PR #58](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/58) merged after five exact-head checks; Metro asset paths/buffers and byte-based image format dispatch are documented, with crafted-input provenance unresolved. [PR #59](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/59) merged the [node-forge consumer-call review](mobile-node-forge-callsites-2026-10-20.md) after five exact-head checks and both Release report inspections; the pinned middleware has no direct `selfsigned` call in published JavaScript, while `selfsigned.generate` verifies its new certificate. [PR #60](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/60) merged the [bounded braces consumer-call review](mobile-braces-callsites-2026-10-21.md) after five exact-head checks and both final Release-report inspections; all 34 dispositions remain undetermined. [PR #61](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/61) merged the [bounded sprintf-js consumer-call review](mobile-sprintf-js-callsites-2026-10-21.md) after five exact-head checks and both final Release-report inspections; all 34 dispositions remain undetermined. [PR #62](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/62) merged the [cross-advisory gate matrix](mobile-advisory-attack-path-gates-2026-10-21.md) after independent review, five exact-head checks, and both final Release-report comparisons; all 34 dispositions remain undetermined. [PR #63](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/63) merged the [asset provenance review](mobile-image-asset-provenance-2026-10-21.md) at `695e9ff8` after independent review, five exact-head CI checks, and final Android/iOS Release-report comparison with PR #62. Two local non-published Metro bundles copied no image asset, and current supported-suffix file signatures were PNG or SVG. Both CI reports retained 34 undetermined findings, 25 source-map packages, the same source-map hashes and native inventories; only the Android APK file hash differed. [PR #64](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/64) merged [Release build-process trace evidence](mobile-build-process-trace-2026-10-21.md) at `ecbe6173` after independent review and five exact-head checks on `2fe27ea8`. Both platforms observed Metro build activity and matching five-package summaries. Both final Release reports retain 34 undetermined findings, 25 source-map packages, and unchanged source-map hashes and native inventories against PR #63; only the Android APK hash differs. The tested head is on main, and its worktree and branch were removed after ignored files were preserved. Generated/external inputs, affected operation arguments, and device gates remain open; at that dated run, all 34 dispositions were undetermined. Remaining affected-API/attack-path review, New Architecture device flows, a supported framework migration, and post-migration Android/iOS device evidence remain. The [artifact evidence](mobile-artifact-evidence-2026-10-20.md), [audit record](mobile-dependency-audit-2026-10-19.md), [migration assessment](mobile-rn-migration-assessment-2026-10-20.md), and [current plan](../PLAN.md) separate these gates. The Android SDK 24/iOS 15.1 support-floor decision remains open. Use the [runtime smoke checklist](mobile-runtime-smoke-test.md); background push, store signing, and publishing remain deferred. |
-| Epic 5: Regional seismic risk profiles | Validation and cutoff sensitivity evidence generated; export remains on quality hold | The [ML pipeline](../ml/src/ml/train.py), [risk-profile API](../backend/app/api/v1/risk_profile.py), and [web map layer](../web/src) use historical data. Offline training uses explicit PHIVOLCS/USGS files and the pinned 17-region boundary asset, with nearby offshore events assigned within 100 km. A local ignored bundle produced 17 schema-valid profiles on 2026-10-14. The offline [validation command](../ml/src/ml/validate_profiles.py) matched saved source and boundary hashes and assignment counts, then generated ignored JSON and Markdown reports. The [quality review](risk-profile-quality-review-2026-10-14.md) records three NCR events in the common window and 18 exploratory, data-derived count cutoffs. At threshold 4, NCR is excluded and 10 of 16 included labels change; no cutoff policy is selected. The user chose to hold this export from staging. [PR #30](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/30) merged with backend, ML, web, mobile, and iOS simulator CI checks passing; these checks do not resolve the data-quality hold. The [domain review decision record](epic5-domain-review-decision-record.md) is prepared, but no stakeholder review or policy decision is recorded. Kaggle versions are unknown; versioned source refresh, scheduled refresh, and live-event modeling remain. Labels are descriptive statistical profiles, not predictions. See [data-source assumptions](data-sources.md#kaggle-historical-earthquake-datasets) and [README training instructions](../README.md#regional-seismic-risk-profiles). |
-| Epic 6: Landslide and InSAR stretch work | Part 1 implemented; Part 2 research-only | Part 1's NASA coarse, informational susceptibility overlay merged in [PR #37](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/37). Part 2 completed metadata screening and reproduction-design review at the Naga event-centroid point: 34 Sentinel-1B SLC records and 26 PROVISIONAL NISAR GUNW records. These do not establish source-scarp coverage, pixel quality, measured deformation, or validation. A georeferenced, reusable source-area footprint and a time-aligned independent reference were not found in the accessible sources reviewed. No images were downloaded and no processing ran. See the [screening report](epic6-insar-pilot-report.md) and [data sources](data-sources.md#static-layers). |
-| Epic 7: Camera scene review | Merged demonstrator; image-quality calibration, deployment, and camera-device checks pending | Shared transient analysis API plus web and mobile camera review flows are implemented. Both clients display the same persistent visual cue demonstrator warning, including that results are not a safety assessment or production-ready emergency decision tool and do not give emergency instructions, identify official shelters, or predict earthquakes. API result limitations enumerate what a single image cannot verify, including structure, ground, glass/electrical hazards, egress, accessibility, routes, unseen areas, and changing conditions. A local Windows run loaded the pinned model and returned HTTP 200 for one synthetic image (`no_clear_candidate`, zero polygons, two model cues); this verifies model loading and the response path, not scene-recognition accuracy. Blur-threshold calibration and real-scene evaluation remain pending. The full backend suite passed (148 tests, including PostGIS and Redis integration), web tests passed (133) with production build, and mobile tests passed (46) with strict TypeScript checking. The 2026-10-13 local verification recorded API, Vite, PostGIS, and Redis running in an isolated Compose project; this is historical evidence, not a current health check. A browser check of `/dashboard` rendered 2,779 earthquake events after refresh; regional activity showed 2,753 events. Enabling Fault lines displayed 155 GEM reference features, and Volcano bulletins showed five PHIVOLCS entries retrieved on 2026-10-13. The recorded local polling-worker cycle fetched and processed 29 USGS events and 2,750 PHIVOLCS events. An earlier one-shot PHIVOLCS request failed Windows certificate-chain validation, but the continuous worker subsequently completed successfully. The checksum-verified pinned GEM source imported 155 local fault features into this isolated database; volcano-zone data remains unavailable pending reuse permission, and the alert-subscription API currently has no subscriptions. Android/iOS camera hardware checks and deployed Linux/ARM64 model packaging/resource fit remain unverified. The default API image omits the large model runtime and weights and can return typed 503 until deployment packaging is measured and provisioned. See the [Epic 7 plan](superpowers/plans/2026-10-13-epic7-scene-analysis.md), [image-quality follow-up plan](superpowers/plans/2026-10-13-epic7-image-quality.md), [model preflight and dataset limits](data-sources.md#scene-analysis-model-preflight), [runbook](runbook.md#epic-7-scene-review), and [camera smoke checklist](mobile-runtime-smoke-test.md). |
-| Free split staging | Partially live; ingestion and acceptance remain open | The [Render web site](https://geohazard-ph-staging-web.onrender.com/) and [Render API](https://geohazard-ph-staging-api.onrender.com/health) are reachable. The 2026-11-04 deployment plan worktree records a Singapore Supabase PostGIS database with migrations applied and an Upstash Redis compatibility check. On 2026-11-05, the API returned 39 USGS events, zero PHIVOLCS earthquake events, 155 GEM fault features, five PHIVOLCS volcano bulletins, and an empty risk-profile list. The local PHIVOLCS earthquake adapter failed certificate-chain verification with Requests; the existing verified CA context fetched and parsed 298 current source events. A code fix and scheduled ingestion workflow are in progress, but the GitHub staging secrets, enabled schedule, hosted ingestion run, WebSocket delivery, and regional profile release remain unverified. See the [free split runbook](runbook.md#free-split-staging-ingestion). |
+| Epic 1: Earthquake feed, API, and web map | Implemented; hosted feed and map observed | Public API, browser map and source records verified on November 6. Sustained freshness, automatic ingestion and recovery acceptance remain; a healthy API alone does not prove a fresh feed. |
+| Epic 2: PHIVOLCS, realtime, and deduplication | Implemented; hosted ingestion-to-browser delivery observed | PR #83 restored verified PHIVOLCS TLS. Canonical ingestion and post-commit Redis/WSS publishing are implemented. November 6 acceptance observed a real ingestion-generated USGS message and browser notifications. First automatic schedule evidence, sleep/restart reconnection and source-outage acceptance remain open. |
+| Epic 3: Static hazard layers | GEM faults available locally and on staging; coverage partial | Pinned GEM snapshot `56816508ad92fd6846dad1163b1c8c01376a2cd1` supplies 155 staging faults. PHIVOLCS vector storage/display/redistribution permission is not established; no request or permission grant is recorded. Raster overlays do not establish local vector coverage or national completeness. See [source/clearance evidence](data-sources.md#static-layers) and [import runbook](runbook.md#import-static-layers-epic-3). |
+| Epic 4: Mobile nearby alerts and offline cache | Foreground Android flow verified on dated builds; release acceptance incomplete | Saved locations, radius matching, ordered URL-scoped cache and native CI are implemented. October 31 standalone QA passed foreground/cache/restart/recovery checks against the local API. PR #82 merged the Retake repair with 71 mobile tests; a fresh binary's physical Retake acceptance remains open. Current-build staging, physical iOS, unresolved advisory/framework decisions and post-migration evidence remain. Background push, signing and store publishing are deferred. See [QA evidence](android-qa-acceptance-2026-10-31.md), [device checklist](mobile-runtime-smoke-test.md), and [advisory evidence](mobile-advisory-attack-path-gates-2026-10-21.md). Historical audit totals are not fresh security clearance. |
+| Epic 5: Regional seismic risk profiles | Pipeline/validation implemented; scientific export held | A local bundle produced 17 schema-valid profiles, but sparse-region sensitivity remains material: excluding NCR at count threshold 4 changed 10 of 16 included labels. No cutoff or export approval is selected. [Domain review](epic5-domain-review-decision-record.md), versioned inputs, policy and a newly validated/approved artifact remain required. [Recorded activity shading](data-sources.md#recorded-regional-earthquake-activity-web) counts events and does not complete this epic or lift the hold. |
+| Epic 6: Landslide and InSAR stretch work | NASA reference overlay implemented; InSAR research-only | PR #37 delivered the coarse informational overlay. InSAR screening found candidate metadata, but no reusable source-area footprint, independent time-aligned validation, download, processing or displacement result. Keep InSAR outside the core monitoring acceptance milestone; see [screening report](epic6-insar-pilot-report.md). |
+| Epic 7: Camera scene review | Browser demonstrator deployed and exercised; mobile/server inference unprovisioned | PR #89 delivered local quantized browser inference; November 5 public staging tests displayed a grass candidate, about 25 seconds cold / 11 seconds warm, with zero photo uploads. These are fixture-path checks, not accuracy evidence. Physical phone/browser performance, representative-scene evaluation and blur calibration remain. Mobile still uses the separate Python endpoint whose default image lacks runtime/weights. PR #36 remains open and conflicting. See [browser architecture/evidence](browser-scene-analysis.md), [model preflight](runbook.md#epic-7-model-packaging-preflight-2026-10-13), and [device checklist](mobile-runtime-smoke-test.md). |
+| Free split staging | Public API/web and manual ingestion live; operational acceptance incomplete | Worker image `5c33057841dd9ae1a2df91926b626b94a78bed0a` published successfully. November 6 health, read endpoints and exact allowed-origin CORS passed; ingestion-generated browser notifications were observed. Six-hour schedule is configured and enabled, but no automatic run was returned at the initial inspection. Sleep/restart recovery, mobile staging, managed backup/restore, repeatable migrations and fresh provider usage evidence remain open. Risk clusters remain empty under the quality hold. |
+
+## Latest development and evidence boundaries
+
+- PR #83 restored PHIVOLCS ingestion; PR #84 selected six-hour staging cadence.
+- PR #86 delivered event-count regional activity shading; PR #88 repaired its panel layout.
+- PR #89 delivered browser scene inference; PR #90 recorded deployed verification.
+- PRs #91–92 refreshed About and project guides. Main `392a936f` passed Backend,
+  ML, Web and Mobile CI, including both mobile/iOS simulator jobs. PR #92 records
+  198 web tests plus build and desktop/tablet/phone page checks. These checks do
+  not prove physical-device, scientific or sustained deployment readiness.
+- The [November 6 acceptance record](staging-acceptance-2026-11-06.md) distinguishes
+  a manual refresh from automatic scheduling and event occurrence from receipt time.
+- No newer approval supersedes the Epic 5 hold. No new permission, domain-review,
+  physical-device or InSAR processing result is inferred by this documentation update.
+
+## Historical implementation and acceptance evidence
+
+The entries below retain their original dates and commit-specific scope. Present-tense
+statements within an older checkpoint describe that checkpoint; the table above and
+linked current acceptance record govern current status.
 
 The [PR #66 image-input slice](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/66)
 merged at `c398d31c` after five exact-head checks on `a80ecd85` and final
@@ -78,7 +96,7 @@ with the final gate and cleanup evidence.
 [PR #36](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/36)
 is still open with conflicts against `main` and has not been merged.
 
-## Session delivery plan
+## Historical delivery checkpoints (October 2026)
 
 [PR #72](https://github.com/matthewubacbrian-afk/geohazard-ph/pull/72) merged
 the PR #71 tracking closeout at `e3bf201f` after five checks on `6d03f321`;
@@ -203,30 +221,18 @@ Physical iOS API/camera flows remain open.
 
 At this 2026-10-30 checkpoint, staging was deferred. The later free split
 deployment supersedes that decision. Local API and device acceptance were ordered in
-[PLAN.md](../PLAN.md#current-local-readiness-checkpoint-2026-10-30). At this local
+[PLAN.md](../PLAN.md#historical-local-readiness-checkpoint-2026-10-30). At this local
 inspection Docker Desktop was unavailable and Android SDK tooling reported no
 connected devices. These prerequisites prevent fresh local runtime evidence;
 they do not change prior recorded results or clear any release gate.
 
-## Next integration milestone
+## Current integration milestone
 
-1. Complete the [Epic 5 domain review decision record](epic5-domain-review-decision-record.md)
-   with seismic-domain stakeholders, using the [reproducible validation
-   evidence](risk-profile-quality-review-2026-10-14.md). Review the count-cutoff
-   sensitivity and define a sparse-region policy before changing labels. Also
-   review the 100 km assignment, source coverage, features, and category
-   semantics. Keep the export on hold until review and validation criteria are
-   documented for a new artifact version.
-   Refresh both Kaggle sources with versioned downloads
-   when credentials are available; preserve input hashes, boundary hash, source
-   counts, and evaluation results. Follow the
-   [training instructions](../README.md#regional-seismic-risk-profiles) and
-   [data-source assumptions](data-sources.md#kaggle-historical-earthquake-datasets).
-2. Complete the [free split staging rollout](runbook.md#free-split-staging-ingestion):
-   publish the PHIVOLCS certificate-chain fix, configure and run the scheduled
-   ingestion job, then record source counts, event freshness, WebSocket delivery,
-   and provider usage. Keep the risk-profile endpoint empty until a reviewed
-   export with recorded approval is available; verify its map shading separately.
+The current queue is in [PLAN.md](../PLAN.md#current-delivery-queue-2026-11-06).
+Complete automatic ingestion and recovery acceptance, current-build mobile staging
+checks, and managed-database backup/restore evidence. Epic 5 domain decisions,
+Epic 3 reuse permission/coverage, and Epic 7 real-scene evaluation remain separate
+gates. Keep the held export absent; count-based activity shading does not release it.
 
 ## How to read project plans
 
@@ -264,9 +270,10 @@ Release HTTP denial. [Build and physical acceptance evidence](android-qa-accepta
 records the exact downloaded binary, passing foreground/cache/restart/recovery
 checks without Metro, and user-assisted capture preview/cleanup.
 
-Testing exposed missing initial-preview Retake; that repair is a separate branch
-and acceptance gate. Scientific model evaluation, remaining camera cases, physical
-iOS, and store release remain open. These results do not establish deployment or
+Testing exposed missing initial-preview Retake. The repair merged in PR #82
+on 2026-10-31; physical acceptance of a fresh APK containing it remains open.
+Scientific model evaluation, remaining camera cases, physical iOS, and store
+release remain open. These results do not establish deployment or
 scientific readiness.
 
 

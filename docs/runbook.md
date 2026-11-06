@@ -5,7 +5,9 @@
 Start with the [current deployment record](free-split-deployment.md) for live
 service links, data flow, release ownership, cost controls, recovery, and open
 acceptance checks. The [rollout plan](superpowers/plans/2026-11-04-free-split-staging-deployment.md)
-preserves setup history. This section is the ingestion procedure.
+preserves setup history. [November 6 acceptance](staging-acceptance-2026-11-06.md)
+records fresh API/CORS and ingestion-generated browser delivery. This section is
+the ingestion procedure; automatic scheduling and recovery need separate evidence.
 
 
 The active staging web site and API are hosted separately on Render. The API uses
@@ -35,8 +37,8 @@ Before enabling the six-hour schedule:
 5. Review Supabase storage and Upstash command/bandwidth use after a representative
    batch. Set `STAGING_INGEST_ENABLED=true` only after the free-tier budget is confirmed.
 
-The six-hour schedule runs at most four cycles per day (about 120 in a 30-day
-month). Each cycle republishes the fetched events to Redis, so compare the
+The six-hour cron configures four scheduled opportunities per day (about 120 in a
+30-day month); GitHub can delay or skip triggers, and manual dispatch adds runs. Each cycle republishes the fetched events to Redis, so compare the
 per-cycle event count with the remaining Upstash command allowance before
 enabling it, and revisit that estimate if the source feed grows.
 
@@ -44,6 +46,35 @@ Scheduled runs stay skipped while `STAGING_INGEST_ENABLED` is absent or not `tru
 If either source fails, inspect the job's source-specific error and verify the
 source endpoint before changing parsing or TLS behavior. The regional risk-profile
 export remains a separate, review-gated release and is not loaded by ingestion.
+
+### Verify scheduling and freshness
+
+From an authenticated repository checkout, inspect metadata without secret values:
+
+```powershell
+gh run list --workflow ingest-staging.yml --limit 10 --json databaseId,event,status,conclusion,createdAt,url
+gh api repos/matthewubacbrian-afk/geohazard-ph/actions/workflows/ingest-staging.yml --jq '{state,path}'
+gh variable list
+gh variable list --env staging
+```
+
+Require at least one successful run whose event is `schedule`; manual runs only
+prove the dispatch path. If none appears, confirm the workflow exists on the
+default branch, is active, and `STAGING_INGEST_ENABLED` is exactly `true`. Inspect
+GitHub's run history and Actions/service status before changing the chosen cadence.
+An enabled workflow is not proof it ran; record missing-trigger evidence explicitly.
+
+For each accepted cycle, record the workflow URL, selected worker SHA, both source
+counts and source-specific API timestamps. `occurred_at` is event occurrence,
+not ingestion completion. Historical records can be republished unchanged; a new
+notification receive time does not mean a new earthquake occurred. Check browser
+notifications during the cycle and distinguish a connected LIVE badge from delivery.
+
+If health times out after inactivity, allow a bounded cold-start retry. Keep TLS
+verification on; local certificate-store failure and a sleeping service are separate
+from confirmed source or application failure. Do not generate continuous keep-alive
+traffic to evade free-plan sleep. Test sleep/restart reconnection separately from a
+normal connected-session delivery check.
 
 ## Epic 7 Model Packaging Preflight (2026-10-13)
 
@@ -61,17 +92,18 @@ secondary pretrained timm backbone initialization. The API adapter uses
 `local_files_only=True`, disables that secondary pretrained backbone, and returns a
 typed unavailable response when runtime/model files cannot load.
 
-Deployment packaging is still unverified: the local Docker CLI is installed, but
-Docker Desktop's Linux daemon was unavailable. The staging workflow builds one
+At this October preflight, the local Docker CLI was installed but Docker Desktop's
+Linux daemon was unavailable. For the alternative colocated deployment, the release workflow builds one
 backend image for `linux/amd64` and `linux/arm64`, and the API and ingestion worker use
 that same image. `compose.staging.yml` defines no per-service CPU or memory limits;
 the OCI target allows 2 OCPUs and 12 GB total across all services. The PyTorch CPU
 index lists the chosen CPython 3.12 Torch and torchvision wheels for both Linux
 architectures, but actual Linux package resolution/install, Docker image delta,
 production cold load/inference, and available staging resource headroom remain
-unmeasured. Do not enable model provisioning in the shared image until the deployment
-targets are measured and reviewed. Keep model initialization lazy so the ingestion
-worker does not initialize it.
+unmeasured in that preflight. Before provisioning the server model, measure cold
+load, inference and resource fit for the actual target: the active Render API or
+the alternative Compose host. The OCI budget above does not apply to Render.
+Keep model initialization lazy and model provisioning separate from ingestion.
 
 ## Epic 7 Scene Review
 
@@ -79,8 +111,9 @@ The web page now defaults to [device-only browser analysis](browser-scene-analys
 The server setup below applies to the separate API/mobile path and is not needed
 for web analysis. Keep the distinction when checking the staging endpoint.
 
-Web and mobile clients capture a still JPEG only after the user taps **Open camera**.
-The client resizes the capture before sending it to `POST /api/v1/scene-analyses`; the
+Both clients capture a still JPEG only after the user taps **Open camera**.
+The web worker analyzes it locally and uploads no photo. The mobile/API path
+resizes the capture before sending it to `POST /api/v1/scene-analyses`; the
 backend enforces a 5,593,000-byte streamed request cap, 4 MiB decoded image cap, 4096
 pixel edge cap, and 12,000,000-pixel cap. The endpoint returns normalized image polygons,
 recognized visual cues, and fixed limitations. It does not store images or analysis
@@ -88,8 +121,9 @@ history. Do not enable body logging, image thumbnails, request-body traces, or f
 payload dumps on this route.
 
 Before segmentation, the API checks a provisional variance-of-Laplacian sharpness
-score. A low score returns `422 scene_image_quality_warning`; web and mobile let the
-user retake the image or explicitly continue. The score can flag some blur, but can
+score. A low score returns `422 scene_image_quality_warning` on the API path;
+the browser worker provides its own local warning. Both clients let the user
+retake the image or explicitly continue. The score can flag some blur, but can
 also warn on smooth, dark, or low-texture scenes. The current threshold (`400.0`) is
 not calibrated on a real-image benchmark. See [dataset and calibration notes](data-sources.md#scene-analysis-model-preflight).
 

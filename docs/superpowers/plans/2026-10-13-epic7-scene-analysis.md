@@ -1,5 +1,12 @@
 # Epic 7 Camera-Based Scene Review — Implementation Plan
 
+**Architecture update (2026-11-06):** This is the original shared-server plan.
+The web default was superseded by [local browser inference](../../browser-scene-analysis.md),
+deployed through PR #89. Mobile retains the Python endpoint, whose default image
+is unprovisioned. Preserve this plan's original implementation evidence; use
+[current status](../../project-status.md) and [the device checklist](../../mobile-runtime-smoke-test.md)
+for open accuracy, calibration, resource and physical-device gates.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a privacy-preserving camera scene review flow to web and mobile that uses one Python vision endpoint to rank visible floor/ground candidates and explain the visual cues without claiming safety.
