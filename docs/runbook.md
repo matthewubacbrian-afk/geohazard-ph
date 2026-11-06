@@ -49,6 +49,29 @@ export remains a separate, review-gated release and is not loaded by ingestion.
 
 ### Verify scheduling and freshness
 
+From the repository root, run the on-demand staging evidence check with Python
+3.11+ and an authenticated GitHub CLI:
+
+```powershell
+python scripts/check_staging_acceptance.py
+```
+
+The JSON records recent scheduled runs on `main`, consecutive successful
+completed runs, and the retained primary row count and latest event occurrence for each
+source. Exit 0 means the snapshot was collected. Inspect the timestamps and
+run conclusions across several intervals to assess sustained cadence. The
+snapshot does not include browser or database recovery evidence.
+
+If the Python installed through MSYS cannot verify the staging certificate,
+run the same check with Windows Python using
+`py -3.11 scripts/check_staging_acceptance.py`.
+
+For browser recovery, keep the dashboard open during an operator-coordinated
+staging API restart. Record the connection drop, recovery and a notification
+from a subsequent real ingestion cycle with its run URL. Active dashboard tabs
+poll the API, so check natural cold start separately. Close polling clients,
+allow the service to idle, then record the first request and time to readiness.
+
 From an authenticated repository checkout, inspect metadata without secret values:
 
 ```powershell
