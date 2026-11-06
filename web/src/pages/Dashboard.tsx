@@ -4,10 +4,11 @@ import VolcanoOverlayStatus from '../components/map/VolcanoOverlayStatus';
 import type { VolcanoOverlayState } from '../components/map/volcanoOverlays';
 import LandslideOverlayStatus from '../components/map/LandslideOverlayStatus';
 import type { LandslideOverlayState } from '../components/map/landslideOverlays';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 import DashboardMapArea from '../components/dashboard/DashboardMapArea';
+import MapLocations from '../components/dashboard/MapLocations';
 import DashboardSidebar, {
   type DashboardView,
 } from '../components/dashboard/DashboardSidebar';
@@ -24,6 +25,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import DashboardActivityPanel, { type ActivityTab } from '../components/dashboard/DashboardActivityPanel';
 import NotificationCenter from '../components/dashboard/NotificationCenter';
 import { useEvents } from '../hooks/useEvents';
+import { useMapLocations } from '../hooks/useMapLocations';
 import { eventRiskBucket, type RiskBucket } from '../lib/risk';
 import type { HazardEvent } from '../types/hazard';
 import { getDatePresetRange, type DashboardDatePreset } from '../lib/dashboardFilterPresets';
@@ -67,6 +69,9 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
   const notificationState = useNotifications();
   const realtime = useRealtimeAlerts(notificationState.addEvent);
   const [controlsCollapsed, setControlsCollapsed] = useState(false);
+  const [locationsExpanded, setLocationsExpanded] = useState(false);
+  const locations = useMapLocations();
+  const locationsTrigger = useRef<HTMLButtonElement>(null);
   const [activityCollapsed, setActivityCollapsed] = useState(false);
   const [activityTab, setActivityTab] = useState<ActivityTab>('events');
   useEffect(() => {
@@ -210,6 +215,18 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
           onBasemapChange={changeBasemap}
           activeView={activeView}
           onViewChange={changeView}
+          locationControls={<MapLocations
+            expanded={locationsExpanded}
+            triggerRef={locationsTrigger}
+            onToggle={() => {
+              if (locationsExpanded) locations.changeMode('idle');
+              setLocationsExpanded(!locationsExpanded);
+            }}
+            locations={locations}
+            events={visibleEvents}
+            isLoading={isLoading}
+            hasError={Boolean(error)}
+          />}
           activeLayers={activeLayers}
           onToggleLayer={toggleLayer}
           activeEventCategories={activeEventCategories}
@@ -226,7 +243,10 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
           source={source}
           onSourceChange={changeSource}
           collapsed={controlsCollapsed}
-          onToggleCollapsed={() => setControlsCollapsed((value) => !value)}
+          onToggleCollapsed={() => {
+            if (!controlsCollapsed) locations.changeMode('idle');
+            setControlsCollapsed(!controlsCollapsed);
+          }}
         />
 
         <DashboardMapArea
@@ -237,6 +257,11 @@ export default function Dashboard({ onNavigate, onSettings }: DashboardProps) {
           basemap={basemap}
           selectedEvent={selectedEvent}
           onSelectEvent={(event) => setSelectedEventId(event.id)}
+          location={locations.point}
+          onPickLocation={locations.mode === 'picking' ? (point, fromMapCenter) => {
+            locations.selectPoint(point);
+            if (fromMapCenter) locationsTrigger.current?.focus();
+          } : undefined}
           showEvents={activeLayers.events}
           showRiskLayer={activeLayers.risk}
           faults={faults.data}

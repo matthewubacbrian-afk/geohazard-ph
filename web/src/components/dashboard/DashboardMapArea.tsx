@@ -4,9 +4,10 @@ import type { LandslideOverlayState } from '../map/landslideOverlays';
 import styles from "./DashboardMapArea.module.css";
 import Skeleton from "../common/Skeleton";
 import DashboardSummaryBar from './DashboardSummaryBar';
-import MapView from "../map/MapView";
+import MapView, { type PickMapLocation } from "../map/MapView";
 import type { BasemapId } from "../map/basemaps";
 import type { HazardEvent } from "../../types/hazard";
+import type { LocationPoint } from "../../lib/savedLocations";
 import { useMemo } from "react";
 import { buildRegionalActivity } from "../map/regionalActivity";
 import { PHILIPPINE_REGIONS } from "../../data/philippine-regions";
@@ -28,6 +29,8 @@ type DashboardMapAreaProps = {
   basemap?: BasemapId;
   selectedEvent?: HazardEvent | null;
   onSelectEvent?: (event: HazardEvent) => void;
+  location?: LocationPoint | null;
+  onPickLocation?: PickMapLocation;
   showEvents?: boolean;
   showRiskLayer?: boolean;
 };
@@ -45,6 +48,8 @@ export default function DashboardMapArea({
   basemap = "streets",
   selectedEvent,
   onSelectEvent,
+  location,
+  onPickLocation,
   showEvents = true,
   showRiskLayer = true,
 }: DashboardMapAreaProps) {
@@ -64,6 +69,8 @@ export default function DashboardMapArea({
         basemap={basemap}
         selectedEvent={selectedEvent}
         onSelectEvent={onSelectEvent}
+        location={location}
+        onPickLocation={onPickLocation}
         showEvents={showEvents}
         activityRegions={isLoading || error ? { type: "FeatureCollection", features: [] } : activity.features}
         showRiskLayer={showRiskLayer}

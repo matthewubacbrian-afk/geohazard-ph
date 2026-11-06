@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import Icon, { type IconName } from '../common/Icon';
 import styles from './DashboardSidebar.module.css';
 import { BASEMAPS, BASEMAP_IDS, type BasemapId } from '../map/basemaps';
@@ -61,6 +62,7 @@ type DashboardSidebarProps = {
   onBasemapChange: (basemap: BasemapId) => void;
   activeView: DashboardView;
   onViewChange: (view: DashboardView) => void;
+  locationControls?: ReactNode;
   activeLayers: Record<string, boolean>;
   onToggleLayer: (key: string) => void;
   activeEventCategories: RiskBucket[];
@@ -85,6 +87,7 @@ export default function DashboardSidebar({
   onBasemapChange,
   activeView,
   onViewChange,
+  locationControls,
   activeLayers,
   onToggleLayer,
   activeEventCategories,
@@ -140,6 +143,7 @@ export default function DashboardSidebar({
               </button>
             ))}
           </div>
+          {locationControls}
         </div>
 
         <div className={styles.section}>

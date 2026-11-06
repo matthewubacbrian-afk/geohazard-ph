@@ -22,6 +22,7 @@ const state = vi.hoisted(() => ({
     occurred_at: string;
   }>,
   selectOnMap: undefined as ((selected: typeof event) => void) | undefined,
+  pickOnMap: undefined as ((point: { latitude: number; longitude: number }, fromMapCenter?: boolean) => void) | undefined,
 }));
 
 state.events = [event];
@@ -35,11 +36,13 @@ vi.mock('../src/hooks/useRealtimeAlerts', () => ({
   useRealtimeAlerts: () => ({ connected: true, lastUpdated: null }),
 }));
 vi.mock('../src/components/dashboard/DashboardMapArea', () => ({
-  default: ({ selectedEvent, onSelectEvent }: {
+  default: ({ selectedEvent, onSelectEvent, onPickLocation }: {
     selectedEvent?: typeof event | null;
     onSelectEvent?: (selected: typeof event) => void;
+    onPickLocation?: typeof state.pickOnMap;
   }) => {
     state.selectOnMap = onSelectEvent;
+    state.pickOnMap = onPickLocation;
     return <div role="status">{selectedEvent ? `Map target: ${selectedEvent.id}` : 'No map target'}</div>;
   },
 }));
@@ -48,6 +51,73 @@ afterEach(() => {
   cleanup();
   state.events = [event];
   state.selectOnMap = undefined;
+  state.pickOnMap = undefined;
+  localStorage.clear();
+  Reflect.deleteProperty(navigator, 'geolocation');
+});
+
+describe('dashboard saved locations', () => {
+  it('finds earthquakes within the chosen radius of a pin and saves it across visits', () => {
+    state.events = [
+      event,
+      { ...event, id: 'e2', place_name: 'Distant earthquake', latitude: 15.1 },
+      { ...event, id: 'e3', place_name: 'Local volcanic event', hazard_type: 'volcanic' },
+    ];
+    const dashboard = renderDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'My locations' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Drop a pin' }));
+    act(() => state.pickOnMap?.({ latitude: 14.6, longitude: 120.97 }));
+
+    const nearby = screen.getByRole('region', { name: 'Nearby earthquakes' });
+    expect(nearby).toHaveTextContent('Luzon earthquake');
+    expect(nearby).toHaveTextContent('0.0 km');
+    expect(nearby).not.toHaveTextContent('Distant earthquake');
+    expect(nearby).not.toHaveTextContent('Local volcanic event');
+    fireEvent.change(screen.getByLabelText('Radius'), { target: { value: '100' } });
+    expect(nearby).toHaveTextContent('Distant earthquake');
+    fireEvent.change(screen.getByLabelText('Location name'), { target: { value: 'School' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save location' }));
+    dashboard.unmount();
+
+    renderDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'My locations' }));
+    fireEvent.click(screen.getByRole('button', { name: 'School' }));
+    expect(screen.getByLabelText('Radius')).toHaveValue('100');
+    fireEvent.click(screen.getByRole('button', { name: 'Remove School' }));
+    expect(screen.queryByRole('button', { name: 'School' })).not.toBeInTheDocument();
+  });
+
+  it('requests geolocation on demand and leaves pin placement available after denial', () => {
+    const requestPosition = vi.fn((_success, onError) => onError({ code: 1 }));
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: { getCurrentPosition: requestPosition },
+    });
+    renderDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'My locations' }));
+    expect(requestPosition).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
+    expect(requestPosition).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('alert')).toHaveTextContent(/permission was denied/i);
+    expect(screen.getByRole('button', { name: 'Drop a pin' })).toBeEnabled();
+  });
+
+  it('cancels pin placement when the controls are collapsed', () => {
+    renderDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'My locations' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Drop a pin' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse controls' }));
+    expect(state.pickOnMap).toBeUndefined();
+  });
+
+  it('returns focus to My locations after placing a pin at map center', () => {
+    renderDashboard();
+    const trigger = screen.getByRole('button', { name: 'My locations' });
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole('button', { name: 'Drop a pin' }));
+    act(() => state.pickOnMap?.({ latitude: 14.6, longitude: 120.97 }, true));
+    expect(trigger).toHaveFocus();
+  });
 });
 
 function renderDashboard() {
